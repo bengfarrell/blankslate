@@ -5,6 +5,8 @@ import * as path from 'path';
 test.describe('HID Data Reader Walkthrough', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    // Navigate from homepage to walkthrough
+    await page.click('button:has-text("Start Walkthrough")');
     // Wait for the component to be ready
     await page.waitForSelector('hid-data-reader');
   });
@@ -17,9 +19,6 @@ test.describe('HID Data Reader Walkthrough', () => {
         return component[prop];
       }, propertyName);
     };
-
-    // Start the walkthrough
-    await page.click('button:has-text("Start Walkthrough")');
 
     // Wait for step 1 to be active
     await expect(page.locator('.walkthrough.active h3').first()).toContainText('Step 1: Horizontal Movement');
