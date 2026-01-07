@@ -102,11 +102,19 @@ export function detectStylusModeStatusByte(
 
 /**
  * Detect excluded usage pages (non-digitizer interfaces)
+ * Note: We don't exclude any interfaces if buttons are configured,
+ * since button data often comes from keyboard interfaces (usagePage 1)
  */
 export function detectExcludedUsagePages(
   allInterfaces?: number[],
-  digitizerUsagePage?: number
+  digitizerUsagePage?: number,
+  hasButtons?: boolean
 ): number[] {
+  // Don't exclude anything if buttons are configured - they may come from other interfaces
+  if (hasButtons) {
+    return [];
+  }
+  
   if (!allInterfaces || allInterfaces.length === 0) {
     return [];
   }
@@ -128,14 +136,17 @@ export function generateCompleteConfig(
   const capabilities = inferCapabilities(byteCodeMappings);
   const digitizerUsagePage = detectDigitizerUsagePage(deviceMetadata.collections);
   const stylusModeStatusByte = detectStylusModeStatusByte(byteCodeMappings);
-  const excludedUsagePages = detectExcludedUsagePages(
-    deviceMetadata.allInterfaces,
-    digitizerUsagePage
-  );
-
+  
   // Update capabilities with user-provided button info
   capabilities.hasButtons = userMetadata.buttonCount > 0;
   capabilities.buttonCount = userMetadata.buttonCount;
+  
+  // Don't exclude interfaces if buttons are configured (they may come from keyboard interface)
+  const excludedUsagePages = detectExcludedUsagePages(
+    deviceMetadata.allInterfaces,
+    digitizerUsagePage,
+    capabilities.hasButtons
+  );
 
   return {
     name: userMetadata.name,

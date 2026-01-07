@@ -1,0 +1,140 @@
+{
+  "name": "XP Pen Deco 640",
+  "manufacturer": "XP Pen",
+  "model": "Deco 640",
+  "description": "XP Pen Deco 640, OSX, Node.js, no driver",
+  "vendorId": "0x28bd",
+  "productId": "0x2904",
+  "deviceInfo": {
+    "vendor_id": 10429,
+    "product_id": 10500,
+    "product_string": "Deco 640",
+    "usage_page": 13,
+    "usage": 2,
+    "interfaces": [
+      13,
+      1
+    ]
+  },
+  "reportId": 0,
+  "digitizerUsagePage": 13,
+  "stylusModeStatusByte": 160,
+  "capabilities": {
+    "hasButtons": true,
+    "buttonCount": 8,
+    "hasPressure": true,
+    "pressureLevels": 16384,
+    "hasTilt": true,
+    "resolution": {
+      "x": 15999,
+      "y": 8999
+    }
+  },
+  "byteCodeMappings": {
+    "x": {
+      "byteIndex": [
+        1,
+        2
+      ],
+      "max": 15999,
+      "type": "multi-byte-range"
+    },
+    "y": {
+      "byteIndex": [
+        3,
+        4
+      ],
+      "max": 8999,
+      "type": "multi-byte-range"
+    },
+    "pressure": {
+      "byteIndex": [
+        5,
+        6
+      ],
+      "max": 16383,
+      "type": "multi-byte-range"
+    },
+    "status": {
+      "byteIndex": [
+        0
+      ],
+      "type": "code",
+      "values": {
+        "0": {
+          "state": "keyboard"
+        },
+        "1": {
+          "state": "buttons"
+        },
+        "3": {
+          "state": "buttons"
+        },
+        "160": {
+          "state": "hover"
+        },
+        "161": {
+          "state": "contact"
+        },
+        "192": {
+          "state": "none"
+        }
+      }
+    },
+    "tiltX": {
+      "byteIndex": [
+        7
+      ],
+      "positiveMax": 60,
+      "negativeMin": 196,
+      "negativeMax": 255,
+      "type": "bipolar-range"
+    },
+    "tiltY": {
+      "byteIndex": [
+        8
+      ],
+      "positiveMax": 60,
+      "negativeMin": 196,
+      "negativeMax": 255,
+      "type": "bipolar-range"
+    },
+    "tabletButtons": {
+      "byteIndex": [
+        1
+      ],
+      "buttonCount": 8,
+      "type": "code",
+      "values": {
+        "5": {
+          "button": 1
+        },
+        "8": {
+          "button": 2
+        },
+        "29": {
+          "button": 7
+        },
+        "47": {
+          "button": 3
+        },
+        "48": {
+          "button": 4
+        },
+        "86": {
+          "button": 5
+        },
+        "87": {
+          "button": 6
+        }
+      },
+      "statusOverrides": [
+        {
+          "scanCode": 29,
+          "statusByte": 3,
+          "buttonNumber": 8
+        }
+      ]
+    }
+  }
+}

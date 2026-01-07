@@ -3,4 +3,4 @@
  * Data structures for tablet HID byte data reading configuration
  */
 
-export * from './config';
+export * from './config.js';

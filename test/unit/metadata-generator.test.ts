@@ -162,7 +162,8 @@ describe('Metadata Generator', () => {
       expect(config.reportId).toBe(7);
       expect(config.digitizerUsagePage).toBe(13);
       expect(config.stylusModeStatusByte).toBe(160);
-      expect(config.excludedUsagePages).toEqual([65290]);
+      // When buttons are configured, we don't exclude any usage pages (they may contain button data)
+      expect(config.excludedUsagePages).toBeUndefined();
       expect(config.capabilities.hasButtons).toBe(true);
       expect(config.capabilities.buttonCount).toBe(8);
       expect(config.capabilities.hasPressure).toBe(true);

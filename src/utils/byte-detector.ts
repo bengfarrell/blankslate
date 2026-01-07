@@ -41,7 +41,17 @@ export interface StatusConfig {
 export interface TabletButtonsConfig {
   byteIndex: number[];
   buttonCount: number;
-  type: 'bit-flags';
+  type: 'bit-flags' | 'code';
+  values?: Record<string, { button: number }>;
+}
+
+/**
+ * Button mapping from interactive detection
+ */
+export interface ButtonMapping {
+  buttonNumber: number;
+  statusByte: number;
+  scanCode: number;
 }
 
 export interface DeviceByteCodeMappings {
@@ -177,28 +187,142 @@ export function groupConsecutiveBytes(bytes: ByteAnalysis[]): number[] {
 }
 
 /**
- * Calculates the maximum value from multi-byte data.
- * For multi-byte values, uses the highest observed max value.
+ * Calculates the maximum value from multi-byte data by combining bytes (little-endian).
+ * For multi-byte values, iterates through all packets and finds the highest combined value.
+ * 
+ * @param byteIndices - Array of byte indices that form the multi-byte value (e.g., [2, 3] for X)
+ * @param packets - Raw HID packets to analyze
+ * @param debug - If true, logs debug information about the calculation
+ * @returns The maximum combined value observed across all packets
  */
-export function calculateMultiByteMax(byteIndices: number[], bytes: ByteAnalysis[]): number {
-  if (byteIndices.length === 0) return 0;
+export function calculateMultiByteMax(byteIndices: number[], packets: Uint8Array[], debug = false): number {
+  if (byteIndices.length === 0 || packets.length === 0) return 0;
 
-  // For multi-byte values, find the highest max value observed
-  let maxValue = 0;
-  for (const index of byteIndices) {
-    const byte = bytes.find(b => b.byteIndex === index);
-    if (byte && byte.max > maxValue) {
-      maxValue = byte.max;
+  let maxCombinedValue = 0;
+  let maxPacket: Uint8Array | null = null;
+  let validPacketCount = 0;
+
+  // Iterate through all packets and combine bytes to find the true max
+  for (const packet of packets) {
+    let combinedValue = 0;
+    let validPacket = true;
+
+    // Combine bytes in little-endian order (first byte is low, second is high)
+    for (let i = 0; i < byteIndices.length; i++) {
+      const byteIndex = byteIndices[i];
+      if (byteIndex >= packet.length) {
+        validPacket = false;
+        break;
+      }
+      combinedValue += packet[byteIndex] << (i * 8);
+    }
+
+    if (validPacket) {
+      validPacketCount++;
+      if (combinedValue > maxCombinedValue) {
+        maxCombinedValue = combinedValue;
+        maxPacket = packet;
+      }
     }
   }
 
-  // If we have 2 bytes, it's likely a 16-bit value
-  // Use the observed max or default to 16-bit max
-  if (byteIndices.length === 2) {
-    return maxValue > 0 ? Math.max(maxValue, 255) : 65535;
+  if (debug && maxPacket) {
+    const bytesStr = byteIndices.map(idx => 
+      `[${idx}]=0x${maxPacket![idx].toString(16).padStart(2, '0')}`
+    ).join(', ');
+    console.log(`  calculateMultiByteMax: indices=[${byteIndices}], max=${maxCombinedValue}, from ${validPacketCount} packets`);
+    console.log(`    Max packet bytes: ${bytesStr}`);
+    console.log(`    Full packet: ${Array.from(maxPacket).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
   }
 
-  return maxValue > 0 ? maxValue : 255;
+  // Return observed max, or sensible defaults
+  if (maxCombinedValue > 0) {
+    return maxCombinedValue;
+  }
+
+  // Fallback defaults based on byte count
+  if (byteIndices.length === 2) {
+    return 65535; // 16-bit max
+  }
+  return 255; // 8-bit max
+}
+
+/**
+ * Calculates the bipolar range values from tilt data.
+ * Tilt values are typically encoded as:
+ * - 0 = no tilt
+ * - 1 to positiveMax = positive tilt (e.g., 1-60)
+ * - negativeMin to 255 = negative tilt (e.g., 196-255, where 196 = 256-60)
+ * 
+ * @param byteIndex - The byte index for the tilt value
+ * @param packets - Raw HID packets to analyze
+ * @returns Object with positiveMax, negativeMin, negativeMax
+ */
+export function calculateBipolarRange(
+  byteIndex: number,
+  packets: Uint8Array[]
+): { positiveMax: number; negativeMin: number; negativeMax: number } {
+  if (packets.length === 0) {
+    // Default to full signed byte range
+    return { positiveMax: 127, negativeMin: 128, negativeMax: 255 };
+  }
+
+  // Collect all values seen at this byte position
+  const values = new Set<number>();
+  for (const packet of packets) {
+    if (byteIndex < packet.length) {
+      values.add(packet[byteIndex]);
+    }
+  }
+
+  if (values.size === 0) {
+    return { positiveMax: 127, negativeMin: 128, negativeMax: 255 };
+  }
+
+  // Separate positive (0-127) and negative (128-255) values
+  // In unsigned byte representation: 128-255 represents negative values
+  let positiveMax = 0;
+  let negativeMin = 255;
+  let negativeMax = 128;
+  let hasPositive = false;
+  let hasNegative = false;
+
+  for (const value of values) {
+    if (value === 0) {
+      // 0 is neutral, don't count as positive range
+      continue;
+    }
+    
+    if (value < 128) {
+      // Positive range
+      hasPositive = true;
+      if (value > positiveMax) {
+        positiveMax = value;
+      }
+    } else {
+      // Negative range (128-255)
+      hasNegative = true;
+      if (value < negativeMin) {
+        negativeMin = value;
+      }
+      if (value > negativeMax) {
+        negativeMax = value;
+      }
+    }
+  }
+
+  // If we didn't see any positive values, use a sensible default
+  if (!hasPositive) {
+    positiveMax = 127;
+  }
+
+  // If we didn't see any negative values, use defaults
+  if (!hasNegative) {
+    negativeMin = 128;
+    negativeMax = 255;
+  }
+
+  return { positiveMax, negativeMin, negativeMax };
 }
 
 /**
@@ -242,6 +366,10 @@ export function findStatusByte(
 /**
  * Generates the final device configuration from detected bytes.
  * Uses 0-based indexing for all byte positions.
+ * 
+ * @param tiltXPackets - Optional: packets captured during tilt X gesture (for accurate range detection)
+ * @param tiltYPackets - Optional: packets captured during tilt Y gesture (for accurate range detection)
+ * @param buttonMappings - Optional: interactive button mappings from per-button detection
  */
 export function generateDeviceConfig(
   horizontalBytes: ByteAnalysis[],
@@ -251,17 +379,40 @@ export function generateDeviceConfig(
   tiltYBytes: ByteAnalysis[],
   statusByteValues: Map<number, StatusValue>,
   allPackets: Uint8Array[],
-  tabletButtonBytes: ByteAnalysis[] = []
+  tabletButtonBytes: ByteAnalysis[] = [],
+  tiltXPackets: Uint8Array[] = [],
+  tiltYPackets: Uint8Array[] = [],
+  buttonMappings: ButtonMapping[] = []
 ): DeviceByteCodeMappings {
   // Group consecutive bytes for multi-byte values
   const xBytes = groupConsecutiveBytes(horizontalBytes);
   const yBytes = groupConsecutiveBytes(verticalBytes);
   const pressureByteIndices = groupConsecutiveBytes(pressureBytes);
 
-  // Calculate max values from the observed data
-  const xMax = calculateMultiByteMax(xBytes, horizontalBytes);
-  const yMax = calculateMultiByteMax(yBytes, verticalBytes);
-  const pressureMax = calculateMultiByteMax(pressureByteIndices, pressureBytes);
+  // Calculate max values from the actual raw packets (not per-byte analysis)
+  // Enable debug logging to help diagnose any calibration issues
+  const debug = typeof process !== 'undefined' && process.env?.DEBUG_WALKTHROUGH === '1';
+  if (debug) {
+    console.log('\n[DEBUG] Calculating max values from', allPackets.length, 'packets:');
+  }
+  const xMax = calculateMultiByteMax(xBytes, allPackets, debug);
+  const yMax = calculateMultiByteMax(yBytes, allPackets, debug);
+  const pressureMax = calculateMultiByteMax(pressureByteIndices, allPackets, debug);
+
+  // Add button status values FIRST (before building status config)
+  // This ensures keyboard/button states are included in the status mapping
+  if (buttonMappings.length > 0) {
+    const buttonStatusBytes = new Set(buttonMappings.map(m => m.statusByte));
+    for (const statusByte of buttonStatusBytes) {
+      if (!statusByteValues.has(statusByte)) {
+        if (statusByte === 0) {
+          statusByteValues.set(0, { state: 'keyboard' });
+        } else if (statusByte >= 1 && statusByte <= 3) {
+          statusByteValues.set(statusByte, { state: 'buttons' });
+        }
+      }
+    }
+  }
 
   // Use 0-based indexing
   const config: DeviceByteCodeMappings = {
@@ -308,32 +459,99 @@ export function generateDeviceConfig(
     }
   }
 
-  // Add tilt X if detected
+  // Add tilt X if detected - use actual captured packets to determine range
   if (tiltXBytes.length > 0) {
     const tiltXIndices = tiltXBytes.map(b => b.byteIndex);
+    const packetsToUse = tiltXPackets.length > 0 ? tiltXPackets : allPackets;
+    const tiltXRange = calculateBipolarRange(tiltXIndices[0], packetsToUse);
+    
+    if (debug) {
+      console.log(`  Tilt X range: positiveMax=${tiltXRange.positiveMax}, negativeMin=${tiltXRange.negativeMin}, negativeMax=${tiltXRange.negativeMax}`);
+    }
+    
     config.tiltX = {
-      byteIndex: tiltXIndices, // Use 0-based indexing
-      positiveMax: 127,
-      negativeMin: 128,
-      negativeMax: 255,
+      byteIndex: tiltXIndices,
+      positiveMax: tiltXRange.positiveMax,
+      negativeMin: tiltXRange.negativeMin,
+      negativeMax: tiltXRange.negativeMax,
       type: 'bipolar-range',
     };
   }
 
-  // Add tilt Y if detected
+  // Add tilt Y if detected - use actual captured packets to determine range
   if (tiltYBytes.length > 0) {
     const tiltYIndices = tiltYBytes.map(b => b.byteIndex);
+    const packetsToUse = tiltYPackets.length > 0 ? tiltYPackets : allPackets;
+    const tiltYRange = calculateBipolarRange(tiltYIndices[0], packetsToUse);
+    
+    if (debug) {
+      console.log(`  Tilt Y range: positiveMax=${tiltYRange.positiveMax}, negativeMin=${tiltYRange.negativeMin}, negativeMax=${tiltYRange.negativeMax}`);
+    }
+    
     config.tiltY = {
-      byteIndex: tiltYIndices, // Use 0-based indexing
-      positiveMax: 127,
-      negativeMin: 128,
-      negativeMax: 255,
+      byteIndex: tiltYIndices,
+      positiveMax: tiltYRange.positiveMax,
+      negativeMin: tiltYRange.negativeMin,
+      negativeMax: tiltYRange.negativeMax,
       type: 'bipolar-range',
     };
   }
 
-  // Add tablet buttons if detected
-  if (tabletButtonBytes.length > 0) {
+  // Add tablet buttons - prefer interactive mappings over auto-detected bytes
+  if (buttonMappings.length > 0) {
+    // Interactive detection - use code type with value mappings
+    const values: Record<string, { button: number }> = {};
+    
+    // Check for scan code conflicts and track status byte overrides
+    const scanCodeGroups = new Map<number, ButtonMapping[]>();
+    for (const mapping of buttonMappings) {
+      const existing = scanCodeGroups.get(mapping.scanCode) || [];
+      existing.push(mapping);
+      scanCodeGroups.set(mapping.scanCode, existing);
+    }
+    
+    // Track conflicting buttons (share same scan code, differentiated by status byte)
+    const conflictingButtons: Array<{ scanCode: number; statusByte: number; buttonNumber: number }> = [];
+    
+    // Build value mappings - for conflicts, use the lower button number as default
+    for (const [scanCode, mappings] of scanCodeGroups) {
+      if (mappings.length > 1) {
+        // Multiple buttons share this scan code
+        // Use the lowest button number as the default mapping
+        // Store the others as conflicts for status-byte-based override
+        const sorted = [...mappings].sort((a, b) => a.buttonNumber - b.buttonNumber);
+        values[String(scanCode)] = { button: sorted[0].buttonNumber };
+        
+        // Record conflicts for runtime status byte checking
+        for (let i = 1; i < sorted.length; i++) {
+          conflictingButtons.push({
+            scanCode,
+            statusByte: sorted[i].statusByte,
+            buttonNumber: sorted[i].buttonNumber,
+          });
+        }
+      } else {
+        values[String(scanCode)] = { button: mappings[0].buttonNumber };
+      }
+    }
+    
+    // Note: Button status values are added earlier in this function
+    
+    const tabletButtonsConfig: TabletButtonsConfig = {
+      byteIndex: [1], // Button scan codes are typically at byte index 1
+      buttonCount: buttonMappings.length,
+      type: 'code',
+      values,
+    };
+    
+    // Add conflict overrides if any buttons share scan codes
+    if (conflictingButtons.length > 0) {
+      (tabletButtonsConfig as any).statusOverrides = conflictingButtons;
+    }
+    
+    config.tabletButtons = tabletButtonsConfig;
+  } else if (tabletButtonBytes.length > 0) {
+    // Fallback: auto-detected bytes with bit-flags type
     const buttonByteIndices = tabletButtonBytes.map(b => b.byteIndex);
     config.tabletButtons = {
       byteIndex: buttonByteIndices, // Use 0-based indexing
@@ -344,3 +562,4 @@ export function generateDeviceConfig(
 
   return config;
 }
+

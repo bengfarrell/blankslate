@@ -70,6 +70,14 @@ export function parseMultiByteRangeData(
 
 /**
  * Parse a bipolar range value (e.g., tilt that can be positive or negative)
+ * 
+ * For tilt encoded in a single byte:
+ * - Positive range: 0 to positiveMax (e.g., 0-60 for +60°)
+ * - Negative range: negativeMin to negativeMax (e.g., 196-255 for -60° to ~0°)
+ * 
+ * In the negative range:
+ * - negativeMin (e.g., 196) represents MAX negative tilt (-1.0)
+ * - negativeMax (e.g., 255) represents near-zero tilt (~0.0)
  */
 export function parseBipolarRangeData(
   data: number[],
@@ -85,7 +93,8 @@ export function parseBipolarRangeData(
   
   const value = data[byteIndex];
   
-  // Check if value is in positive range
+  // Check if value is in positive range (e.g., 1-60)
+  // Higher byte value = more positive tilt
   if (value >= positiveMin && value <= positiveMax) {
     if (positiveMax === positiveMin) {
       return 0;
@@ -93,12 +102,15 @@ export function parseBipolarRangeData(
     return (value - positiveMin) / (positiveMax - positiveMin);
   }
   
-  // Check if value is in negative range
+  // Check if value is in negative range (e.g., 196-255)
+  // Lower byte value (196) = max negative tilt (-1.0)
+  // Higher byte value (255) = near zero tilt (~0.0)
   if (value >= negativeMin && value <= negativeMax) {
     if (negativeMax === negativeMin) {
       return 0;
     }
-    return -((value - negativeMin) / (negativeMax - negativeMin));
+    // Invert: negativeMin maps to -1, negativeMax maps to ~0
+    return -((negativeMax - value) / (negativeMax - negativeMin));
   }
   
   return 0;
@@ -147,33 +159,59 @@ export function processDeviceData(
   const dataList = Array.from(data);
   const result: Record<string, string | number | boolean> = {};
 
-  // Check Report ID
+  // Check Report ID - will also check keyboard state after parsing status
   const reportId = dataList.length > 0 ? dataList[0] : 0;
-  const isButtonInterface = reportId === 6;  // Report ID 6 is button-only interface
+  let isButtonInterface = reportId === 6;  // Report ID 6 is button-only interface
 
   // Parse the status to determine device state
   let deviceState: string | null = null;
   for (const [key, mapping] of Object.entries(mappings)) {
     if (mapping.type === MappingType.CODE) {
-      const byteIndex = mapping.byteIndex ?? 0;
+      // Handle byteIndex as either number or array
+      const rawByteIndex = mapping.byteIndex ?? 0;
+      const byteIndex = Array.isArray(rawByteIndex) ? rawByteIndex[0] : rawByteIndex;
+      
       // Use 0-based indexing directly
       if (byteIndex >= 0 && byteIndex < dataList.length) {
-        const codeResult = parseCode(dataList, byteIndex, mapping.values ?? []);
+        const codeResult = parseCode(dataList, byteIndex, mapping.values ?? {});
         if (typeof codeResult === 'object' && codeResult !== null) {
           Object.assign(result, codeResult);
           deviceState = codeResult.state ?? null;
         } else {
-          result[key] = codeResult;
+          // Unknown status code - check if it's an idle/out-of-range state
+          const statusByte = dataList[byteIndex];
+          // Common idle status bytes: 0x00 (no data), 0xC0 (192 = out of range)
+          if (statusByte === 0x00 || statusByte === 0xC0) {
+            result.state = 'none';
+            deviceState = 'none';
+          } else {
+            // Show the unknown status byte value to help with debugging
+            result.state = `unknown(${statusByte})`;
+            result[key] = codeResult;
+          }
         }
         break;
       }
     }
   }
+  
+  // If no state was determined, check if all data is zeros (pen out of range)
+  if (!deviceState && dataList.every(b => b === 0)) {
+    result.state = 'none';
+    deviceState = 'none';
+  }
+
+  // Keyboard interface packets should be treated like button interface
+  if (deviceState === 'keyboard') {
+    isButtonInterface = true;
+  }
 
   // Process remaining mappings based on device state
   for (const [key, mapping] of Object.entries(mappings)) {
     const mappingType = mapping.type;
-    const byteIndex = mapping.byteIndex ?? 0;
+    // Handle byteIndex as either number or array
+    const rawByteIndex = mapping.byteIndex ?? 0;
+    const byteIndex = Array.isArray(rawByteIndex) ? rawByteIndex[0] : rawByteIndex;
 
     // Skip if already processed (status/code), unless it's tabletButtons with code type
     if (mappingType === MappingType.CODE && key !== 'tabletButtons') {
@@ -182,20 +220,38 @@ export function processDeviceData(
 
     // Handle tabletButtons with code type (custom value mapping)
     if (key === 'tabletButtons' && mappingType === MappingType.CODE) {
-      // ONLY process button codes from the button interface (Report ID 6)
-      if (isButtonInterface) {
+      // Process button codes from keyboard or button interfaces
+      if (isButtonInterface || deviceState === 'buttons') {
         // Use 0-based indexing directly
         if (byteIndex >= 0 && byteIndex < dataList.length) {
           const byteValue = String(dataList[byteIndex]);
           const valuesMap = mapping.values ?? {};
+          const statusOverrides = mapping.statusOverrides as Array<{ scanCode: number; statusByte: number; buttonNumber: number }> | undefined;
+          
+          let buttonNum: number | undefined;
+          
           if (byteValue in valuesMap) {
-            const buttonNum = valuesMap[byteValue].button;
-            if (buttonNum) {
-              // Set only this button as pressed
-              const buttonCount = mapping.buttonCount ?? 8;
-              for (let i = 1; i <= buttonCount; i++) {
-                result[`button${i}`] = i === buttonNum;
+            buttonNum = valuesMap[byteValue].button;
+            
+            // Check for status byte overrides (buttons sharing same scan code)
+            if (statusOverrides) {
+              const scanCode = parseInt(byteValue, 10);
+              const statusByte = dataList[0];
+              const override = statusOverrides.find(
+                o => o.scanCode === scanCode && o.statusByte === statusByte
+              );
+              if (override) {
+                buttonNum = override.buttonNumber;
               }
+            }
+          }
+          
+          if (buttonNum) {
+            // Set the active button number and individual flags
+            result.tabletButtons = buttonNum;
+            const buttonCount = mapping.buttonCount ?? 8;
+            for (let i = 1; i <= buttonCount; i++) {
+              result[`button${i}`] = i === buttonNum;
             }
           }
         }

@@ -186,8 +186,9 @@ describe('Data Helpers', () => {
       const data = [0, 0, 0];
       const result = parseBipolarRangeData(data, 1, 128, 255, 0, 127);
       
-      // At negative minimum (0-0)/(127-0) = 0, but negative, so -0
-      expect(Math.abs(result)).toBe(0);
+      // At negativeMin (0), should return -1 (maximum negative)
+      // Formula: -((negativeMax - value) / (negativeMax - negativeMin)) = -((127 - 0) / (127 - 0)) = -1
+      expect(result).toBe(-1);
     });
 
     it('should return 0 at positive minimum boundary', () => {
