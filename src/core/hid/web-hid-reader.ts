@@ -84,8 +84,10 @@ export class WebHIDReader implements IHIDReader {
         return;
       }
 
-      // WebHID provides data without the report ID (it's in event.reportId)
-      const data = new Uint8Array(event.data.buffer);
+      // WebHID provides data as a DataView, which may be a view into a larger ArrayBuffer
+      // We must use byteOffset and byteLength to get only the valid portion
+      const dataView = event.data;
+      const data = new Uint8Array(dataView.buffer, dataView.byteOffset, dataView.byteLength);
       this.dataCallback(data, event.reportId);
     };
 

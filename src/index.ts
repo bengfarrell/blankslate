@@ -12,3 +12,5 @@ export * from './models/index.js';
 // Mock devices for testing and development
 export * from './mockbytes/index.js';
 
+// Strings (for UI integration)
+export * from './strings/walkthrough-strings.js';

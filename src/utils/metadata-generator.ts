@@ -15,6 +15,8 @@ export interface DeviceMetadata {
   collections?: Array<{ usagePage: number; usage: number }>;
   allInterfaces?: number[];
   detectedReportId?: number;
+  /** The usage page of the interface that actually sends pen data */
+  dataSourceUsagePage?: number;
 }
 
 export interface UserProvidedMetadata {
@@ -159,7 +161,8 @@ export function generateCompleteConfig(
       vendor_id: deviceMetadata.vendorId || 0,
       product_id: deviceMetadata.productId || 0,
       product_string: deviceMetadata.productName || '',
-      usage_page: deviceMetadata.collections?.[0]?.usagePage || 13,
+      // Use the actual data source usage page if detected, otherwise fall back to first collection
+      usage_page: deviceMetadata.dataSourceUsagePage || deviceMetadata.collections?.[0]?.usagePage || 13,
       usage: deviceMetadata.collections?.[0]?.usage || 2,
       interfaces: deviceMetadata.allInterfaces || [],
     },

@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { analyzeBytes, getBestGuessBytesByVariance, generateDeviceConfig } from '../../src/utils/byte-detector.js';
 import { inferCapabilities } from '../../src/utils/metadata-generator.js';
 import { TabletDataGenerator } from '../../src/mockbytes/tablet-data-generator.js';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 describe('Walkthrough Byte Detection', () => {
   const generator = new TabletDataGenerator({
@@ -200,10 +198,6 @@ describe('Walkthrough Byte Detection', () => {
 
   describe('Final: Complete Configuration Generation', () => {
     it('should generate configuration matching XP-Pen Deco 640 structure', () => {
-      // Load expected configuration
-      const expectedConfigPath = join(process.cwd(), 'public/exampleconfigurations/xp_pen_deco_640_osx_nodriver.json');
-      const expectedConfig = JSON.parse(readFileSync(expectedConfigPath, 'utf-8'));
-
       // Simulate all walkthrough steps to collect data
       // Use higher maxPackets to ensure we capture the pen away packets at the end
       const horizontalPackets = collectPackets(

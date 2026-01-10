@@ -209,9 +209,12 @@ export function processDeviceData(
   // Process remaining mappings based on device state
   for (const [key, mapping] of Object.entries(mappings)) {
     const mappingType = mapping.type;
-    // Handle byteIndex as either number or array
+    // Handle byteIndex - keep as array for multi-byte types, extract first for single-byte
     const rawByteIndex = mapping.byteIndex ?? 0;
-    const byteIndex = Array.isArray(rawByteIndex) ? rawByteIndex[0] : rawByteIndex;
+    // For multi-byte-range, keep the full array; for others, use first element
+    const byteIndex = mappingType === MappingType.MULTI_BYTE_RANGE
+      ? rawByteIndex  // Keep full array for multi-byte
+      : (Array.isArray(rawByteIndex) ? rawByteIndex[0] : rawByteIndex);  // First element for single-byte
 
     // Skip if already processed (status/code), unless it's tabletButtons with code type
     if (mappingType === MappingType.CODE && key !== 'tabletButtons') {

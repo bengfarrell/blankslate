@@ -233,27 +233,22 @@ Tilt values follow the drawing direction:
 
 Default 200 Hz (200 samples/second) matches real tablets.
 
-## Integration with HIDReader
+## Integration with processDeviceData
 
 ```typescript
-import { HIDReader } from '../hid-reader.js';
+import { processDeviceData } from '../utils/data-helpers.js';
 import { MockTabletDevice } from '../mockbytes/index.js';
 
 const mockTablet = new MockTabletDevice();
 await mockTablet.open();
 
-const reader = new HIDReader(
-  mockTablet as any, // Cast to HIDDevice interface
-  {
-    mappings: yourMappingConfig,
-    reportId: 2,
-  },
-  (data) => {
-    console.log('Processed data:', data);
-  }
-);
+// Listen for raw bytes from mock device
+mockTablet.addEventListener('inputreport', (data: Uint8Array) => {
+  // Process using shared data-helpers (same as real devices)
+  const processed = processDeviceData(data, yourMappingConfig);
+  console.log('Processed data:', processed);
+});
 
-await reader.startReading();
 mockTablet.playCircle();
 ```
 

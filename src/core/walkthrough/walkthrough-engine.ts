@@ -137,6 +137,13 @@ export class WalkthroughEngine {
   }
 
   /**
+   * Get all captured packets for current step
+   */
+  getCapturedPackets(): Uint8Array[] {
+    return [...this.captureBuffer];
+  }
+
+  /**
    * Set device information
    */
   setDeviceInfo(info: DeviceInfo): void {
@@ -231,7 +238,9 @@ export class WalkthroughEngine {
     // Filter out idle packets if enabled
     // Idle packets typically have status byte indicating pen is out of range
     // Common idle status bytes: 0xC0 (out of range), 0x00 (no data)
-    if (this.options.filterIdlePackets && packet.length > 0) {
+    // NOTE: Skip filtering for step9-tablet-buttons since button packets have different structures
+    const isButtonStep = this.state.currentStep === 'step9-tablet-buttons';
+    if (this.options.filterIdlePackets && packet.length > 0 && !isButtonStep) {
       const statusByte = packet[0];
       
       // Check for common "out of range" or "idle" status bytes
@@ -563,6 +572,13 @@ export class WalkthroughEngine {
   }
 
   /**
+   * Get all data for a specific step
+   */
+  getStepData(step: WalkthroughStep): StepData | undefined {
+    return this.state.stepData.get(step);
+  }
+
+  /**
    * Get all detected status byte values
    */
   getStatusByteValues(): Map<number, StatusValue> {
@@ -586,6 +602,7 @@ export class WalkthroughEngine {
         collections: this.state.deviceInfo.collections,
         allInterfaces: this.state.deviceInfo.allInterfaces,
         detectedReportId: this.state.deviceInfo.detectedReportId,
+        dataSourceUsagePage: this.state.deviceInfo.dataSourceUsagePage,
       };
 
       const userProvidedMetadata: UserProvidedMetadata = {

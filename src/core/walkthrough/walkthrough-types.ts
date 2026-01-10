@@ -4,7 +4,7 @@
  */
 
 import type { ByteAnalysis, DeviceByteCodeMappings, StatusValue } from '../../utils/byte-detector.js';
-import { loadStringsSync, type StepStrings } from '../../utils/strings-loader.js';
+import { WALKTHROUGH_STRINGS } from '../../strings/walkthrough-strings.js';
 
 /**
  * Walkthrough step identifiers
@@ -80,6 +80,8 @@ export interface DeviceInfo {
   collections?: Array<{ usagePage: number; usage: number }>;
   allInterfaces?: number[];
   detectedReportId?: number;
+  /** The usage page of the interface that actually sends pen data */
+  dataSourceUsagePage?: number;
 }
 
 /**
@@ -132,14 +134,13 @@ const STEP_GESTURES: Record<WalkthroughStep, GestureType | null> = {
 };
 
 /**
- * Build step info by merging gesture mappings with loaded strings
+ * Build step info by merging gesture mappings with strings
  */
 function buildStepInfo(): Record<WalkthroughStep, StepInfo> {
-  const strings = loadStringsSync();
   const result: Record<string, StepInfo> = {};
 
   for (const [stepId, gesture] of Object.entries(STEP_GESTURES)) {
-    const stepStrings: StepStrings = strings.steps[stepId] || {
+    const stepStrings = WALKTHROUGH_STRINGS.steps[stepId] || {
       number: 0,
       title: stepId,
       description: '',
@@ -160,7 +161,7 @@ function buildStepInfo(): Record<WalkthroughStep, StepInfo> {
 }
 
 /**
- * Step information lookup - loaded from strings JSON at runtime
+ * Step information lookup
  */
 export const STEP_INFO: Record<WalkthroughStep, StepInfo> = buildStepInfo();
 

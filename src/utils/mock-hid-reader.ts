@@ -6,7 +6,24 @@
 
 import { processDeviceData } from './data-helpers.js';
 import type { Config } from '../models/index.js';
-import type { HIDConfig, HIDDataCallback, WarningCallback } from './hid-reader.js';
+
+/**
+ * Configuration for the mock HID reader
+ */
+export interface HIDConfig {
+    mappings: Record<string, any> | Config['byteCodeMappings'];
+    reportId?: number;
+}
+
+/**
+ * Callback for processed HID data
+ */
+export type HIDDataCallback = (data: Record<string, string | number | boolean>) => void;
+
+/**
+ * Callback for warnings during data processing
+ */
+export type WarningCallback = (message: string) => void;
 
 /**
  * Configuration options for mock device behavior

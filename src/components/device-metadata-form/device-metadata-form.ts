@@ -122,6 +122,15 @@ export class DeviceMetadataForm extends LitElement {
       color: #666;
       margin-top: 4px;
     }
+
+    .readonly-value {
+      padding: 10px;
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 4px;
+      color: #2e7d32;
+      font-size: 0.95rem;
+    }
   `;
 
   @property({ type: String })
@@ -250,20 +259,28 @@ export class DeviceMetadataForm extends LitElement {
             ></textarea>
           </div>
 
-          <div class="form-field">
-            <label for="buttonCount">Number of Express Keys/Buttons</label>
-            <input
-              type="number"
-              id="buttonCount"
-              min="0"
-              max="32"
-              .value=${this.formData.buttonCount.toString()}
-              @input=${(e: Event) => {
-                this.formData.buttonCount = parseInt((e.target as HTMLInputElement).value) || 0;
-              }}
-            />
-            <div class="hint">Enter 0 if your device has no express keys</div>
-          </div>
+          ${this.suggestedButtonCount > 0 ? html`
+            <!-- Button count already collected in step 9, show as read-only info -->
+            <div class="form-field">
+              <label>Express Keys/Buttons</label>
+              <div class="readonly-value">${this.suggestedButtonCount} buttons detected in previous step</div>
+            </div>
+          ` : html`
+            <div class="form-field">
+              <label for="buttonCount">Number of Express Keys/Buttons</label>
+              <input
+                type="number"
+                id="buttonCount"
+                min="0"
+                max="32"
+                .value=${this.formData.buttonCount.toString()}
+                @input=${(e: Event) => {
+                  this.formData.buttonCount = parseInt((e.target as HTMLInputElement).value) || 0;
+                }}
+              />
+              <div class="hint">Enter 0 if your device has no express keys</div>
+            </div>
+          `}
 
           <div class="form-actions">
             <button type="button" class="btn-secondary" @click=${this._handleCancel}>

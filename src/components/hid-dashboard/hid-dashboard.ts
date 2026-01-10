@@ -5,7 +5,6 @@ import '../tablet-visualizer/tablet-visualizer.js';
 import '../bytes-display/bytes-display.js';
 import type { ByteData, DeviceInfo } from '../bytes-display/bytes-display.js';
 import { Config } from '../../models/config.js';
-import { HIDReader } from '../../utils/hid-reader.js';
 import { MockTabletDevice } from '../../mockbytes/mock-tablet-device.js';
 import { processDeviceData } from '../../utils/data-helpers.js';
 
@@ -77,7 +76,6 @@ export class HidDashboard extends LitElement {
   private currentSimulation = '';
 
   private hidDevice: HIDDevice | null = null;
-  private hidReader: HIDReader | null = null;
   private mockDevice: MockTabletDevice | null = null;
 
   private readonly mockDataOptions: MockDataOption[] = [
@@ -228,35 +226,68 @@ export class HidDashboard extends LitElement {
 
     try {
       // Request HID device access
-      const devices = await navigator.hid.requestDevice({
+      const requestedDevices = await navigator.hid.requestDevice({
         filters: [{
           vendorId: this.config.deviceInfo.vendor_id,
           productId: this.config.deviceInfo.product_id
         }]
       });
 
-      if (devices.length === 0) {
+      if (requestedDevices.length === 0) {
         console.log('No device selected');
         return;
       }
 
-      const device = devices[0];
-      this.hidDevice = device;
-      this.deviceName = device.productName || this.config.name;
+      // IMPORTANT: Get ALL authorized devices (like the walkthrough does)
+      // The requestDevice picker authorizes access, but we need to get ALL interfaces
+      const allDevices = await navigator.hid.getDevices();
+      
+      // Filter to just devices from this tablet (same vendor/product)
+      const tabletDevices = allDevices.filter(d => 
+        d.vendorId === this.config!.deviceInfo.vendor_id &&
+        d.productId === this.config!.deviceInfo.product_id
+      );
+      
+      // Find the interface matching the config's usage_page
+      // This is where the actual pen data comes from (may be vendor-specific like 65290/0xFF0A)
+      const configUsagePage = this.config.deviceInfo.usage_page;
+      
+      const configuredDevice = tabletDevices.find(d => 
+        d.collections.some(c => c.usagePage === configUsagePage)
+      );
+      
+      // Fallback to digitizer (13) or first device if config's usage_page not found
+      const digitizerDevice = tabletDevices.find(d => 
+        d.collections.some(c => c.usagePage === 13)
+      );
+      const primaryDevice = configuredDevice || digitizerDevice || tabletDevices[0];
+      
+      if (!primaryDevice) {
+        console.error('[Dashboard] No suitable device interface found');
+        return;
+      }
+      
+      this.hidDevice = primaryDevice;
+      this.deviceName = primaryDevice.productName || this.config.name;
       this.deviceConnected = true;
 
-      // Create HID reader with config mappings
-      this.hidReader = new HIDReader(
-        device,
-        {
-          mappings: this.config.byteCodeMappings,
-          reportId: this.config.reportId
-        },
-        (data) => this._handleTabletData(data as TabletDataEvent)
-      );
+      // Only open and listen to the interface specified in the config
+      if (!primaryDevice.opened) {
+        await primaryDevice.open();
+      }
 
-      // Start reading from the device
-      await this.hidReader.startReading();
+      // Set up event listener on the config-specified interface
+      primaryDevice.addEventListener('inputreport', (event: HIDInputReportEvent) => {
+        const dv = event.data;
+        const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+        
+        // Update raw bytes display
+        this._updateRawBytes(bytes);
+        
+        // Process through config mappings using shared processDeviceData
+        const processed = processDeviceData(bytes, this.config!.byteCodeMappings);
+        this._handleTabletData(processed as TabletDataEvent);
+      });
 
     } catch (error) {
       console.error('Failed to connect:', error);
@@ -300,10 +331,6 @@ export class HidDashboard extends LitElement {
   }
 
   private _disconnect() {
-    if (this.hidReader) {
-      this.hidReader.close();
-      this.hidReader = null;
-    }
     if (this.hidDevice) {
       this.hidDevice.close();
       this.hidDevice = null;

@@ -1,24 +1,25 @@
 import { LitElement, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { styles } from './hid-walkthrough.styles.js';
+
+// Import shared types and step info from core
+import { 
+  STEP_INFO, 
+  type WalkthroughStep, 
+  type GestureType,
+  type StepInfo 
+} from '../../core/walkthrough/index.js';
 import type { ByteAnalysis, DeviceByteCodeMappings } from '../../utils/byte-detector.js';
 import type { MetadataFormData } from '../device-metadata-form/device-metadata-form.js';
+
+// Import strings
+import { WALKTHROUGH_STRINGS } from '../../strings/walkthrough-strings.js';
+
 import '../hid-walkthrough-progress/hid-walkthrough-progress.js';
 import '../device-metadata-form/device-metadata-form.js';
 
-export type WalkthroughStep = 
-  | 'idle' 
-  | 'step1-horizontal' 
-  | 'step2-vertical' 
-  | 'step3-pressure' 
-  | 'step4-hover-movement' 
-  | 'step5-tilt-x' 
-  | 'step6-tilt-y' 
-  | 'step7-primary-button' 
-  | 'step8-secondary-button' 
-  | 'step9-tablet-buttons' 
-  | 'step10-metadata' 
-  | 'complete';
+// Re-export types for consumers
+export type { WalkthroughStep };
 
 export interface WalkthroughStepCompleteEvent {
   step: WalkthroughStep;
@@ -35,7 +36,7 @@ export interface WalkthroughMetadataSubmitEvent {
 
 /**
  * HID Walkthrough component for guiding users through device configuration
- * Handles all 10 steps of the walkthrough process
+ * Uses shared step info and strings from JSON for consistency with CLI
  */
 @customElement('hid-walkthrough')
 export class HidWalkthrough extends LitElement {
@@ -84,6 +85,13 @@ export class HidWalkthrough extends LitElement {
   @property({ type: Object })
   completeConfig: any = null;
 
+  /**
+   * Get step info from the shared STEP_INFO constant
+   */
+  private _getStepInfo(step: WalkthroughStep): StepInfo {
+    return STEP_INFO[step];
+  }
+
   render() {
     return html`
       <div class="walkthrough-container">
@@ -93,29 +101,24 @@ export class HidWalkthrough extends LitElement {
   }
 
   private _renderCurrentStep() {
+    const stepInfo = this._getStepInfo(this.currentStep);
+
     switch (this.currentStep) {
       case 'step1-horizontal':
-        return this._renderStep1Horizontal();
       case 'step2-vertical':
-        return this._renderStep2Vertical();
       case 'step3-pressure':
-        return this._renderStep3Pressure();
       case 'step4-hover-movement':
-        return this._renderStep4HoverMovement();
       case 'step5-tilt-x':
-        return this._renderStep5TiltX();
       case 'step6-tilt-y':
-        return this._renderStep6TiltY();
       case 'step7-primary-button':
-        return this._renderStep7PrimaryButton();
       case 'step8-secondary-button':
-        return this._renderStep8SecondaryButton();
+        return this._renderGestureStep(stepInfo);
       case 'step9-tablet-buttons':
-        return this._renderStep9TabletButtons();
+        return this._renderTabletButtonsStep(stepInfo);
       case 'step10-metadata':
-        return this._renderStep10Metadata();
+        return this._renderMetadataStep(stepInfo);
       case 'complete':
-        return this._renderComplete();
+        return this._renderComplete(stepInfo);
       default:
         return html``;
     }
@@ -139,151 +142,42 @@ export class HidWalkthrough extends LitElement {
     `;
   }
 
-  private _renderStep1Horizontal() {
+  /**
+   * Render a standard gesture step (steps 1-8)
+   */
+  private _renderGestureStep(stepInfo: StepInfo) {
+    const { simulate, simulating } = WALKTHROUGH_STRINGS.ui.buttons;
+
     return html`
       <div class="section walkthrough active">
-        ${this._renderStepHeader(0, 'Step 1: Horizontal Movement (Contact)')}
+        ${this._renderStepHeader(stepInfo.number - 1, `Step ${stepInfo.number}: ${stepInfo.title}`)}
         <div class="step-description">
-          <p>This will help us identify which bytes represent the <strong>X coordinate</strong>.</p>
+          <p>${stepInfo.description}</p>
+          <p class="instructions">${stepInfo.instructions}</p>
           <button 
             class="simulate-button" 
             ?disabled="${this.isPlaying}" 
-            @click="${() => this._handlePlayGesture('horizontal')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
+            @click="${() => this._handlePlayGesture(stepInfo.gesture!)}">
+            ${this.isPlaying ? `⏳ ${simulating}` : `🤖 ${simulate}`}
           </button>
         </div>
       </div>
     `;
   }
 
-  private _renderStep2Vertical() {
-    return html`
-      <div class="section walkthrough active">
-        ${this._renderStepHeader(1, 'Step 2: Vertical Movement (Contact)')}
-        <div class="step-description">
-          <p>This will help us identify which bytes represent the <strong>Y coordinate</strong>.</p>
-          <button
-            class="simulate-button"
-            ?disabled="${this.isPlaying}"
-            @click="${() => this._handlePlayGesture('vertical')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderStep3Pressure() {
-    return html`
-      <div class="section walkthrough active">
-        ${this._renderStepHeader(2, 'Step 3: Pressure Detection')}
-        <div class="step-description">
-          <p>This will help us identify which bytes represent <strong>pressure</strong>.</p>
-          <button
-            class="simulate-button"
-            ?disabled="${this.isPlaying}"
-            @click="${() => this._handlePlayGesture('pressure')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderStep4HoverMovement() {
-    return html`
-      <div class="section walkthrough active">
-        ${this._renderStepHeader(3, 'Step 4: Hover Movement')}
-        <div class="step-description">
-          <p>Hover your pen above the tablet and move it around freely (both horizontally and vertically).</p>
-          <p>This helps identify X and Y coordinate bytes without pressure interference.</p>
-          <button
-            class="simulate-button"
-            ?disabled="${this.isPlaying}"
-            @click="${() => this._handlePlayGesture('circle')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderStep5TiltX() {
-    return html`
-      <div class="section walkthrough active">
-        ${this._renderStepHeader(4, 'Step 5: Tilt X Detection')}
-        <div class="step-description">
-          <p>This will help us identify which byte represents <strong>X tilt</strong>.</p>
-          <button
-            class="simulate-button"
-            ?disabled="${this.isPlaying}"
-            @click="${() => this._handlePlayGesture('tilt-x')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderStep6TiltY() {
-    return html`
-      <div class="section walkthrough active">
-        ${this._renderStepHeader(5, 'Step 6: Tilt Y Detection')}
-        <div class="step-description">
-          <p>This will help us identify which byte represents <strong>Y tilt</strong>.</p>
-          <button
-            class="simulate-button"
-            ?disabled="${this.isPlaying}"
-            @click="${() => this._handlePlayGesture('tilt-y')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderStep7PrimaryButton() {
-    return html`
-      <div class="section walkthrough active">
-        ${this._renderStepHeader(6, 'Step 7: Primary Button Detection')}
-        <div class="step-description">
-          <p>This will help us identify the status byte value for <strong>primary button</strong>.</p>
-          <button
-            class="simulate-button"
-            ?disabled="${this.isPlaying}"
-            @click="${() => this._handlePlayGesture('primary-button')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderStep8SecondaryButton() {
-    return html`
-      <div class="section walkthrough active">
-        ${this._renderStepHeader(7, 'Step 8: Secondary Button Detection')}
-        <div class="step-description">
-          <p>This will help us identify the status byte value for <strong>secondary button</strong>.</p>
-          <button
-            class="simulate-button"
-            ?disabled="${this.isPlaying}"
-            @click="${() => this._handlePlayGesture('secondary-button')}">
-            ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderStep9TabletButtons() {
+  /**
+   * Render tablet buttons step (step 9)
+   */
+  private _renderTabletButtonsStep(stepInfo: StepInfo) {
     const buttonCount = this.detectedButtonStates.size;
+    const { simulate, simulating } = WALKTHROUGH_STRINGS.ui.buttons;
+
     return html`
       <div class="section walkthrough active">
-        ${this._renderStepHeader(8, 'Step 9: Tablet Buttons Detection')}
+        ${this._renderStepHeader(stepInfo.number - 1, `Step ${stepInfo.number}: ${stepInfo.title}`)}
         <div class="step-description">
-          <p>Press different buttons on your tablet (not the pen buttons).</p>
-          <p>We'll detect how many buttons your tablet has and their byte values.</p>
+          <p>${stepInfo.description}</p>
+          <p class="instructions">${stepInfo.instructions}</p>
           ${buttonCount > 0 ? html`
             <div class="button-detection-status">
               <strong>Detected ${buttonCount} button state${buttonCount !== 1 ? 's' : ''}</strong>
@@ -299,7 +193,7 @@ export class HidWalkthrough extends LitElement {
               class="simulate-button"
               ?disabled="${this.isPlaying}"
               @click="${() => this._handlePlayGesture('tablet-buttons')}">
-              ${this.isPlaying ? '⏳ Simulating...' : '🤖 Simulate this data'}
+              ${this.isPlaying ? `⏳ ${simulating}` : `🤖 ${simulate}`}
             </button>
           </div>
         </div>
@@ -307,11 +201,14 @@ export class HidWalkthrough extends LitElement {
     `;
   }
 
-  private _renderStep10Metadata() {
+  /**
+   * Render metadata step (step 10)
+   */
+  private _renderMetadataStep(stepInfo: StepInfo) {
     return html`
       <div class="section walkthrough active">
-        ${this._renderStepHeader(9, 'Step 10: Device Information', false)}
-        <p>Please provide some additional information about your device to complete the configuration.</p>
+        ${this._renderStepHeader(stepInfo.number - 1, `Step ${stepInfo.number}: ${stepInfo.title}`, false)}
+        <p>${stepInfo.description}</p>
         <device-metadata-form
           @metadata-submit="${this._handleMetadataSubmit}">
         </device-metadata-form>
@@ -319,16 +216,19 @@ export class HidWalkthrough extends LitElement {
     `;
   }
 
-  private _renderComplete() {
+  /**
+   * Render completion step
+   */
+  private _renderComplete(stepInfo: StepInfo) {
     return html`
       <div class="section walkthrough complete">
-        <h3>✅ Walkthrough Complete!</h3>
-        <p>Your device configuration has been generated.</p>
+        <h3>✅ ${stepInfo.title}</h3>
+        <p>${stepInfo.description}</p>
       </div>
     `;
   }
 
-  private _handlePlayGesture(gesture: string) {
+  private _handlePlayGesture(gesture: GestureType) {
     this.dispatchEvent(new CustomEvent('play-gesture', {
       detail: { gesture },
       bubbles: true,
