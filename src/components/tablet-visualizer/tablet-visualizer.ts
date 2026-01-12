@@ -517,26 +517,35 @@ export class TabletVisualizer extends LitElement {
                 
                 ${(() => {
                     // Use external data when in socket mode, otherwise use internal state
-                    const shouldShow = this.socketMode 
-                        ? this.externalTabletData.pressure > 0
-                        : (this.clickPosition && this.isPressingTablet);
-                    
-                    if (!shouldShow) return '';
-                    
                     if (this.socketMode) {
+                        // Show position when pen is in range (x or y > 0)
+                        const penInRange = this.externalTabletData.x > 0 || this.externalTabletData.y > 0;
+                        if (!penInRange) return '';
+                        
+                        const isContact = this.externalTabletData.pressure > 0;
                         // Convert normalized coordinates to SVG coordinates
                         const x = activeAreaX + (this.externalTabletData.x * activeAreaWidth);
                         const y = activeAreaY + (this.externalTabletData.y * activeAreaHeight);
+                        
+                        // Contact: red with pressure-based opacity
+                        // Hover: blue with fixed opacity
+                        const color = isContact ? '#ff6b6b' : '#74c0fc';
+                        const opacity = isContact ? Math.max(0.3, this.externalTabletData.pressure) : 0.6;
+                        const radius = isContact ? 12 : 8;
+                        
                         return svg`
-                            <!-- Pressure indicator dot -->
+                            <!-- Position indicator dot -->
                             <circle cx="${x}" 
                                     cy="${y}" 
-                                    r="12" 
-                                    fill="#ff6b6b"
-                                    opacity="${this.externalTabletData.pressure}"
+                                    r="${radius}" 
+                                    fill="${color}"
+                                    opacity="${opacity}"
                                     pointer-events="none" />
                         `;
                     } else {
+                        // Local mouse interaction - only show when pressing
+                        if (!(this.clickPosition && this.isPressingTablet)) return '';
+                        
                         return svg`
                             <!-- Pressure indicator dot -->
                             <circle cx="${this.clickPosition!.x}" 
