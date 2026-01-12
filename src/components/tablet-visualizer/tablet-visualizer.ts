@@ -201,7 +201,7 @@ export class TabletVisualizer extends LitElement {
         const buttonCenterY = activeAreaY + verticalPadding + buttonRadius;
         const buttonMargin = 5;
         const stringStartY = buttonCenterY + buttonRadius + buttonMargin;
-        const stringEndY = activeAreaY + activeAreaHeight;
+        const stringEndY = activeAreaY  + activeAreaHeight;
         const stringAreaHeight = stringEndY - stringStartY;
         
         // Normalize Y position within string area (0-1)
@@ -445,7 +445,9 @@ export class TabletVisualizer extends LitElement {
                 const buttonCx = startX + buttonRadius + (i * (buttonRadius * 2 + buttonGap));
                 // Use external pressed buttons when in socket mode, otherwise use internal state
                 const pressedButtonsSet = this.socketMode ? this.externalPressedButtons : this.pressedButtons;
-                const isPressed = pressedButtonsSet.has(i);
+                // Button numbers are 1-indexed from the tablet, so check i+1
+                const buttonNum = i + 1;
+                const isPressed = pressedButtonsSet.has(buttonNum);
                 
                 return svg`
                     <g class="tablet-button">
@@ -456,8 +458,8 @@ export class TabletVisualizer extends LitElement {
                               stroke="#adb5bd"
                               stroke-width="1.5"
                               pointer-events="${this.socketMode ? 'none' : 'auto'}"
-                              @mousedown=${(e: MouseEvent) => this.handleButtonMouseDown(i, e)}
-                              @mouseup=${(e: MouseEvent) => this.handleButtonMouseUp(i, e)}
+                              @mousedown=${(e: MouseEvent) => this.handleButtonMouseDown(i + 1, e)}
+                              @mouseup=${(e: MouseEvent) => this.handleButtonMouseUp(i + 1, e)}
                               class="button-rect" />
                         
                         <!-- Button number label -->
@@ -765,4 +767,3 @@ export class TabletVisualizer extends LitElement {
         return html``;
     }
 }
-

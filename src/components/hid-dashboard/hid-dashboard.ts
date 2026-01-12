@@ -319,14 +319,15 @@ export class HidDashboard extends LitElement {
       secondaryButtonPressed: data.secondaryButtonPressed ?? false
     };
 
-    // Handle tablet buttons if present
+    // Handle tablet buttons - track which button is currently pressed
     if (data.button !== undefined) {
-      const newSet = new Set(this.pressedButtons);
-      // Simple toggle logic - in reality this would need proper button state tracking
       if (data.button > 0) {
-        newSet.add(data.button);
+        // Button pressed - show it
+        this.pressedButtons = new Set([data.button]);
+      } else {
+        // No button pressed - clear all
+        this.pressedButtons = new Set();
       }
-      this.pressedButtons = newSet;
     }
   }
 

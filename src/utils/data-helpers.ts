@@ -223,8 +223,11 @@ export function processDeviceData(
 
     // Handle tabletButtons with code type (custom value mapping)
     if (key === 'tabletButtons' && mappingType === MappingType.CODE) {
-      // Process button codes from keyboard or button interfaces
-      if (isButtonInterface || deviceState === 'buttons') {
+      // Process button codes when in button mode OR when byte 0 is 240 (buttons state)
+      // Some tablets send button data without a full state change
+      const statusByte = dataList[0];
+      const inButtonMode = isButtonInterface || deviceState === 'buttons' || statusByte === 240;
+      if (inButtonMode) {
         // Use 0-based indexing directly
         if (byteIndex >= 0 && byteIndex < dataList.length) {
           const byteValue = String(dataList[byteIndex]);
@@ -252,10 +255,15 @@ export function processDeviceData(
           if (buttonNum) {
             // Set the active button number and individual flags
             result.tabletButtons = buttonNum;
+            result.button = buttonNum;  // Also set generic 'button' for dashboard compatibility
             const buttonCount = mapping.buttonCount ?? 8;
             for (let i = 1; i <= buttonCount; i++) {
               result[`button${i}`] = i === buttonNum;
             }
+          } else {
+            // No button pressed - clear button state
+            result.button = 0;
+            result.tabletButtons = 0;
           }
         }
       }
