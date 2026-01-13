@@ -54,8 +54,54 @@ export class TabletDataGenerator {
   // Increased to 30 to ensure they're captured (150ms at 200Hz)
   private readonly PEN_AWAY_PACKETS = 30;
 
+  // Track last generated packet state for translation
+  private lastPacketState: {
+    x: number;
+    y: number;
+    pressure: number;
+    tiltX: number;
+    tiltY: number;
+    status: number;
+    button: number; // For tablet buttons (1-8), 0 = none
+  } = {
+    x: 0,
+    y: 0,
+    pressure: 0,
+    tiltX: 0,
+    tiltY: 0,
+    status: 0xc0,
+    button: 0,
+  };
+
   constructor(config?: Partial<GeneratorConfig>) {
     this.config = { ...this.defaultConfig, ...config };
+  }
+
+  /**
+   * Get the last packet state as a translated event
+   * Returns normalized values (0-1 for x, y, pressure; -1 to 1 for tilt)
+   */
+  getLastState(): any {
+    const status = this.lastPacketState.status;
+
+    // Decode stylus button states from status byte
+    // 0xa2 (162) = hover + secondary, 0xa3 (163) = contact + secondary
+    // 0xa4 (164) = hover + primary, 0xa5 (165) = contact + primary
+    const primaryButtonPressed = (status === 0xa4 || status === 0xa5);
+    const secondaryButtonPressed = (status === 0xa2 || status === 0xa3);
+
+    return {
+      x: this.lastPacketState.x / this.config.maxX,
+      y: this.lastPacketState.y / this.config.maxY,
+      pressure: this.lastPacketState.pressure / 16383,
+      tiltX: this.lastPacketState.tiltX,
+      tiltY: this.lastPacketState.tiltY,
+      status: status,
+      primaryButtonPressed,
+      secondaryButtonPressed,
+      button: this.lastPacketState.button, // Tablet button (1-8)
+      timestamp: Date.now(),
+    };
   }
 
   /**
@@ -80,6 +126,17 @@ export class TabletDataGenerator {
     if (statusByte === undefined) {
       statusByte = normalizedPressure > 0 ? 0xa1 : 0xa0;
     }
+
+    // Store state for translation
+    this.lastPacketState = {
+      x: normalizedX,
+      y: normalizedY,
+      pressure: normalizedPressure,
+      tiltX,
+      tiltY,
+      status: statusByte,
+      button: 0, // Stylus packets don't have tablet buttons
+    };
 
     // Create HID packet matching XP-Pen Deco 640 structure (without Report ID)
     // WebHID strips the Report ID from inputreport events, so we match that behavior
@@ -304,6 +361,17 @@ export class TabletDataGenerator {
    * Status byte: 0xc0 (192) = none
    */
   generatePenAwayPacket(): Uint8Array {
+    // Store state for translation
+    this.lastPacketState = {
+      x: 0,
+      y: 0,
+      pressure: 0,
+      tiltX: 0,
+      tiltY: 0,
+      status: 0xc0,
+      button: 0,
+    };
+
     const packet = new Uint8Array(9);
     packet[0] = 0xc0; // Status byte for "none" state
     // All other bytes are 0 (no position, pressure, or tilt data)
@@ -476,6 +544,17 @@ export class TabletDataGenerator {
    * Uses a compact structure with button bit-flags at byte 1
    */
   generateButtonPacket(buttonNumber: number): Uint8Array {
+    // Store state for translation
+    this.lastPacketState = {
+      x: 0,
+      y: 0,
+      pressure: 0,
+      tiltX: 0,
+      tiltY: 0,
+      status: 0xf0,
+      button: buttonNumber, // Store which tablet button is pressed
+    };
+
     const packet = new Uint8Array(11);
     packet[0] = 0xf0; // Button mode status (different from stylus 0xa0)
     packet[1] = 1 << (buttonNumber - 1); // Set button bit in byte 1
@@ -563,4 +642,3 @@ function* createSpiral(generator: TabletDataGenerator): Generator<Uint8Array> {
 
   yield* generator.generatePath(points, 4000);
 }
-

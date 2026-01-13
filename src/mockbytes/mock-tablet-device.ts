@@ -92,10 +92,19 @@ export class MockTabletDevice {
     }
 
     // If translation is enabled, also emit translated events
-    if (this.config.translateEvents && this.config.byteCodeMappings) {
-      const translated = processDeviceData(data, this.config.byteCodeMappings);
+    if (this.config.translateEvents) {
       const translatedListeners = this.listeners.get('tablet-event');
       if (translatedListeners) {
+        let translated;
+
+        if (this.config.byteCodeMappings) {
+          // Use config mappings to translate
+          translated = processDeviceData(data, this.config.byteCodeMappings);
+        } else {
+          // Generate synthetic translated events from generator state
+          translated = this.generator.getLastState();
+        }
+
         // Encode translated data as JSON in Uint8Array for compatibility
         const jsonStr = JSON.stringify(translated);
         const encoded = new TextEncoder().encode(jsonStr);

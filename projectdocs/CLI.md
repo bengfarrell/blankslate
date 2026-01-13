@@ -78,6 +78,9 @@ npx tsx src/cli/tablet-websocket-server.ts -c config.json
 # Specify custom port
 npx tsx src/cli/tablet-websocket-server.ts -c config.json --port 9000
 
+# Send raw bytes instead of translated events
+npx tsx src/cli/tablet-websocket-server.ts -c config.json --raw
+
 # Use mock data for testing
 npx tsx src/cli/tablet-websocket-server.ts -c config.json --mock
 ```
@@ -85,11 +88,13 @@ npx tsx src/cli/tablet-websocket-server.ts -c config.json --mock
 **Features:**
 - Reads HID tablet data using your config file
 - Broadcasts high-level tablet events (position, pressure, buttons) over WebSocket
+- Supports raw byte mode (`--raw`) for debugging and low-level analysis
 - Supports multiple simultaneous client connections
 - Automatic client connection/disconnection handling
 - Mock mode for testing without physical hardware
+- Web client auto-detects data format (raw vs translated)
 
-**Event Format:**
+**Translated Event Format (default):**
 ```json
 {
   "type": "tablet-data",
@@ -100,6 +105,9 @@ npx tsx src/cli/tablet-websocket-server.ts -c config.json --mock
   "buttons": [false, true, false]
 }
 ```
+
+**Raw Byte Format (`--raw` flag):**
+Binary data (Uint8Array) sent directly over WebSocket. The web client will automatically detect this format and display the raw bytes viewer with config-based byte interpretation.
 
 **Client Example:**
 ```javascript

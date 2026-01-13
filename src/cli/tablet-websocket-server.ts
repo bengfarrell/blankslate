@@ -33,6 +33,7 @@ interface ServerOptions {
   config: string;
   port?: number;
   mock?: boolean;
+  raw?: boolean;
 }
 
 export class TabletWebSocketServer extends TabletReaderBase {
@@ -40,14 +41,16 @@ export class TabletWebSocketServer extends TabletReaderBase {
   private wss: WebSocketServer | null = null;
   private clients: Set<WebSocket> = new Set();
   private keepAlive: boolean;
+  private sendRaw: boolean;
 
-  constructor(configPath: string, options: { mock?: boolean; port?: number; keepAlive?: boolean; exitOnStop?: boolean }) {
+  constructor(configPath: string, options: { mock?: boolean; port?: number; keepAlive?: boolean; exitOnStop?: boolean; raw?: boolean }) {
     super(configPath, {
       mock: options.mock,
       exitOnStop: options.exitOnStop
     });
     this.port = options.port ?? 8765;
     this.keepAlive = options.keepAlive ?? true;
+    this.sendRaw = options.raw ?? false;
   }
 
   async start(): Promise<void> {
@@ -73,7 +76,7 @@ export class TabletWebSocketServer extends TabletReaderBase {
       });
 
       // Send initial connection confirmation
-      ws.send(JSON.stringify({
+      const connectionMessage: any = {
         type: 'connected',
         config: {
           name: this.configData.name,
@@ -81,7 +84,31 @@ export class TabletWebSocketServer extends TabletReaderBase {
           model: this.configData.model,
         },
         mode: this.isMockMode ? 'mock' : 'device',
-      }));
+        dataFormat: this.sendRaw ? 'raw' : 'translated',
+      };
+
+      // If sending raw bytes, include the full config so client can interpret them
+      if (this.sendRaw) {
+        // Convert Config instance to plain object for JSON serialization
+        connectionMessage.fullConfig = {
+          name: this.configData.name,
+          manufacturer: this.configData.manufacturer,
+          model: this.configData.model,
+          description: this.configData.description,
+          vendorId: this.configData.vendorId,
+          productId: this.configData.productId,
+          deviceInfo: this.configData.deviceInfo,
+          reportId: this.configData.reportId,
+          digitizerUsagePage: this.configData.digitizerUsagePage,
+          buttonInterfaceReportId: this.configData.buttonInterfaceReportId,
+          stylusModeStatusByte: this.configData.stylusModeStatusByte,
+          excludedUsagePages: this.configData.excludedUsagePages,
+          capabilities: this.configData.capabilities,
+          byteCodeMappings: this.configData.byteCodeMappings,
+        };
+      }
+
+      ws.send(JSON.stringify(connectionMessage));
     });
 
     console.log(chalk.green(`✓ WebSocket server listening on ws://localhost:${this.port}`));
@@ -119,19 +146,24 @@ export class TabletWebSocketServer extends TabletReaderBase {
     try {
       this.packetCount++;
 
-      // Process raw bytes into tablet events
-      const events = this.processPacket(data);
-      const normalized = normalizeTabletEvent(events);
+      if (this.sendRaw) {
+        // Send raw bytes directly
+        this.broadcastRaw(data);
+      } else {
+        // Process raw bytes into tablet events
+        const events = this.processPacket(data);
+        const normalized = normalizeTabletEvent(events);
 
-      // Build WebSocket event
-      const tabletEvent: TabletWebSocketEvent = {
-        type: 'tablet-data',
-        timestamp: Date.now(),
-        ...normalized,
-      };
+        // Build WebSocket event
+        const tabletEvent: TabletWebSocketEvent = {
+          type: 'tablet-data',
+          timestamp: Date.now(),
+          ...normalized,
+        };
 
-      // Broadcast to all connected clients
-      this.broadcast(tabletEvent);
+        // Broadcast to all connected clients
+        this.broadcast(tabletEvent);
+      }
 
     } catch {
       // Silently ignore unexpected packet formats
@@ -143,6 +175,14 @@ export class TabletWebSocketServer extends TabletReaderBase {
     for (const client of this.clients) {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
+      }
+    }
+  }
+
+  private broadcastRaw(data: Uint8Array): void {
+    for (const client of this.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(data);
       }
     }
   }
@@ -171,11 +211,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .requiredOption('-c, --config <path>', 'Path to tablet config JSON file')
     .option('-p, --port <number>', 'WebSocket server port', '8765')
     .option('-m, --mock', 'Use mock data instead of real device')
+    .option('-r, --raw', 'Send raw bytes instead of translated events')
     .action(async (options: ServerOptions) => {
       try {
         const server = new TabletWebSocketServer(options.config, {
           mock: options.mock,
           port: parseInt(String(options.port), 10),
+          raw: options.raw,
         });
 
         await server.start();

@@ -91,6 +91,15 @@ export const styles = css`
     animation: pulse 2s infinite;
   }
 
+  .status-badge.warning {
+    background: #fff3bf;
+    color: #e67700;
+  }
+
+  .status-badge.warning .status-dot {
+    background: #fab005;
+  }
+
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -109,9 +118,15 @@ export const styles = css`
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
   }
 
-  .connect-button:hover {
+  .connect-button:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(51, 154, 240, 0.4);
+  }
+
+  .connect-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #adb5bd;
   }
 
   .disconnect-button {
@@ -130,6 +145,33 @@ export const styles = css`
   .disconnect-button:hover {
     background: #f1f3f5;
     border-color: #adb5bd;
+  }
+
+  .config-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .config-button {
+    padding: 8px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    color: #495057;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    white-space: nowrap;
+  }
+
+  .config-button:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-1px);
   }
 
   .visualizers-grid {
@@ -254,13 +296,95 @@ export const styles = css`
 
   .empty-state {
     text-align: center;
-    padding: 40px;
+    padding: 60px 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+  }
+
+  .empty-state h2 {
+    color: #212529;
+    margin: 0 0 12px 0;
+    font-size: 2rem;
+  }
+
+  .empty-state > p {
+    margin: 0 0 40px 0;
+    font-size: 1rem;
     color: #868e96;
   }
 
-  .empty-state p {
-    margin: 8px 0 0 0;
+  .config-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    margin-top: 40px;
+  }
+
+  .config-option-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .config-option-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .option-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+
+  .config-option-card h3 {
+    margin: 0 0 8px 0;
+    color: #212529;
+    font-size: 1.25rem;
+  }
+
+  .config-option-card p {
+    margin: 0 0 20px 0;
+    color: #868e96;
     font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .option-button {
+    padding: 12px 24px;
+    border: 2px solid #ced4da;
+    border-radius: 8px;
+    background: white;
+    color: #495057;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .option-button:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+  }
+
+  .option-button.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+  }
+
+  .option-button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
 
   /* Add more visualizer placeholder styles */
@@ -339,6 +463,27 @@ export const styles = css`
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .load-config-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .load-config-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
 
   .simulation-button {
