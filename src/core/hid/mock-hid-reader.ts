@@ -7,6 +7,7 @@
 
 import type { IHIDReader, HIDDeviceInfo, HIDDataCallback } from './hid-interface.js';
 import { TabletDataGenerator, type GeneratorConfig } from '../../mockbytes/tablet-data-generator.js';
+import { processDeviceData } from '../../utils/data-helpers.js';
 
 /**
  * Configuration for mock device
@@ -18,6 +19,10 @@ export interface MockHIDReaderConfig extends Partial<GeneratorConfig> {
   reportId?: number;
   /** Interval between packets in ms (default: 5) */
   packetInterval?: number;
+  /** If true, emit translated tablet events instead of raw bytes (default: false) */
+  translateEvents?: boolean;
+  /** Config mappings for translating bytes to events (required if translateEvents is true) */
+  byteCodeMappings?: Record<string, any>;
 }
 
 /**
@@ -231,4 +236,3 @@ export class MockHIDReader implements IHIDReader {
 export function createMockHIDReader(config?: MockHIDReaderConfig): MockHIDReader {
   return new MockHIDReader(config);
 }
-

@@ -4,12 +4,17 @@
  */
 
 import { TabletDataGenerator, GeneratorConfig } from './tablet-data-generator.js';
+import { processDeviceData } from '../utils/data-helpers.js';
 
 export interface MockDeviceConfig extends Partial<GeneratorConfig> {
   deviceName?: string;
   vendorId?: number;
   productId?: number;
   autoPlay?: boolean;
+  /** If true, emit translated tablet events instead of raw bytes */
+  translateEvents?: boolean;
+  /** Config mappings for translating bytes to events (required if translateEvents is true) */
+  byteCodeMappings?: Record<string, any>;
 }
 
 /**
@@ -84,6 +89,28 @@ export class MockTabletDevice {
     const listeners = this.listeners.get(event);
     if (listeners) {
       listeners.forEach(callback => callback(data));
+    }
+
+    // If translation is enabled, also emit translated events
+    if (this.config.translateEvents && this.config.byteCodeMappings) {
+      const translated = processDeviceData(data, this.config.byteCodeMappings);
+      const translatedListeners = this.listeners.get('tablet-event');
+      if (translatedListeners) {
+        // Encode translated data as JSON in Uint8Array for compatibility
+        const jsonStr = JSON.stringify(translated);
+        const encoded = new TextEncoder().encode(jsonStr);
+        translatedListeners.forEach(callback => callback(encoded));
+      }
+    }
+  }
+
+  /**
+   * Set translation mode
+   */
+  setTranslateEvents(enabled: boolean, byteCodeMappings?: Record<string, any>): void {
+    this.config.translateEvents = enabled;
+    if (byteCodeMappings) {
+      this.config.byteCodeMappings = byteCodeMappings;
     }
   }
 
@@ -269,4 +296,3 @@ export class MockTabletDevice {
 export function createMockTablet(config?: MockDeviceConfig): MockTabletDevice {
   return new MockTabletDevice(config);
 }
-

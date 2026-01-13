@@ -6,7 +6,8 @@
   "type": "module",
   "bin": {
     "tablet-config": "./dist/cli/config-generator.js",
-    "tablet-events": "./dist/cli/event-viewer.js"
+    "tablet-events": "./dist/cli/event-viewer.js",
+    "tablet-websocket": "./dist/cli/tablet-websocket-server.js"
   },
   "scripts": {
     "dev": "vite",
@@ -20,10 +21,13 @@
     "test:coverage": "vitest --coverage",
     "test:integration": "playwright test",
     "test:integration:ui": "playwright test --ui",
+    "test:server": "vitest run --config vitest.server.config.ts",
+    "test:server:watch": "vitest --config vitest.server.config.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "config": "npx tsx src/cli/config-generator.ts",
-    "events": "npx tsx src/cli/event-viewer.ts"
+    "events": "npx tsx src/cli/event-viewer.ts",
+    "websocket": "npx tsx src/cli/tablet-websocket-server.ts"
   },
   "repository": {
     "type": "git",
@@ -36,7 +40,8 @@
     "inquirer": "^9.2.23",
     "lit": "^3.3.1",
     "node-hid": "^3.1.0",
-    "ora": "^8.0.1"
+    "ora": "^8.0.1",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0",
@@ -44,6 +49,7 @@
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.14.10",
     "@types/w3c-web-hid": "^1.0.6",
+    "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
     "@vitest/coverage-v8": "^1.6.0",

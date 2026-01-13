@@ -444,17 +444,35 @@ class CLIReaderFactory implements IReaderFactory {
       );
       await this.reader.open();
 
-      const readerInfo = this.reader.deviceInfo;
-      const collections = readerInfo && readerInfo.usagePage !== undefined && readerInfo.usage !== undefined
-        ? [{ usagePage: readerInfo.usagePage, usage: readerInfo.usage }]
-        : device.collections || [];
+      // Get all available interfaces for this device
+      const allDevices = await manager.listDevices({
+        vendorId: device.vendorId,
+        productId: device.productId
+      });
+
+      // Extract all unique usage pages
+      const allUsagePages = Array.from(
+        new Set(allDevices.map(d => d.usagePage).filter((up): up is number => up !== undefined))
+      );
+
+      // Build collections from all available interfaces
+      const collections = allDevices
+        .filter(d => d.usagePage !== undefined && d.usage !== undefined)
+        .map(d => ({ usagePage: d.usagePage!, usage: d.usage! }));
+
+      // Determine the correct data source usage page
+      // Priority: 1) Digitizer pen (13, 2), 2) Any digitizer (13), 3) First interface
+      const digitizerPen = collections.find(c => c.usagePage === 13 && c.usage === 2);
+      const anyDigitizer = collections.find(c => c.usagePage === 13);
+      const primaryCollection = digitizerPen || anyDigitizer || collections[0];
 
       this.deviceInfo = {
         vendorId: device.vendorId,
         productId: device.productId,
         productName: device.productName,
         collections,
-        allInterfaces: device.usagePage ? [device.usagePage] : [],
+        allInterfaces: allUsagePages,
+        dataSourceUsagePage: primaryCollection?.usagePage,
       };
 
       spinner.succeed(strings.messages.deviceReady);

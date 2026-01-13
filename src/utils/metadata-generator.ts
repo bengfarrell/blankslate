@@ -138,17 +138,27 @@ export function generateCompleteConfig(
   const capabilities = inferCapabilities(byteCodeMappings);
   const digitizerUsagePage = detectDigitizerUsagePage(deviceMetadata.collections);
   const stylusModeStatusByte = detectStylusModeStatusByte(byteCodeMappings);
-  
+
   // Update capabilities with user-provided button info
   capabilities.hasButtons = userMetadata.buttonCount > 0;
   capabilities.buttonCount = userMetadata.buttonCount;
-  
+
   // Don't exclude interfaces if buttons are configured (they may come from keyboard interface)
   const excludedUsagePages = detectExcludedUsagePages(
     deviceMetadata.allInterfaces,
     digitizerUsagePage,
     capabilities.hasButtons
   );
+
+  // Find the digitizer pen collection for correct usage_page and usage
+  // Priority: 1) Digitizer pen (13, 2), 2) Any digitizer (13), 3) dataSourceUsagePage, 4) First collection
+  const digitizerPen = deviceMetadata.collections?.find(c => c.usagePage === 13 && c.usage === 2);
+  const anyDigitizer = deviceMetadata.collections?.find(c => c.usagePage === 13);
+  const primaryCollection = digitizerPen || anyDigitizer || deviceMetadata.collections?.[0];
+
+  // Use digitizer interface for usage_page/usage (not vendor-specific)
+  const usagePage = primaryCollection?.usagePage || 13;
+  const usage = primaryCollection?.usage || 2;
 
   return {
     name: userMetadata.name,
@@ -161,9 +171,9 @@ export function generateCompleteConfig(
       vendor_id: deviceMetadata.vendorId || 0,
       product_id: deviceMetadata.productId || 0,
       product_string: deviceMetadata.productName || '',
-      // Use the actual data source usage page if detected, otherwise fall back to first collection
-      usage_page: deviceMetadata.dataSourceUsagePage || deviceMetadata.collections?.[0]?.usagePage || 13,
-      usage: deviceMetadata.collections?.[0]?.usage || 2,
+      // Always use standard digitizer interface (13, 2) for compatibility
+      usage_page: usagePage,
+      usage: usage,
       interfaces: deviceMetadata.allInterfaces || [],
     },
     reportId: deviceMetadata.detectedReportId || 0,
@@ -174,4 +184,3 @@ export function generateCompleteConfig(
     byteCodeMappings,
   };
 }
-

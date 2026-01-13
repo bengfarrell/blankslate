@@ -8,6 +8,38 @@ import { Config } from '../../models/config.js';
 import { MockTabletDevice } from '../../mockbytes/mock-tablet-device.js';
 import { processDeviceData } from '../../utils/data-helpers.js';
 
+/**
+ * Tablet event structure received from WebSocket server
+ */
+interface WebSocketTabletEvent {
+  type: 'tablet-data' | 'connected';
+  timestamp?: number;
+  state?: string;
+  x?: number;
+  y?: number;
+  pressure?: number;
+  tiltX?: number;
+  tiltY?: number;
+  tiltXY?: number;
+  primaryButtonPressed?: boolean;
+  secondaryButtonPressed?: boolean;
+  tabletButtons?: number;
+  button1?: boolean;
+  button2?: boolean;
+  button3?: boolean;
+  button4?: boolean;
+  button5?: boolean;
+  button6?: boolean;
+  button7?: boolean;
+  button8?: boolean;
+  config?: {
+    name?: string;
+    manufacturer?: string;
+    model?: string;
+  };
+  mode?: string;
+}
+
 interface TabletDataEvent {
   x?: number;
   y?: number;
@@ -75,8 +107,24 @@ export class HidDashboard extends LitElement {
   @state()
   private currentSimulation = '';
 
+  @state()
+  private websocketConnected = false;
+
+  @state()
+  private websocketUrl = 'ws://localhost:8765';
+
+  @state()
+  private showWebSocketInput = false;
+
+  @state()
+  private websocketServerInfo = '';
+
+  @state()
+  private simulationDataMode: 'raw' | 'translated' = 'raw';
+
   private hidDevice: HIDDevice | null = null;
   private mockDevice: MockTabletDevice | null = null;
+  private websocket: WebSocket | null = null;
 
   private readonly mockDataOptions: MockDataOption[] = [
     { id: 'circle', label: 'Draw Circle', icon: '⭕', action: (d) => d.playCircle() },
@@ -103,6 +151,7 @@ export class HidDashboard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._disconnect();
+    this._disconnectWebSocket();
     this._stopSimulation();
     document.removeEventListener('click', this._handleOutsideClick);
   }
@@ -133,25 +182,50 @@ export class HidDashboard extends LitElement {
       maxX,
       maxY,
       deviceName: 'Mock ' + (this.config?.name || 'Tablet'),
+      translateEvents: this.simulationDataMode === 'translated',
+      byteCodeMappings: this.config?.byteCodeMappings,
     });
 
-    // Listen for mock data and process it through the config
+    // Listen for raw bytes
     this.mockDevice.addEventListener('inputreport', (data: Uint8Array) => {
       this._processMockData(data);
     });
+
+    // Listen for translated events (if in translated mode)
+    if (this.simulationDataMode === 'translated') {
+      this.mockDevice.addEventListener('tablet-event', (data: Uint8Array) => {
+        this._processTranslatedData(data);
+      });
+    }
   }
 
   private _processMockData(data: Uint8Array) {
     if (!this.config) return;
+
+    // In translated mode, skip processing raw bytes for visualization
+    // (they're still shown in the bytes display)
+    if (this.simulationDataMode === 'translated') {
+      this._updateRawBytes(data);
+      return;
+    }
 
     // Update raw bytes display
     this._updateRawBytes(data);
 
     // Process through the config mappings
     const processed = processDeviceData(data, this.config.byteCodeMappings);
-    
+
     // Update tablet data using the same handler as real device
     this._handleTabletData(processed as TabletDataEvent);
+  }
+
+  private _processTranslatedData(data: Uint8Array) {
+    // Decode JSON from Uint8Array
+    const jsonStr = new TextDecoder().decode(data);
+    const translated = JSON.parse(jsonStr);
+
+    // Update tablet data directly from translated events
+    this._handleTabletData(translated as TabletDataEvent);
   }
 
   private _updateRawBytes(data: Uint8Array) {
@@ -216,6 +290,37 @@ export class HidDashboard extends LitElement {
     // Reset raw bytes when stopping simulation
     this.rawBytes = [];
     this.packetCount = 0;
+  }
+
+  private _toggleDataMode() {
+    // Stop any current simulation
+    this._stopSimulation();
+
+    // Toggle mode
+    this.simulationDataMode = this.simulationDataMode === 'raw' ? 'translated' : 'raw';
+
+    // Recreate mock device with new mode
+    this.mockDevice = null;
+    this._initMockDevice();
+  }
+
+  private _setDataMode(mode: 'raw' | 'translated') {
+    if (this.simulationDataMode === mode || this.isSimulating) {
+      return;
+    }
+
+    // Stop any current simulation
+    this._stopSimulation();
+
+    // Set mode
+    this.simulationDataMode = mode;
+
+    // Recreate mock device with new mode
+    this.mockDevice = null;
+    this._initMockDevice();
+
+    // Keep the menu open
+    this.requestUpdate();
   }
 
   private async _handleConnect() {
@@ -353,6 +458,124 @@ export class HidDashboard extends LitElement {
     this.packetCount = 0;
   }
 
+  // ================== WebSocket Connection Methods ==================
+
+  private _toggleWebSocketInput(e: Event) {
+    e.stopPropagation();
+    this.showWebSocketInput = !this.showWebSocketInput;
+  }
+
+  private _handleWebSocketUrlChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    this.websocketUrl = input.value;
+  }
+
+  private _connectWebSocket() {
+    if (this.websocketConnected || !this.websocketUrl) return;
+
+    try {
+      this.websocket = new WebSocket(this.websocketUrl);
+
+      this.websocket.onopen = () => {
+        console.log('[Dashboard] WebSocket connected');
+        this.websocketConnected = true;
+        this.showWebSocketInput = false;
+      };
+
+      this.websocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as WebSocketTabletEvent;
+          this._handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('[Dashboard] Failed to parse WebSocket message:', error);
+        }
+      };
+
+      this.websocket.onclose = () => {
+        console.log('[Dashboard] WebSocket disconnected');
+        this.websocketConnected = false;
+        this.websocketServerInfo = '';
+        this.websocket = null;
+      };
+
+      this.websocket.onerror = (error) => {
+        console.error('[Dashboard] WebSocket error:', error);
+        this.websocketConnected = false;
+        this.websocket = null;
+      };
+
+    } catch (error) {
+      console.error('[Dashboard] Failed to connect WebSocket:', error);
+    }
+  }
+
+  private _disconnectWebSocket() {
+    if (this.websocket) {
+      this.websocket.close();
+      this.websocket = null;
+    }
+    this.websocketConnected = false;
+    this.websocketServerInfo = '';
+    this._resetTabletData();
+  }
+
+  private _handleWebSocketMessage(data: WebSocketTabletEvent) {
+    if (data.type === 'connected') {
+      // Initial connection message from server
+      this.websocketServerInfo = data.config?.name || 'WebSocket Server';
+      this.deviceName = `WS: ${this.websocketServerInfo}`;
+      console.log('[Dashboard] Connected to:', this.websocketServerInfo, 'Mode:', data.mode);
+      return;
+    }
+
+    if (data.type === 'tablet-data') {
+      this.packetCount++;
+
+      // Update tablet data from WebSocket event
+      this.tabletData = {
+        x: data.x ?? 0,
+        y: data.y ?? 0,
+        pressure: data.pressure ?? 0,
+        tiltX: data.tiltX ?? 0,
+        tiltY: data.tiltY ?? 0,
+        tiltXY: data.tiltXY ?? 0,
+        primaryButtonPressed: data.primaryButtonPressed ?? false,
+        secondaryButtonPressed: data.secondaryButtonPressed ?? false
+      };
+
+      // Handle tablet buttons
+      if (data.tabletButtons !== undefined && data.tabletButtons > 0) {
+        this.pressedButtons = new Set([data.tabletButtons]);
+      } else {
+        // Check individual button flags
+        const pressed = new Set<number>();
+        for (let i = 1; i <= 8; i++) {
+          const key = `button${i}` as keyof WebSocketTabletEvent;
+          if (data[key]) {
+            pressed.add(i);
+          }
+        }
+        this.pressedButtons = pressed;
+      }
+    }
+  }
+
+  private _resetTabletData() {
+    this.tabletData = {
+      x: 0,
+      y: 0,
+      pressure: 0,
+      tiltX: 0,
+      tiltY: 0,
+      tiltXY: 0,
+      primaryButtonPressed: false,
+      secondaryButtonPressed: false
+    };
+    this.pressedButtons = new Set();
+    this.rawBytes = [];
+    this.packetCount = 0;
+  }
+
   private _formatValue(value: number, decimals: number = 2): string {
     return value.toFixed(decimals);
   }
@@ -380,7 +603,7 @@ export class HidDashboard extends LitElement {
           <div class="header-controls">
             <!-- Simulation Dropdown -->
             <div class="simulation-dropdown">
-              <button 
+              <button
                 class="simulation-button ${this.isSimulating ? 'active' : ''}"
                 @click=${this._toggleSimulationMenu}>
                 <span class="button-icon">🎮</span>
@@ -395,9 +618,28 @@ export class HidDashboard extends LitElement {
 
               ${this.showSimulationMenu ? html`
                 <div class="dropdown-menu">
+                  <div class="dropdown-header">Data Mode</div>
+                  <button
+                    class="dropdown-item ${this.simulationDataMode === 'raw' ? 'active' : ''}"
+                    @click=${() => this._setDataMode('raw')}
+                    ?disabled=${this.isSimulating}>
+                    <span class="item-icon">📦</span>
+                    <span class="item-label">Raw Bytes</span>
+                    ${this.simulationDataMode === 'raw' ? html`<span class="check-mark">✓</span>` : ''}
+                  </button>
+                  <button
+                    class="dropdown-item ${this.simulationDataMode === 'translated' ? 'active' : ''}"
+                    @click=${() => this._setDataMode('translated')}
+                    ?disabled=${this.isSimulating}>
+                    <span class="item-icon">✨</span>
+                    <span class="item-label">Translated</span>
+                    ${this.simulationDataMode === 'translated' ? html`<span class="check-mark">✓</span>` : ''}
+                  </button>
+
+                  <div class="dropdown-divider"></div>
                   <div class="dropdown-header">Mock Data Patterns</div>
                   ${this.mockDataOptions.map(option => html`
-                    <button 
+                    <button
                       class="dropdown-item"
                       @click=${() => this._runSimulation(option)}>
                       <span class="item-icon">${option.icon}</span>
@@ -416,19 +658,49 @@ export class HidDashboard extends LitElement {
 
             <!-- Connection Status -->
             <div class="connection-status">
-              <div class="status-badge ${this.deviceConnected ? 'connected' : 'disconnected'}">
+              <div class="status-badge ${this.deviceConnected || this.websocketConnected ? 'connected' : 'disconnected'}">
                 <span class="status-dot"></span>
-                ${this.deviceConnected ? `Connected: ${this.deviceName}` : 'Disconnected'}
+                ${this.deviceConnected ? `Connected: ${this.deviceName}` : 
+                  this.websocketConnected ? `WebSocket: ${this.websocketServerInfo || this.websocketUrl}` : 
+                  'Disconnected'}
               </div>
 
               ${this.deviceConnected ? html`
                 <button class="disconnect-button" @click=${this._disconnect}>
                   Disconnect
                 </button>
-              ` : html`
-                <button class="connect-button" @click=${this._handleConnect}>
-                  Connect Tablet
+              ` : this.websocketConnected ? html`
+                <button class="disconnect-button" @click=${this._disconnectWebSocket}>
+                  Disconnect WS
                 </button>
+              ` : html`
+                <div class="connect-options">
+                  <button class="connect-button" @click=${this._handleConnect}>
+                    🔌 Connect Tablet
+                  </button>
+                  <div class="websocket-dropdown">
+                    <button class="connect-button websocket-btn" @click=${this._toggleWebSocketInput}>
+                      🌐 WebSocket ${this.showWebSocketInput ? '▲' : '▼'}
+                    </button>
+                    ${this.showWebSocketInput ? html`
+                      <div class="websocket-input-panel">
+                        <input 
+                          type="text" 
+                          class="websocket-url-input"
+                          .value=${this.websocketUrl}
+                          @input=${this._handleWebSocketUrlChange}
+                          @keydown=${(e: KeyboardEvent) => {
+                            if (e.key === 'Enter') this._connectWebSocket();
+                          }}
+                          placeholder="ws://localhost:8765"
+                        />
+                        <button class="connect-ws-btn" @click=${this._connectWebSocket}>
+                          Connect
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
               `}
             </div>
           </div>
@@ -441,8 +713,8 @@ export class HidDashboard extends LitElement {
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tablet"
-                .socketMode=${this.deviceConnected || this.isSimulating}
-                .tabletConnected=${this.deviceConnected || this.isSimulating}
+                .socketMode=${this.deviceConnected || this.isSimulating || this.websocketConnected}
+                .tabletConnected=${this.deviceConnected || this.isSimulating || this.websocketConnected}
                 .externalTabletData=${this.tabletData}
                 .externalPressedButtons=${this.pressedButtons}
                 .stringCount=${0}>
@@ -471,8 +743,8 @@ export class HidDashboard extends LitElement {
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tilt"
-                .socketMode=${this.deviceConnected || this.isSimulating}
-                .tabletConnected=${this.deviceConnected || this.isSimulating}
+                .socketMode=${this.deviceConnected || this.isSimulating || this.websocketConnected}
+                .tabletConnected=${this.deviceConnected || this.isSimulating || this.websocketConnected}
                 .externalTabletData=${this.tabletData}
                 .externalPressedButtons=${this.pressedButtons}
                 .stringCount=${0}>
@@ -527,4 +799,3 @@ declare global {
     'hid-dashboard': HidDashboard;
   }
 }
-
