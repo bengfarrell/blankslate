@@ -147,32 +147,7 @@ export const styles = css`
     border-color: #adb5bd;
   }
 
-  .config-controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
 
-  .config-button {
-    padding: 8px 16px;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    background: white;
-    color: #495057;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    white-space: nowrap;
-  }
-
-  .config-button:hover {
-    background: #f8f9fa;
-    border-color: #667eea;
-    color: #667eea;
-    transform: translateY(-1px);
-  }
 
   .visualizers-grid {
     display: grid;
@@ -455,6 +430,35 @@ export const styles = css`
 
   .mode-button .button-icon {
     font-size: 1.1rem;
+  }
+
+  /* Config Dropdown */
+  .config-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .config-menu-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    background: white;
+    color: #495057;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .config-menu-button:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
   }
 
   /* Simulation Dropdown */

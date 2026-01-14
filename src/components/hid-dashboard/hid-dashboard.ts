@@ -117,6 +117,9 @@ export class HidDashboard extends LitElement {
   private showSimulationMenu = false;
 
   @state()
+  private showConfigMenu = false;
+
+  @state()
   private currentSimulation = '';
 
   @state()
@@ -277,6 +280,15 @@ export class HidDashboard extends LitElement {
       bubbles: true,
       composed: true
     }));
+  }
+
+  private _toggleConfigMenu() {
+    this.showConfigMenu = !this.showConfigMenu;
+  }
+
+  private _handleConfigMenuAction(action: () => void) {
+    this.showConfigMenu = false;
+    action();
   }
 
   private _initMockDevice() {
@@ -796,16 +808,39 @@ export class HidDashboard extends LitElement {
           <div class="header-controls">
             <!-- Config loading options for WebHID mode -->
             ${this.viewerMode === 'webhid' ? html`
-              <div class="config-controls">
-                <button class="config-button" @click=${this._handleLoadLocalConfig} title="Load config from file">
-                  📁 Load Config
+              <div class="config-dropdown">
+                <button
+                  class="config-menu-button"
+                  @click=${this._toggleConfigMenu}
+                  title="Config options">
+                  <span class="button-icon">⚙️</span>
+                  <span>Config</span>
+                  <span class="dropdown-arrow">▼</span>
                 </button>
-                <button class="config-button" @click=${this._loadSampleConfig} title="Load sample XP-Pen config">
-                  📄 Sample
-                </button>
-                <button class="config-button" @click=${this._handleGoToGenerator} title="Generate new config">
-                  ✨ Generator
-                </button>
+
+                ${this.showConfigMenu ? html`
+                  <div class="dropdown-menu">
+                    <div class="dropdown-header">Configuration</div>
+                    <button
+                      class="dropdown-item"
+                      @click=${() => this._handleConfigMenuAction(this._handleLoadLocalConfig.bind(this))}>
+                      <span class="item-icon">📁</span>
+                      <span class="item-label">Load from File</span>
+                    </button>
+                    <button
+                      class="dropdown-item"
+                      @click=${() => this._handleConfigMenuAction(this._loadSampleConfig.bind(this))}>
+                      <span class="item-icon">📄</span>
+                      <span class="item-label">Load Sample Config</span>
+                    </button>
+                    <button
+                      class="dropdown-item"
+                      @click=${() => this._handleConfigMenuAction(this._handleGoToGenerator.bind(this))}>
+                      <span class="item-icon">✨</span>
+                      <span class="item-label">Generate New Config</span>
+                    </button>
+                  </div>
+                ` : ''}
               </div>
             ` : ''}
 
