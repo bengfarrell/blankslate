@@ -124,20 +124,21 @@ export class HidHomepage extends LitElement {
 
         <div class="options">
           <div class="option-card load-config">
-            <div class="card-icon">📄</div>
+            <div class="card-icon">LOAD</div>
             <h2>Load Configuration</h2>
             <p>Already have a tablet configuration file? Load it here.</p>
-            
-            <div 
+
+            <div
               class="drop-zone ${this.isDragOver ? 'drag-over' : ''}"
               @dragover=${this._handleDragOver}
               @dragleave=${this._handleDragLeave}
               @drop=${this._handleDrop}>
-              <div class="drop-icon">📁</div>
+              <div class="drop-icon">↓</div>
               <p>Drag & drop your JSON config here</p>
               <span class="or-divider">or</span>
               <sp-button
                 variant="secondary"
+                data-spectrum-pattern="button-secondary"
                 @click=${this._handleFileInputClick}>
                 Browse Files
               </sp-button>
@@ -152,15 +153,15 @@ export class HidHomepage extends LitElement {
               <span class="or-divider">or try an example</span>
               <sp-button
                 variant="secondary"
+                data-spectrum-pattern="button-secondary"
                 @click=${this._loadExampleConfig}>
-                <span class="example-icon">⚡</span>
-                Load XP-Pen Deco 640 Config
+                ⚡ Load XP-Pen Deco 640 Config
               </sp-button>
             </div>
 
             ${this.error ? html`
               <div class="error-message">
-                <span class="error-icon">⚠️</span>
+                <span class="error-icon">!</span>
                 ${this.error}
               </div>
             ` : ''}
@@ -174,29 +175,26 @@ export class HidHomepage extends LitElement {
           </div>
 
           <div class="option-card create-new">
-            <div class="card-icon">🔧</div>
+            <div class="card-icon">NEW</div>
             <h2>Create New Configuration</h2>
             <p>Don't have a config? Use our interactive walkthrough to create one for your tablet.</p>
 
             <sp-button
               variant="accent"
+              data-spectrum-pattern="button-accent"
               @click=${this._handleCreateNew}>
-              Start Walkthrough
-              <span class="arrow">→</span>
+              Start Walkthrough →
             </sp-button>
 
             <div class="features">
               <div class="feature">
-                <span class="feature-icon">🎯</span>
-                <span>Auto-detect byte mappings</span>
+                <span>• Auto-detect byte mappings</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">✏️</span>
-                <span>Supports pressure & tilt</span>
+                <span>• Supports pressure & tilt</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">💾</span>
-                <span>Export reusable config</span>
+                <span>• Export reusable config</span>
               </div>
             </div>
           </div>

@@ -15,6 +15,13 @@ import '@spectrum-web-components/action-menu/sp-action-menu.js';
 import '@spectrum-web-components/menu/sp-menu.js';
 import '@spectrum-web-components/menu/sp-menu-item.js';
 import '@spectrum-web-components/textfield/sp-textfield.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-settings.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-folder-open.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-document.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-magic-wand.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-stop.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-play.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-link.js';
 
 export type ViewerMode = 'webhid' | 'mock-raw' | 'mock-translated' | 'websocket';
 
@@ -68,7 +75,6 @@ interface TabletDataEvent {
 interface MockDataOption {
   id: string;
   label: string;
-  icon: string;
   action: (device: MockTabletDevice) => void;
 }
 
@@ -147,18 +153,18 @@ export class HidDashboard extends LitElement {
   private websocket: WebSocket | null = null;
 
   private readonly mockDataOptions: MockDataOption[] = [
-    { id: 'circle', label: 'Draw Circle', icon: '⭕', action: (d) => d.playCircle() },
-    { id: 'line', label: 'Draw Line', icon: '📏', action: (d) => d.playLine() },
-    { id: 'scribble', label: 'Scribble', icon: '✏️', action: (d) => d.playScribble() },
-    { id: 'horizontal', label: 'Horizontal Drag', icon: '↔️', action: (d) => d.playHorizontalDrag() },
-    { id: 'vertical', label: 'Vertical Drag', icon: '↕️', action: (d) => d.playVerticalDrag() },
-    { id: 'hover-h', label: 'Hover Horizontal', icon: '👆', action: (d) => d.playHoverHorizontalDrag() },
-    { id: 'hover-v', label: 'Hover Vertical', icon: '👇', action: (d) => d.playHoverVerticalDrag() },
-    { id: 'tilt-x', label: 'Tilt X Sweep', icon: '↗️', action: (d) => d.playTiltXDrag() },
-    { id: 'tilt-y', label: 'Tilt Y Sweep', icon: '↘️', action: (d) => d.playTiltYDrag() },
-    { id: 'primary-btn', label: 'Primary Button', icon: '🔘', action: (d) => d.playPrimaryButtonDrag() },
-    { id: 'secondary-btn', label: 'Secondary Button', icon: '⚪', action: (d) => d.playSecondaryButtonDrag() },
-    { id: 'tablet-btns', label: 'Tablet Buttons', icon: '🎹', action: (d) => d.playTabletButtons(8) },
+    { id: 'circle', label: 'Draw Circle', action: (d) => d.playCircle() },
+    { id: 'line', label: 'Draw Line', action: (d) => d.playLine() },
+    { id: 'scribble', label: 'Scribble', action: (d) => d.playScribble() },
+    { id: 'horizontal', label: 'Horizontal Drag', action: (d) => d.playHorizontalDrag() },
+    { id: 'vertical', label: 'Vertical Drag', action: (d) => d.playVerticalDrag() },
+    { id: 'hover-h', label: 'Hover Horizontal', action: (d) => d.playHoverHorizontalDrag() },
+    { id: 'hover-v', label: 'Hover Vertical', action: (d) => d.playHoverVerticalDrag() },
+    { id: 'tilt-x', label: 'Tilt X Sweep', action: (d) => d.playTiltXDrag() },
+    { id: 'tilt-y', label: 'Tilt Y Sweep', action: (d) => d.playTiltYDrag() },
+    { id: 'primary-btn', label: 'Primary Button', action: (d) => d.playPrimaryButtonDrag() },
+    { id: 'secondary-btn', label: 'Secondary Button', action: (d) => d.playSecondaryButtonDrag() },
+    { id: 'tablet-btns', label: 'Tablet Buttons', action: (d) => d.playTabletButtons(8) },
   ];
 
   connectedCallback() {
@@ -785,7 +791,7 @@ export class HidDashboard extends LitElement {
             <!-- Config loading options for WebHID mode -->
             ${this.viewerMode === 'webhid' ? html`
               <sp-action-menu
-                label="Config"
+                data-spectrum-pattern="action-menu"
                 placement="bottom-start"
                 @change=${(e: Event) => {
                   const menu = e.target as any;
@@ -801,16 +807,20 @@ export class HidDashboard extends LitElement {
                     }
                   }
                 }}>
-                <span slot="label">⚙️ Config</span>
-                <sp-menu slot="options">
-                  <sp-menu-item value="load-file">
-                    📁 Load from File
+                <sp-icon-settings slot="icon"></sp-icon-settings>
+                <span slot="label">Config</span>
+                <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
+                  <sp-menu-item value="load-file" data-spectrum-pattern="menu-item">
+                    <sp-icon-folder-open slot="icon"></sp-icon-folder-open>
+                    Load from File
                   </sp-menu-item>
-                  <sp-menu-item value="load-sample">
-                    📄 Load Sample Config
+                  <sp-menu-item value="load-sample" data-spectrum-pattern="menu-item">
+                    <sp-icon-document slot="icon"></sp-icon-document>
+                    Load Sample Config
                   </sp-menu-item>
-                  <sp-menu-item value="generate">
-                    ✨ Generate New Config
+                  <sp-menu-item value="generate" data-spectrum-pattern="menu-item">
+                    <sp-icon-magic-wand slot="icon"></sp-icon-magic-wand>
+                    Generate New Config
                   </sp-menu-item>
                 </sp-menu>
               </sp-action-menu>
@@ -820,8 +830,10 @@ export class HidDashboard extends LitElement {
             ${this.viewerMode === 'mock-translated' && !this.config ? html`
               <sp-button
                 variant="secondary"
+                data-spectrum-pattern="button-secondary"
                 @click=${this._loadSampleConfig}>
-                📄 Load Sample Config
+                <sp-icon-document slot="icon"></sp-icon-document>
+                Load Sample Config
               </sp-button>
             ` : ''}
 
@@ -831,12 +843,14 @@ export class HidDashboard extends LitElement {
                 ${this.isSimulating ? html`
                   <sp-button
                     variant="negative"
+                    data-spectrum-pattern="button-negative"
                     @click=${this._stopSimulation}>
-                    ⏹ Stop ${this.currentSimulation}
+                    <sp-icon-stop slot="icon"></sp-icon-stop>
+                    Stop ${this.currentSimulation}
                   </sp-button>
                 ` : html`
                   <sp-action-menu
-                    label="Simulate"
+                    data-spectrum-pattern="action-menu"
                     placement="bottom-start"
                     @change=${(e: Event) => {
                       const menu = e.target as any;
@@ -849,11 +863,12 @@ export class HidDashboard extends LitElement {
                         }
                       }
                     }}>
-                    <span slot="label">🎮 Simulate</span>
-                    <sp-menu slot="options">
+                    <sp-icon-play slot="icon"></sp-icon-play>
+                    <span slot="label">Simulate</span>
+                    <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
                       ${this.mockDataOptions.map(option => html`
-                        <sp-menu-item value="${option.label}">
-                          ${option.icon} ${option.label}
+                        <sp-menu-item value="${option.label}" data-spectrum-pattern="menu-item">
+                          ${option.label}
                         </sp-menu-item>
                       `)}
                     </sp-menu>
@@ -882,12 +897,14 @@ export class HidDashboard extends LitElement {
                 ${this.deviceConnected ? html`
                   <sp-button
                     variant="negative"
+                    data-spectrum-pattern="button-negative"
                     @click=${this._disconnect}>
                     Disconnect
                   </sp-button>
                 ` : this.websocketConnected ? html`
                   <sp-button
                     variant="negative"
+                    data-spectrum-pattern="button-negative"
                     @click=${this._disconnectWebSocket}>
                     Disconnect WS
                   </sp-button>
@@ -896,23 +913,27 @@ export class HidDashboard extends LitElement {
                     ${this.viewerMode === 'webhid' ? html`
                       <sp-button
                         variant="accent"
+                        data-spectrum-pattern="button-accent"
                         @click=${this._handleConnect}
                         ?disabled=${!this.config}
                         title=${!this.config ? 'Load a config first' : 'Connect to tablet'}>
-                        🔌 Connect Tablet
+                        <sp-icon-link slot="icon"></sp-icon-link>
+                        Connect Tablet
                       </sp-button>
                     ` : ''}
                     ${this.viewerMode === 'websocket' ? html`
                       <div class="websocket-dropdown">
                         <sp-action-button
                           quiet
+                          data-spectrum-pattern="action-button"
                           @click=${this._toggleWebSocketInput}>
-                          🌐 WebSocket ${this.showWebSocketInput ? '▲' : '▼'}
+                          WebSocket ${this.showWebSocketInput ? '▲' : '▼'}
                         </sp-action-button>
                         ${this.showWebSocketInput ? html`
                           <div class="websocket-input-panel">
                             <sp-textfield
                               class="websocket-url-input"
+                              data-spectrum-pattern="textfield"
                               .value=${this.websocketUrl}
                               @input=${this._handleWebSocketUrlChange}
                               @keydown=${(e: KeyboardEvent) => {
@@ -922,6 +943,7 @@ export class HidDashboard extends LitElement {
                             </sp-textfield>
                             <sp-button
                               variant="accent"
+                              data-spectrum-pattern="button-accent"
                               @click=${this._connectWebSocket}>
                               Connect
                             </sp-button>
@@ -939,7 +961,7 @@ export class HidDashboard extends LitElement {
         <div class="visualizers-grid">
           <!-- Coordinates Panel -->
           <div class="visualizer-card compact">
-            <h2><span class="card-icon">📍</span> Position</h2>
+            <h2>Position</h2>
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tablet"
@@ -969,7 +991,7 @@ export class HidDashboard extends LitElement {
 
           <!-- Pressure & Tilt Panel -->
           <div class="visualizer-card compact">
-            <h2><span class="card-icon">🎯</span> Pressure & Tilt</h2>
+            <h2>Pressure & Tilt</h2>
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tilt"
@@ -1006,7 +1028,7 @@ export class HidDashboard extends LitElement {
           <!-- Raw Bytes or Events Panel (50% width) -->
           ${this.viewerMode === 'webhid' || this.viewerMode === 'mock-raw' || (this.viewerMode === 'websocket' && this.websocketDataMode === 'raw') ? html`
             <div class="visualizer-card half-width">
-              <h2><span class="card-icon">📊</span> Raw Bytes</h2>
+              <h2>Raw Bytes</h2>
               <bytes-display
                 .bytes=${this.rawBytes}
                 .isEmpty=${this.rawBytes.length === 0}
@@ -1021,7 +1043,7 @@ export class HidDashboard extends LitElement {
             </div>
           ` : html`
             <div class="visualizer-card half-width">
-              <h2><span class="card-icon">📋</span> Event Stream</h2>
+              <h2>Event Stream</h2>
               <events-display
                 .events=${this.tabletEvents}
                 .isEmpty=${this.tabletEvents.length === 0}

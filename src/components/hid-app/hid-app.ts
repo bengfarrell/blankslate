@@ -75,13 +75,12 @@ export class HidApp extends LitElement {
 
   render() {
     return html`
-      <sp-theme theme="spectrum" color="light" scale="medium">
+      <sp-theme system="spectrum" color="light" scale="medium">
         <div class="app">
           ${this.currentPage !== 'viewer-mode-selection' ? html`
             <div class="nav-bar">
-              <sp-button variant="secondary" @click=${this._handleBackToHome}>
-                <span class="back-arrow">←</span>
-                Back to Home
+              <sp-button variant="secondary" data-spectrum-pattern="button-secondary" @click=${this._handleBackToHome}>
+                ← Back to Home
               </sp-button>
             </div>
           ` : ''}

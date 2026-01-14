@@ -54,7 +54,7 @@ export class EventsDisplay extends LitElement {
 
   private _formatBoolean(value: boolean | undefined): string {
     if (value === undefined) return '-';
-    return value ? '✓' : '✗';
+    return value ? 'Yes' : 'No';
   }
 
   render() {
@@ -77,7 +77,7 @@ export class EventsDisplay extends LitElement {
         <div class="events-container">
           ${deviceInfoHtml}
           <div class="empty-state">
-            <div class="empty-icon">📭</div>
+            <div class="empty-icon">—</div>
             <p>No events received yet</p>
           </div>
         </div>
@@ -141,4 +141,3 @@ declare global {
     'events-display': EventsDisplay;
   }
 }
-
