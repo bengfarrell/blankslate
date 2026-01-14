@@ -1,5 +1,9 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import '@spectrum-web-components/button/sp-button.js';
+import '@spectrum-web-components/textfield/sp-textfield.js';
+import '@spectrum-web-components/field-label/sp-field-label.js';
+import '@spectrum-web-components/help-text/sp-help-text.js';
 
 export interface MetadataFormData {
   name: string;
@@ -197,7 +201,7 @@ export class DeviceMetadataForm extends LitElement {
 
   render() {
     return html`
-      <div class="form-container">
+      <div class="form-container" data-spectrum-pattern="form">
         <div class="form-header">
           <h2>Device Configuration Details</h2>
           <p>Please provide additional information about your device to complete the configuration.</p>
@@ -205,70 +209,68 @@ export class DeviceMetadataForm extends LitElement {
 
         <form @submit=${this._handleSubmit}>
           <div class="form-field">
-            <label for="name">Device Name *</label>
-            <input
-              type="text"
+            <sp-field-label for="name" required>Device Name</sp-field-label>
+            <sp-textfield
               id="name"
               required
               .value=${this.formData.name}
               @input=${(e: Event) => {
                 this.formData.name = (e.target as HTMLInputElement).value;
               }}
-              placeholder="e.g., XP-Pen Deco 640"
-            />
+              placeholder="e.g., XP-Pen Deco 640">
+            </sp-textfield>
           </div>
 
           <div class="form-field">
-            <label for="manufacturer">Manufacturer *</label>
-            <input
-              type="text"
+            <sp-field-label for="manufacturer" required>Manufacturer</sp-field-label>
+            <sp-textfield
               id="manufacturer"
               required
               .value=${this.formData.manufacturer}
               @input=${(e: Event) => {
                 this.formData.manufacturer = (e.target as HTMLInputElement).value;
               }}
-              placeholder="e.g., XP-Pen"
-            />
+              placeholder="e.g., XP-Pen">
+            </sp-textfield>
           </div>
 
           <div class="form-field">
-            <label for="model">Model *</label>
-            <input
-              type="text"
+            <sp-field-label for="model" required>Model</sp-field-label>
+            <sp-textfield
               id="model"
               required
               .value=${this.formData.model}
               @input=${(e: Event) => {
                 this.formData.model = (e.target as HTMLInputElement).value;
               }}
-              placeholder="e.g., Deco 640"
-            />
+              placeholder="e.g., Deco 640">
+            </sp-textfield>
           </div>
 
           <div class="form-field">
-            <label for="description">Description *</label>
-            <textarea
+            <sp-field-label for="description" required>Description</sp-field-label>
+            <sp-textfield
               id="description"
+              multiline
               required
               .value=${this.formData.description}
               @input=${(e: Event) => {
-                this.formData.description = (e.target as HTMLTextAreaElement).value;
+                this.formData.description = (e.target as HTMLInputElement).value;
               }}
-              placeholder="e.g., XP-Pen Deco 640 graphics tablet with 8 express keys"
-            ></textarea>
+              placeholder="e.g., XP-Pen Deco 640 graphics tablet with 8 express keys">
+            </sp-textfield>
           </div>
 
           ${this.suggestedButtonCount > 0 ? html`
             <!-- Button count already collected in step 9, show as read-only info -->
             <div class="form-field">
-              <label>Express Keys/Buttons</label>
+              <sp-field-label>Express Keys/Buttons</sp-field-label>
               <div class="readonly-value">${this.suggestedButtonCount} buttons detected in previous step</div>
             </div>
           ` : html`
             <div class="form-field">
-              <label for="buttonCount">Number of Express Keys/Buttons</label>
-              <input
+              <sp-field-label for="buttonCount">Number of Express Keys/Buttons</sp-field-label>
+              <sp-textfield
                 type="number"
                 id="buttonCount"
                 min="0"
@@ -276,19 +278,24 @@ export class DeviceMetadataForm extends LitElement {
                 .value=${this.formData.buttonCount.toString()}
                 @input=${(e: Event) => {
                   this.formData.buttonCount = parseInt((e.target as HTMLInputElement).value) || 0;
-                }}
-              />
-              <div class="hint">Enter 0 if your device has no express keys</div>
+                }}>
+              </sp-textfield>
+              <sp-help-text>Enter 0 if your device has no express keys</sp-help-text>
             </div>
           `}
 
           <div class="form-actions">
-            <button type="button" class="btn-secondary" @click=${this._handleCancel}>
+            <sp-button
+              type="button"
+              variant="secondary"
+              @click=${this._handleCancel}>
               Cancel
-            </button>
-            <button type="submit" class="btn-primary">
+            </sp-button>
+            <sp-button
+              type="submit"
+              variant="accent">
               Generate Configuration
-            </button>
+            </sp-button>
           </div>
         </form>
       </div>
@@ -301,4 +308,3 @@ declare global {
     'device-metadata-form': DeviceMetadataForm;
   }
 }
-

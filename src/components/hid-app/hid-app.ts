@@ -7,6 +7,9 @@ import '../hid-dashboard/hid-dashboard.js';
 import '../viewer-mode-selector/viewer-mode-selector.js';
 import type { Config } from '../../models/config.js';
 import type { ViewerMode } from '../viewer-mode-selector/viewer-mode-selector.js';
+import '@spectrum-web-components/button/sp-button.js';
+import '@spectrum-web-components/theme/sp-theme.js';
+import '@spectrum-web-components/theme/src/themes.js';
 
 type AppPage = 'home' | 'walkthrough' | 'viewer-mode-selection' | 'config-loader' | 'dashboard';
 
@@ -72,44 +75,46 @@ export class HidApp extends LitElement {
 
   render() {
     return html`
-      <div class="app">
-        ${this.currentPage !== 'viewer-mode-selection' ? html`
-          <div class="nav-bar">
-            <button class="back-button" @click=${this._handleBackToHome}>
-              <span class="back-arrow">←</span>
-              Back to Home
-            </button>
+      <sp-theme theme="spectrum" color="light" scale="medium">
+        <div class="app">
+          ${this.currentPage !== 'viewer-mode-selection' ? html`
+            <div class="nav-bar">
+              <sp-button variant="secondary" @click=${this._handleBackToHome}>
+                <span class="back-arrow">←</span>
+                Back to Home
+              </sp-button>
+            </div>
+          ` : ''}
+
+          <div class="page-content">
+            ${this.currentPage === 'viewer-mode-selection' ? html`
+              <viewer-mode-selector
+                @mode-selected=${this._handleModeSelected}>
+              </viewer-mode-selector>
+            ` : ''}
+
+            ${this.currentPage === 'config-loader' ? html`
+              <hid-homepage
+                @config-loaded=${this._handleConfigLoaded}
+                @create-new=${this._handleSkipConfig}>
+              </hid-homepage>
+            ` : ''}
+
+            ${this.currentPage === 'walkthrough' ? html`
+              <hid-data-reader></hid-data-reader>
+            ` : ''}
+
+            ${this.currentPage === 'dashboard' ? html`
+              <hid-dashboard
+                .config=${this.loadedConfig}
+                .viewerMode=${this.selectedViewerMode}
+                @config-loaded=${this._handleConfigLoadedFromDashboard}
+                @go-to-generator=${this._handleGoToGenerator}>
+              </hid-dashboard>
+            ` : ''}
           </div>
-        ` : ''}
-
-        <div class="page-content">
-          ${this.currentPage === 'viewer-mode-selection' ? html`
-            <viewer-mode-selector
-              @mode-selected=${this._handleModeSelected}>
-            </viewer-mode-selector>
-          ` : ''}
-
-          ${this.currentPage === 'config-loader' ? html`
-            <hid-homepage
-              @config-loaded=${this._handleConfigLoaded}
-              @create-new=${this._handleSkipConfig}>
-            </hid-homepage>
-          ` : ''}
-
-          ${this.currentPage === 'walkthrough' ? html`
-            <hid-data-reader></hid-data-reader>
-          ` : ''}
-
-          ${this.currentPage === 'dashboard' ? html`
-            <hid-dashboard
-              .config=${this.loadedConfig}
-              .viewerMode=${this.selectedViewerMode}
-              @config-loaded=${this._handleConfigLoadedFromDashboard}
-              @go-to-generator=${this._handleGoToGenerator}>
-            </hid-dashboard>
-          ` : ''}
         </div>
-      </div>
+      </sp-theme>
     `;
   }
 }

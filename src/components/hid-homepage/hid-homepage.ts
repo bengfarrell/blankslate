@@ -2,6 +2,7 @@ import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { styles } from './hid-homepage.styles.js';
 import { Config } from '../../models/config.js';
+import '@spectrum-web-components/button/sp-button.js';
 
 /**
  * Homepage component for The Learning Tablet
@@ -135,11 +136,13 @@ export class HidHomepage extends LitElement {
               <div class="drop-icon">📁</div>
               <p>Drag & drop your JSON config here</p>
               <span class="or-divider">or</span>
-              <button class="browse-button" @click=${this._handleFileInputClick}>
+              <sp-button
+                variant="secondary"
+                @click=${this._handleFileInputClick}>
                 Browse Files
-              </button>
-              <input 
-                type="file" 
+              </sp-button>
+              <input
+                type="file"
                 accept=".json,application/json"
                 @change=${this._handleFileSelected}
                 hidden>
@@ -147,10 +150,12 @@ export class HidHomepage extends LitElement {
 
             <div class="quick-load">
               <span class="or-divider">or try an example</span>
-              <button class="example-button" @click=${this._loadExampleConfig}>
+              <sp-button
+                variant="secondary"
+                @click=${this._loadExampleConfig}>
                 <span class="example-icon">⚡</span>
                 Load XP-Pen Deco 640 Config
-              </button>
+              </sp-button>
             </div>
 
             ${this.error ? html`
@@ -172,11 +177,13 @@ export class HidHomepage extends LitElement {
             <div class="card-icon">🔧</div>
             <h2>Create New Configuration</h2>
             <p>Don't have a config? Use our interactive walkthrough to create one for your tablet.</p>
-            
-            <button class="create-button" @click=${this._handleCreateNew}>
+
+            <sp-button
+              variant="accent"
+              @click=${this._handleCreateNew}>
               Start Walkthrough
               <span class="arrow">→</span>
-            </button>
+            </sp-button>
 
             <div class="features">
               <div class="feature">

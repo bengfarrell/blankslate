@@ -4,6 +4,9 @@
   "description": "Graphics tablet controller with LitElement web components and Node.js CLI",
   "main": "dist/index.js",
   "type": "module",
+  "workspaces": [
+    "../../spectrumizer"
+  ],
   "bin": {
     "tablet-config": "./dist/cli/config-generator.js",
     "tablet-events": "./dist/cli/event-viewer.js",
@@ -27,7 +30,12 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "config": "npx tsx src/cli/config-generator.ts",
     "events": "npx tsx src/cli/event-viewer.ts",
-    "websocket": "npx tsx src/cli/tablet-websocket-server.ts"
+    "websocket": "npx tsx src/cli/tablet-websocket-server.ts",
+    "test:spectrum": "playwright test --config=playwright.spectrumizer.config.ts",
+    "test:spectrum:ci": "playwright test --config=playwright.spectrumizer.config.ts --reporter=line",
+    "test:spectrum:ui": "playwright test --config=playwright.spectrumizer.config.ts --ui",
+    "test:spectrum:headed": "playwright test --config=playwright.spectrumizer.config.ts --headed",
+    "test:spectrum:debug": "playwright test --config=playwright.spectrumizer.config.ts --debug"
   },
   "repository": {
     "type": "git",

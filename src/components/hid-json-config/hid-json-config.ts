@@ -1,6 +1,7 @@
 import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styles } from './hid-json-config.styles.js';
+import '@spectrum-web-components/button/sp-button.js';
 
 /**
  * Component that displays HID device configuration JSON with copy and download buttons
@@ -70,15 +71,18 @@ export class HidJsonConfig extends LitElement {
       <div class="config-container">
         <pre class="config-display"><code>${configText}</code></pre>
         <div class="config-actions">
-          <button class="button secondary" @click="${this._copyConfig}">
+          <sp-button
+            variant="secondary"
+            @click="${this._copyConfig}">
             📋 Copy JSON
-          </button>
-          <button class="button secondary" @click="${this._downloadConfig}">
+          </sp-button>
+          <sp-button
+            variant="secondary"
+            @click="${this._downloadConfig}">
             💾 Download Config
-          </button>
+          </sp-button>
         </div>
       </div>
     `;
   }
 }
-

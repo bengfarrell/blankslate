@@ -1,6 +1,7 @@
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { styles } from './viewer-mode-selector.styles.js';
+import '@spectrum-web-components/button/sp-button.js';
 
 export type ViewerMode = 'webhid' | 'mock-raw' | 'mock-translated' | 'websocket';
 
@@ -48,10 +49,10 @@ export class ViewerModeSelector extends LitElement {
                 <span>Debug byte mappings</span>
               </div>
             </div>
-            <button class="select-button">
+            <sp-button variant="accent">
               Select
               <span class="arrow">→</span>
-            </button>
+            </sp-button>
           </div>
 
           <!-- Mock Data Mode -->
@@ -73,10 +74,10 @@ export class ViewerModeSelector extends LitElement {
                 <span>Perfect for testing</span>
               </div>
             </div>
-            <button class="select-button">
+            <sp-button variant="accent">
               Select
               <span class="arrow">→</span>
-            </button>
+            </sp-button>
           </div>
 
           <!-- WebSocket Mode -->
@@ -98,10 +99,10 @@ export class ViewerModeSelector extends LitElement {
                 <span>Node.js server support</span>
               </div>
             </div>
-            <button class="select-button">
+            <sp-button variant="accent">
               Select
               <span class="arrow">→</span>
-            </button>
+            </sp-button>
           </div>
         </div>
       </div>
