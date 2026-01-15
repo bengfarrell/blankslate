@@ -28,9 +28,9 @@ export const styles = css`
   }
 
   .status-badge.connected {
-    background: #e8f5e9;
-    color: #2e7d32;
-    border: 2px solid #4caf50;
+    background: var(--spectrum-positive-background-color-default);
+    color: var(--spectrum-positive-color-1000);
+    border: 2px solid var(--spectrum-positive-color-900);
   }
 
   .status-icon {
@@ -43,15 +43,15 @@ export const styles = css`
   }
 
   .status-detail.warning {
-    color: #f57c00;
+    color: var(--spectrum-notice-color-900);
   }
 
   .button {
     padding: 10px 20px;
     border: none;
     border-radius: 6px;
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-white);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -59,9 +59,9 @@ export const styles = css`
   }
 
   .button:hover:not(:disabled) {
-    background: #5568d3;
+    background: var(--spectrum-accent-color-1000);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    
   }
 
   .button:active:not(:disabled) {
@@ -69,7 +69,7 @@ export const styles = css`
   }
 
   .button:disabled {
-    background: #ccc;
+    background: var(--spectrum-gray-300);
     cursor: not-allowed;
     opacity: 0.6;
   }
@@ -80,14 +80,13 @@ export const styles = css`
   }
 
   .button.disconnect {
-    background: #f44336 !important;
-    color: white;
+    background: var(--spectrum-negative-color-900) !important;
+    color: var(--spectrum-white);
     padding: 8px 16px;
     border: none;
   }
 
   .button.disconnect:hover:not(:disabled) {
-    background: #d32f2f !important;
+    background: var(--spectrum-negative-color-1000) !important;
   }
 `;
-

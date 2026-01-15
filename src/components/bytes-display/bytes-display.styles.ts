@@ -8,9 +8,9 @@ export const styles = css`
   .bytes-container {
     margin-top: 20px;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1000) 100%);
     border-radius: 8px;
-    color: white;
+    color: var(--spectrum-gray-50);
   }
 
   .device-info-header {
@@ -20,7 +20,7 @@ export const styles = css`
     align-items: center;
     margin-bottom: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid var(--spectrum-gray-300);
     font-size: 13px;
   }
 
@@ -37,7 +37,7 @@ export const styles = css`
 
   .info-value {
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--spectrum-gray-100);
     padding: 2px 8px;
     border-radius: 4px;
   }
@@ -52,15 +52,15 @@ export const styles = css`
   }
 
   .info-badge.digitizer {
-    background: rgba(76, 175, 80, 0.3);
-    color: #c8e6c9;
-    border: 1px solid rgba(76, 175, 80, 0.5);
+    background: var(--spectrum-positive-background-color-default);
+    color: var(--spectrum-positive-color-200);
+    border: 1px solid var(--spectrum-positive-color-900);
   }
 
   .info-badge.digitizer.mock {
-    background: rgba(255, 152, 0, 0.3);
-    color: #ffcc80;
-    border: 1px solid rgba(255, 152, 0, 0.5);
+    background: var(--spectrum-notice-background-color-default);
+    color: var(--spectrum-orange-200);
+    border: 1px solid var(--spectrum-notice-color-900);
   }
 
   .bytes-grid {
@@ -72,4 +72,3 @@ export const styles = css`
     padding: 15px 0 0 0;
   }
 `;
-

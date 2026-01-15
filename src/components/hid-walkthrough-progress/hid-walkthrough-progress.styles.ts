@@ -15,17 +15,16 @@ export const styles = css`
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #e0e0e0;
+    background: var(--spectrum-gray-300);
     transition: all 0.3s ease;
   }
 
   .progress-dot.complete {
-    background: #4caf50;
+    background: var(--spectrum-positive-color-900);
   }
 
   .progress-dot.current {
-    background: #667eea;
+    background: var(--spectrum-accent-color-900);
     transform: scale(1.3);
   }
 `;
-

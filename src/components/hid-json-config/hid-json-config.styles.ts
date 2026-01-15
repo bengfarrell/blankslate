@@ -28,14 +28,14 @@ export const styles = css`
   }
 
   .button.secondary {
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-gray-50);
   }
 
   .button.secondary:hover {
-    background: #5568d3;
+    background: var(--spectrum-accent-color-1000);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    
   }
 
   .button.secondary:active {
@@ -43,8 +43,8 @@ export const styles = css`
   }
 
   .config-display {
-    background: #f5f5f5;
-    border: 1px solid #ddd;
+    background: var(--spectrum-gray-75);
+    border: 1px solid var(--spectrum-gray-300);
     border-radius: 6px;
     padding: 20px;
     margin: 0;
@@ -52,7 +52,7 @@ export const styles = css`
     font-family: 'Courier New', monospace;
     font-size: 13px;
     line-height: 1.6;
-    color: #333;
+    color: var(--spectrum-gray-800);
   }
 
   .config-display code {
@@ -62,8 +62,7 @@ export const styles = css`
   .no-config {
     padding: 20px;
     text-align: center;
-    color: #999;
+    color: var(--spectrum-gray-600);
     font-style: italic;
   }
 `;
-

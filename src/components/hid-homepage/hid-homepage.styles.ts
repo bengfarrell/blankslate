@@ -19,7 +19,7 @@ export const styles = css`
     font-size: 3rem;
     font-weight: 800;
     margin: 0 0 12px 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -28,7 +28,7 @@ export const styles = css`
 
   .tagline {
     font-size: 1.25rem;
-    color: #666;
+    color: var(--spectrum-gray-700);
     margin: 0;
     font-weight: 400;
   }
@@ -42,25 +42,23 @@ export const styles = css`
   }
 
   .option-card {
-    background: white;
+    background: var(--spectrum-gray-50);
     border-radius: 16px;
     padding: 32px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 2px solid transparent;
     transition: all 0.3s ease;
   }
 
   .option-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   }
 
   .option-card.load-config:hover {
-    border-color: #667eea;
+    border-color: var(--spectrum-accent-color-900);
   }
 
   .option-card.create-new:hover {
-    border-color: #4caf50;
+    border-color: var(--spectrum-positive-color-900);
   }
 
   .card-icon {
@@ -72,34 +70,34 @@ export const styles = css`
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0 0 12px 0;
-    color: #333;
+    color: var(--spectrum-gray-900);
   }
 
   .option-card > p {
-    color: #666;
+    color: var(--spectrum-gray-700);
     margin: 0 0 24px 0;
     line-height: 1.6;
   }
 
   /* Drop Zone */
   .drop-zone {
-    border: 2px dashed #d0d0d0;
+    border: 2px dashed var(--spectrum-gray-400);
     border-radius: 12px;
     padding: 32px 24px;
     text-align: center;
     transition: all 0.2s ease;
-    background: #fafafa;
+    background: var(--spectrum-gray-75);
     cursor: pointer;
   }
 
   .drop-zone:hover {
-    border-color: #667eea;
-    background: #f5f7ff;
+    border-color: var(--spectrum-accent-color-900);
+    background: var(--spectrum-accent-background-color-default);
   }
 
   .drop-zone.drag-over {
-    border-color: #667eea;
-    background: #eef1ff;
+    border-color: var(--spectrum-accent-color-900);
+    background: var(--spectrum-accent-background-color-hover);
     border-style: solid;
     transform: scale(1.02);
   }
@@ -112,13 +110,13 @@ export const styles = css`
 
   .drop-zone p {
     margin: 0 0 16px 0;
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-size: 0.95rem;
   }
 
   .or-divider {
     display: block;
-    color: #999;
+    color: var(--spectrum-gray-600);
     font-size: 0.85rem;
     margin-bottom: 16px;
     text-transform: uppercase;
@@ -127,8 +125,8 @@ export const styles = css`
 
   .browse-button {
     padding: 12px 28px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
+    color: var(--spectrum-white);
     border: none;
     border-radius: 8px;
     font-size: 0.95rem;
@@ -139,7 +137,6 @@ export const styles = css`
 
   .browse-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
 
   .browse-button:active {
@@ -161,8 +158,8 @@ export const styles = css`
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--spectrum-notice-color-900) 0%, var(--spectrum-notice-color-1000) 100%);
+    color: var(--spectrum-white);
     border: none;
     border-radius: 8px;
     font-size: 0.9rem;
@@ -173,7 +170,6 @@ export const styles = css`
 
   .example-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
   }
 
   .example-button:active {
@@ -198,15 +194,15 @@ export const styles = css`
   }
 
   .error-message {
-    background: #ffebee;
-    color: #c62828;
-    border: 1px solid #ffcdd2;
+    background: var(--spectrum-negative-background-color-default);
+    color: var(--spectrum-negative-color-1000);
+    border: 1px solid var(--spectrum-negative-color-900);
   }
 
   .success-message {
-    background: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
+    background: var(--spectrum-positive-background-color-default);
+    color: var(--spectrum-positive-color-1000);
+    border: 1px solid var(--spectrum-positive-color-900);
   }
 
   .error-icon,
@@ -222,8 +218,8 @@ export const styles = css`
     gap: 10px;
     width: 100%;
     padding: 16px 28px;
-    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--spectrum-positive-color-900) 0%, var(--spectrum-positive-color-1000) 100%);
+    color: var(--spectrum-white);
     border: none;
     border-radius: 10px;
     font-size: 1.1rem;
@@ -235,7 +231,6 @@ export const styles = css`
 
   .create-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
   }
 
   .create-button:active {
@@ -263,7 +258,7 @@ export const styles = css`
     align-items: center;
     gap: 12px;
     font-size: 0.9rem;
-    color: #555;
+    color: var(--spectrum-gray-800);
   }
 
   .feature-icon {
@@ -289,4 +284,3 @@ export const styles = css`
     }
   }
 `;
-

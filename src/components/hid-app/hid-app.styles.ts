@@ -14,9 +14,9 @@ export const styles = css`
 
   .nav-bar {
     padding: 16px 24px;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--spectrum-gray-50);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--spectrum-gray-300);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -27,10 +27,10 @@ export const styles = css`
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
-    background: white;
-    border: 2px solid #667eea;
+    background: var(--spectrum-gray-50);
+    border: 2px solid var(--spectrum-accent-color-900);
     border-radius: 8px;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
@@ -38,8 +38,8 @@ export const styles = css`
   }
 
   .back-button:hover {
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-gray-50);
   }
 
   .back-arrow {
@@ -69,4 +69,3 @@ export const styles = css`
     padding: 30px;
   }
 `;
-
