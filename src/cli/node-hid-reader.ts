@@ -26,11 +26,16 @@ function toDeviceInfo(device: HID.Device): HIDDeviceInfo {
 export interface NodeHIDReaderOptions {
   /**
    * If true, attempt to open device in exclusive mode (suppresses mouse input)
-   * Note: On macOS, node-hid cannot truly grab exclusive access. 
+   * Note: On macOS, node-hid cannot truly grab exclusive access.
    * The XP-Pen/Wacom driver will still process input as mouse movement.
    * To prevent mouse movement on macOS, disable "use as mouse" in the tablet driver settings.
    */
   exclusive?: boolean;
+
+  /**
+   * Callback invoked when device is disconnected
+   */
+  onDisconnect?: () => void;
 }
 
 /**
@@ -99,6 +104,14 @@ export class NodeHIDReader implements IHIDReader {
 
       this.device.on('error', (err: Error) => {
         console.error('[NodeHID] Device error:', err.message);
+
+        // Check if this is a disconnection error
+        // node-hid typically throws "could not read from HID device" when disconnected
+        if (err.message.includes('could not read') ||
+            err.message.includes('device disconnected') ||
+            err.message.includes('LIBUSB_ERROR')) {
+          this._handleDisconnect();
+        }
       });
 
       // IMPORTANT: Resume the device to start receiving data events
@@ -149,6 +162,46 @@ export class NodeHIDReader implements IHIDReader {
   }
 
   /**
+   * Check if the device is still physically connected
+   * @returns true if device is found in the system device list
+   */
+  isDeviceConnected(): boolean {
+    if (!this.devicePath) return false;
+
+    try {
+      const devices = HID.devices();
+      return devices.some(d => d.path === this.devicePath);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Handle device disconnection
+   */
+  private _handleDisconnect(): void {
+    console.log('[NodeHID] Device disconnected');
+
+    // Mark as closed
+    this._isOpen = false;
+
+    // Clean up device reference
+    if (this.device) {
+      try {
+        this.device.close();
+      } catch {
+        // Ignore errors when closing disconnected device
+      }
+      this.device = null;
+    }
+
+    // Invoke disconnect callback if provided
+    if (this.options.onDisconnect) {
+      this.options.onDisconnect();
+    }
+  }
+
+  /**
    * Send a feature report
    */
   sendFeatureReport(data: number[]): void {
@@ -182,7 +235,8 @@ export class MultiInterfaceReader implements IHIDReader {
   private dataCallback: HIDDataCallback | null = null;
   private interfaces: HIDDeviceInfo[];
   private options: NodeHIDReaderOptions;
-  
+  private disconnectHandled = false;
+
   // Track which interface has sent data (for config generation)
   private _activeInterface: HIDDeviceInfo | null = null;
   private _dataReceivedFrom: Set<number> = new Set(); // usagePages that sent data
@@ -192,8 +246,21 @@ export class MultiInterfaceReader implements IHIDReader {
       throw new Error('At least one interface required');
     }
     this.interfaces = interfaces;
-    this.options = options;
-    
+
+    // Wrap the onDisconnect callback to only fire once for all interfaces
+    const originalOnDisconnect = options.onDisconnect;
+    this.options = {
+      ...options,
+      onDisconnect: () => {
+        if (!this.disconnectHandled) {
+          this.disconnectHandled = true;
+          if (originalOnDisconnect) {
+            originalOnDisconnect();
+          }
+        }
+      }
+    };
+
     // Use the first interface's info as the primary device info
     this._deviceInfo = {
       ...interfaces[0],
@@ -311,6 +378,17 @@ export class MultiInterfaceReader implements IHIDReader {
       reader.stopReading();
     }
     this.dataCallback = null;
+  }
+
+  /**
+   * Check if any of the device interfaces are still physically connected
+   * @returns true if at least one interface is found in the system device list
+   */
+  isDeviceConnected(): boolean {
+    if (this.readers.length === 0) return false;
+
+    // Check if any reader's device is still connected
+    return this.readers.some(reader => reader.isDeviceConnected());
   }
 }
 
@@ -476,4 +554,3 @@ export function formatDeviceInfo(device: HIDDeviceInfo): string {
   const product = device.productId.toString(16).padStart(4, '0');
   return `${vendor}:${product} - ${device.productName} (${device.manufacturer || 'Unknown'})`;
 }
-

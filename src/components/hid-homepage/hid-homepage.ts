@@ -93,7 +93,7 @@ export class HidHomepage extends LitElement {
   private async _loadExampleConfig() {
     this.error = '';
     try {
-      const response = await fetch('/configs/xp-pen-deco640-osx-webhid-nodriver-config.json');
+      const response = await fetch('/configs/sample.json');
       if (!response.ok) {
         throw new Error('Failed to fetch example configuration');
       }
@@ -149,7 +149,7 @@ export class HidHomepage extends LitElement {
               <span class="or-divider">or try an example</span>
               <button class="example-button" @click=${this._loadExampleConfig}>
                 <span class="example-icon">⚡</span>
-                Load XP-Pen Deco 640 Config
+                Load Sample Config
               </button>
             </div>
 

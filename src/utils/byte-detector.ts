@@ -41,8 +41,16 @@ export interface StatusConfig {
 export interface TabletButtonsConfig {
   byteIndex: number[];
   buttonCount: number;
-  type: 'bit-flags' | 'code';
+  type: 'bit-flags' | 'code' | 'keyboard-events';
   values?: Record<string, { button: number }>;
+  keyMappings?: Record<string, {
+    key: string;
+    code: string;
+    ctrlKey?: boolean;
+    shiftKey?: boolean;
+    altKey?: boolean;
+    metaKey?: boolean;
+  }>;
 }
 
 /**
@@ -50,8 +58,15 @@ export interface TabletButtonsConfig {
  */
 export interface ButtonMapping {
   buttonNumber: number;
-  statusByte: number;
-  scanCode: number;
+  statusByte?: number;
+  scanCode?: number;
+  // Keyboard event properties (when driver is active)
+  key?: string;
+  code?: string;
+  ctrlKey?: boolean;
+  shiftKey?: boolean;
+  altKey?: boolean;
+  metaKey?: boolean;
 }
 
 export interface DeviceByteCodeMappings {
@@ -402,7 +417,11 @@ export function generateDeviceConfig(
   // Add button status values FIRST (before building status config)
   // This ensures keyboard/button states are included in the status mapping
   if (buttonMappings.length > 0) {
-    const buttonStatusBytes = new Set(buttonMappings.map(m => m.statusByte));
+    const buttonStatusBytes = new Set(
+      buttonMappings
+        .map(m => m.statusByte)
+        .filter((sb): sb is number => sb !== undefined)
+    );
     for (const statusByte of buttonStatusBytes) {
       if (!statusByteValues.has(statusByte)) {
         if (statusByte === 0) {
@@ -499,57 +518,98 @@ export function generateDeviceConfig(
 
   // Add tablet buttons - prefer interactive mappings over auto-detected bytes
   if (buttonMappings.length > 0) {
-    // Interactive detection - use code type with value mappings
-    const values: Record<string, { button: number }> = {};
-    
-    // Check for scan code conflicts and track status byte overrides
-    const scanCodeGroups = new Map<number, ButtonMapping[]>();
-    for (const mapping of buttonMappings) {
-      const existing = scanCodeGroups.get(mapping.scanCode) || [];
-      existing.push(mapping);
-      scanCodeGroups.set(mapping.scanCode, existing);
-    }
-    
-    // Track conflicting buttons (share same scan code, differentiated by status byte)
-    const conflictingButtons: Array<{ scanCode: number; statusByte: number; buttonNumber: number }> = [];
-    
-    // Build value mappings - for conflicts, use the lower button number as default
-    for (const [scanCode, mappings] of scanCodeGroups) {
-      if (mappings.length > 1) {
-        // Multiple buttons share this scan code
-        // Use the lowest button number as the default mapping
-        // Store the others as conflicts for status-byte-based override
-        const sorted = [...mappings].sort((a, b) => a.buttonNumber - b.buttonNumber);
-        values[String(scanCode)] = { button: sorted[0].buttonNumber };
-        
-        // Record conflicts for runtime status byte checking
-        for (let i = 1; i < sorted.length; i++) {
-          conflictingButtons.push({
-            scanCode,
-            statusByte: sorted[i].statusByte,
-            buttonNumber: sorted[i].buttonNumber,
-          });
+    // Check if we have keyboard mappings or HID scan codes
+    const hasKeyboardMappings = buttonMappings.some(m => m.key !== undefined);
+    const hasHIDMappings = buttonMappings.some(m => m.scanCode !== undefined);
+
+    if (hasKeyboardMappings) {
+      // Keyboard event detection (driver active)
+      const keyMappings: Record<string, {
+        key: string;
+        code: string;
+        ctrlKey?: boolean;
+        shiftKey?: boolean;
+        altKey?: boolean;
+        metaKey?: boolean;
+      }> = {};
+
+      for (const mapping of buttonMappings) {
+        if (mapping.key && mapping.code) {
+          keyMappings[String(mapping.buttonNumber)] = {
+            key: mapping.key,
+            code: mapping.code,
+            ctrlKey: mapping.ctrlKey,
+            shiftKey: mapping.shiftKey,
+            altKey: mapping.altKey,
+            metaKey: mapping.metaKey,
+          };
         }
-      } else {
-        values[String(scanCode)] = { button: mappings[0].buttonNumber };
       }
+
+      config.tabletButtons = {
+        byteIndex: [], // Not used for keyboard events
+        buttonCount: buttonMappings.length,
+        type: 'keyboard-events',
+        keyMappings,
+      };
+    } else if (hasHIDMappings) {
+      // HID scan code detection (no driver)
+      const values: Record<string, { button: number }> = {};
+
+      // Check for scan code conflicts and track status byte overrides
+      const scanCodeGroups = new Map<number, ButtonMapping[]>();
+      for (const mapping of buttonMappings) {
+        if (mapping.scanCode !== undefined) {
+          const existing = scanCodeGroups.get(mapping.scanCode) || [];
+          existing.push(mapping);
+          scanCodeGroups.set(mapping.scanCode, existing);
+        }
+      }
+
+      // Track conflicting buttons (share same scan code, differentiated by status byte)
+      const conflictingButtons: Array<{ scanCode: number; statusByte: number; buttonNumber: number }> = [];
+
+      // Build value mappings - for conflicts, use the lower button number as default
+      for (const [scanCode, mappings] of scanCodeGroups) {
+        if (mappings.length > 1) {
+          // Multiple buttons share this scan code
+          // Use the lowest button number as the default mapping
+          // Store the others as conflicts for status-byte-based override
+          const sorted = [...mappings].sort((a, b) => a.buttonNumber - b.buttonNumber);
+          values[String(scanCode)] = { button: sorted[0].buttonNumber };
+
+          // Record conflicts for runtime status byte checking
+          for (let i = 1; i < sorted.length; i++) {
+            const statusByte = sorted[i].statusByte;
+            if (statusByte !== undefined) {
+              conflictingButtons.push({
+                scanCode,
+                statusByte,
+                buttonNumber: sorted[i].buttonNumber,
+              });
+            }
+          }
+        } else {
+          values[String(scanCode)] = { button: mappings[0].buttonNumber };
+        }
+      }
+
+      // Note: Button status values are added earlier in this function
+
+      const tabletButtonsConfig: TabletButtonsConfig = {
+        byteIndex: [1], // Button scan codes are typically at byte index 1
+        buttonCount: buttonMappings.length,
+        type: 'code',
+        values,
+      };
+
+      // Add conflict overrides if any buttons share scan codes
+      if (conflictingButtons.length > 0) {
+        (tabletButtonsConfig as any).statusOverrides = conflictingButtons;
+      }
+
+      config.tabletButtons = tabletButtonsConfig;
     }
-    
-    // Note: Button status values are added earlier in this function
-    
-    const tabletButtonsConfig: TabletButtonsConfig = {
-      byteIndex: [1], // Button scan codes are typically at byte index 1
-      buttonCount: buttonMappings.length,
-      type: 'code',
-      values,
-    };
-    
-    // Add conflict overrides if any buttons share scan codes
-    if (conflictingButtons.length > 0) {
-      (tabletButtonsConfig as any).statusOverrides = conflictingButtons;
-    }
-    
-    config.tabletButtons = tabletButtonsConfig;
   } else if (tabletButtonBytes.length > 0) {
     // Fallback: auto-detected bytes with bit-flags type
     const buttonByteIndices = tabletButtonBytes.map(b => b.byteIndex);
@@ -562,4 +622,3 @@ export function generateDeviceConfig(
 
   return config;
 }
-

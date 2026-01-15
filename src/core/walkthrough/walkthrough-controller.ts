@@ -29,8 +29,15 @@ export type DataSource = 'mock' | 'device' | 'exit';
  */
 export interface DetectedButton {
   buttonNumber: number;
-  statusByte: number;
-  scanCode: number;
+  statusByte?: number;
+  scanCode?: number;
+  // Keyboard event properties (when driver is active)
+  key?: string;
+  code?: string;
+  ctrlKey?: boolean;
+  shiftKey?: boolean;
+  altKey?: boolean;
+  metaKey?: boolean;
 }
 
 /**
@@ -702,4 +709,3 @@ export class WalkthroughController {
 
 // Re-export types
 export type { WalkthroughStep, StepInfo, GestureType, ByteAnalysis, ButtonMapping };
-

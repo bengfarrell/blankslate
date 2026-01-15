@@ -125,7 +125,7 @@ export function autoSelectInterface(devices: HIDDeviceInfo[], config: Config): H
 /**
  * Initialize a real HID device reader based on config
  */
-export async function initializeRealDevice(config: Config): Promise<IHIDReader> {
+export async function initializeRealDevice(config: Config, options?: Partial<NodeHIDReaderOptions>): Promise<IHIDReader> {
   const vendorId = config.deviceInfo?.vendor_id;
   const productId = config.deviceInfo?.product_id;
 
@@ -136,7 +136,7 @@ export async function initializeRealDevice(config: Config): Promise<IHIDReader> 
   console.log(chalk.gray(`Searching for device 0x${vendorId.toString(16)}:0x${productId.toString(16)}...`));
 
   const manager = createNodeHIDManager();
-  const readerOptions: NodeHIDReaderOptions = { exclusive: true };
+  const readerOptions: NodeHIDReaderOptions = { exclusive: true, ...options };
 
   const devices = await manager.listDevices({ vendorId, productId });
 
@@ -262,6 +262,14 @@ export abstract class TabletReaderBase {
   protected packetCount = 0;
   protected currentGestureIndex = 0;
   protected gestureTimer: NodeJS.Timeout | null = null;
+  protected reconnectTimer: NodeJS.Timeout | null = null;
+  protected reconnectCheckInterval: NodeJS.Timeout | null = null;
+  protected isReconnecting = false;
+  protected reconnectAttempts = 0;
+  protected maxReconnectAttempts = 30; // More attempts with faster polling
+  protected reconnectBaseInterval = 500; // Start with 500ms
+  protected reconnectMaxInterval = 5000; // Cap at 5 seconds
+  protected deviceCheckInterval = 200; // Check for device every 200ms when disconnected
 
   constructor(configPath: string, options: TabletReaderOptions) {
     this.isMockMode = options.mock ?? false;
@@ -295,7 +303,9 @@ export abstract class TabletReaderBase {
     if (this.isMockMode) {
       this.reader = createMockReader(this.configData);
     } else {
-      this.reader = await initializeRealDevice(this.configData);
+      this.reader = await initializeRealDevice(this.configData, {
+        onDisconnect: () => this.handleDeviceDisconnect()
+      });
     }
   }
 
@@ -372,6 +382,14 @@ export abstract class TabletReaderBase {
       clearTimeout(this.gestureTimer);
     }
 
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+
+    if (this.reconnectCheckInterval) {
+      clearInterval(this.reconnectCheckInterval);
+    }
+
     if (this.reader) {
       this.reader.stopReading();
       try {
@@ -387,6 +405,136 @@ export abstract class TabletReaderBase {
     // Only exit process if not in test mode
     if (this.exitOnStop) {
       process.exit(0);
+    }
+  }
+
+  /**
+   * Handle device disconnection
+   */
+  protected handleDeviceDisconnect(): void {
+    console.log(chalk.red('\n⚠ Device disconnected!'));
+
+    if (this.reader) {
+      this.reader.stopReading();
+      this.reader = null;
+    }
+
+    // Start device polling for reconnection
+    if (!this.isReconnecting) {
+      this.reconnectAttempts = 0;
+      this.startDevicePolling();
+    }
+  }
+
+  /**
+   * Start polling for device presence
+   * More elegant than blind retries - we check if device is actually back
+   */
+  protected startDevicePolling(): void {
+    if (this.reconnectCheckInterval) {
+      clearInterval(this.reconnectCheckInterval);
+    }
+
+    console.log(chalk.yellow('Waiting for device to be reconnected...'));
+    console.log(chalk.gray('(Checking every 200ms)'));
+
+    this.reconnectCheckInterval = setInterval(async () => {
+      this.reconnectAttempts++;
+
+      // Check if device is present
+      if (await this.isDevicePresent()) {
+        // Device detected! Stop polling and attempt connection
+        if (this.reconnectCheckInterval) {
+          clearInterval(this.reconnectCheckInterval);
+          this.reconnectCheckInterval = null;
+        }
+
+        console.log(chalk.green('✓ Device detected!'));
+        await this.attemptReconnect();
+      } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        // Give up after max attempts
+        if (this.reconnectCheckInterval) {
+          clearInterval(this.reconnectCheckInterval);
+          this.reconnectCheckInterval = null;
+        }
+
+        const totalTime = (this.maxReconnectAttempts * this.deviceCheckInterval) / 1000;
+        console.log(chalk.red(`✗ Device not found after ${totalTime}s`));
+        console.log(chalk.yellow('Please reconnect the device and restart the application.'));
+      }
+    }, this.deviceCheckInterval);
+  }
+
+  /**
+   * Check if the device is physically present in the system
+   */
+  protected async isDevicePresent(): Promise<boolean> {
+    try {
+      const vendorId = this.configData.deviceInfo?.vendor_id;
+      const productId = this.configData.deviceInfo?.product_id;
+
+      if (!vendorId || !productId) {
+        return false;
+      }
+
+      const manager = createNodeHIDManager();
+      const devices = await manager.listDevices({ vendorId, productId });
+      return devices.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Attempt to reconnect to the device
+   * Called after device presence is confirmed
+   */
+  protected async attemptReconnect(): Promise<void> {
+    if (this.isReconnecting) return;
+
+    this.isReconnecting = true;
+
+    console.log(chalk.yellow('Attempting to reconnect...'));
+
+    try {
+      // Try to reinitialize the device
+      await this.initializeReader();
+
+      if (!this.reader) {
+        throw new Error('Failed to initialize reader');
+      }
+
+      // Restart reading
+      this.reader.startReading((data, _reportId) => {
+        this.handlePacket(data);
+      });
+
+      console.log(chalk.green('✓ Device reconnected successfully!'));
+      this.isReconnecting = false;
+      this.reconnectAttempts = 0;
+
+    } catch (error) {
+      // Reconnection failed even though device was detected
+      // This can happen if device is still initializing
+      this.isReconnecting = false;
+
+      // Use exponential backoff for retry
+      const backoffTime = Math.min(
+        this.reconnectBaseInterval * Math.pow(1.5, this.reconnectAttempts),
+        this.reconnectMaxInterval
+      );
+
+      console.log(chalk.gray(`Connection failed, retrying in ${Math.round(backoffTime)}ms...`));
+
+      this.reconnectTimer = setTimeout(async () => {
+        if (await this.isDevicePresent()) {
+          await this.attemptReconnect();
+        } else {
+          // Device disappeared again, restart polling
+          console.log(chalk.yellow('Device disappeared, resuming polling...'));
+          this.startDevicePolling();
+        }
+      }, backoffTime);
     }
   }
 }

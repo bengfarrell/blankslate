@@ -2,18 +2,18 @@
   "name": "XP Pen Deco 640",
   "manufacturer": "XP Pen",
   "model": "Deco 640",
-  "description": "XP Pen Deco 640, OSX, WebHID, no driver",
+  "description": "XP Pen Deco 640, OSX, Node.js, driver",
   "vendorId": "0x28bd",
   "productId": "0x2904",
   "deviceInfo": {
     "vendor_id": 10429,
     "product_id": 10500,
     "product_string": "Deco 640",
-    "usage_page": 65290,
-    "usage": 1,
+    "usage_page": 13,
+    "usage": 2,
     "interfaces": [
-      13,
       65290,
+      13,
       1
     ]
   },

@@ -474,81 +474,135 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
    * Detect a single button press with confirmation
    * Processes packets as they arrive and looks for 3 matching patterns
    * that differ from "idle" state
+   * Also listens for keyboard events (for when driver is active)
    */
   private async _detectSingleButton(
-    buttonNumber: number, 
+    buttonNumber: number,
     minConfirmations: number
   ): Promise<DetectedButton | null> {
     const engine = this.controller.getEngine();
     console.log(`[ButtonDetect] Starting button ${buttonNumber}`);
-    
+
     // Status bytes that indicate button packets (not pen data)
     const BUTTON_STATUS_BYTES = [0xF0, 0x02, 0x03]; // 240, 2, 3 - common button status bytes
-    
+
     return new Promise((resolve) => {
       // Track ONLY button packet patterns (status 0xF0 etc), ignoring pen data
       const buttonPatterns = new Map<string, { packet: Uint8Array; count: number }>();
+      // Track keyboard events
+      const keyboardPatterns = new Map<string, { event: KeyboardEvent; count: number }>();
       let lastProcessedIndex = 0;
       let resolved = false;
       let logCounter = 0;
-      
+
+      // Keyboard event handler
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (resolved) return;
+
+        // Ignore modifier-only keys
+        if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
+          return;
+        }
+
+        // Create a unique key for this keyboard event
+        const keySignature = `${e.code}-${e.key}-${e.ctrlKey}-${e.shiftKey}-${e.altKey}-${e.metaKey}`;
+
+        console.log(`[ButtonDetect] Keyboard event: ${keySignature}`);
+
+        const existing = keyboardPatterns.get(keySignature);
+        if (existing) {
+          existing.count++;
+
+          // Check if we have enough confirmations
+          if (existing.count >= minConfirmations) {
+            console.log(`[ButtonDetect] Button ${buttonNumber} DETECTED via keyboard: ${keySignature}, count=${existing.count}`);
+            resolved = true;
+            clearInterval(interval);
+            window.removeEventListener('keydown', handleKeyDown);
+
+            resolve({
+              buttonNumber,
+              key: e.key,
+              code: e.code,
+              ctrlKey: e.ctrlKey || undefined,
+              shiftKey: e.shiftKey || undefined,
+              altKey: e.altKey || undefined,
+              metaKey: e.metaKey || undefined,
+            });
+            return;
+          }
+        } else {
+          keyboardPatterns.set(keySignature, { event: e, count: 1 });
+        }
+      };
+
+      // Add keyboard listener
+      window.addEventListener('keydown', handleKeyDown);
+
       // Set up skip handler
       this.pendingGestureComplete = () => {
         console.log(`[ButtonDetect] Button ${buttonNumber} skipped`);
         resolved = true;
         clearInterval(interval);
+        window.removeEventListener('keydown', handleKeyDown);
         resolve(null);
       };
-      
+
       // Process new packets incrementally - read directly from engine's buffer
       const processNewPackets = () => {
         if (resolved) return;
-        
+
         // Get packets directly from the engine's capture buffer
         const enginePackets = engine.getCapturedPackets();
-        
+
         // Log status every second
         logCounter++;
         if (logCounter % 20 === 0) {
           const patterns = Array.from(buttonPatterns.entries())
             .map(([k, d]) => `${k.substring(0, 20)}...(${d.count})`);
-          console.log(`[ButtonDetect] Button ${buttonNumber}: ${enginePackets.length} total packets, ${buttonPatterns.size} button patterns: [${patterns.join(', ')}]`);
+          const keyPatterns = Array.from(keyboardPatterns.entries())
+            .map(([k, d]) => `${k}(${d.count})`);
+          console.log(`[ButtonDetect] Button ${buttonNumber}: ${enginePackets.length} HID packets, ${buttonPatterns.size} HID patterns, ${keyboardPatterns.size} key patterns`);
+          if (keyPatterns.length > 0) {
+            console.log(`  Key patterns: [${keyPatterns.join(', ')}]`);
+          }
         }
-        
+
         // Only process packets we haven't seen yet
         const newPackets = enginePackets.slice(lastProcessedIndex);
         lastProcessedIndex = enginePackets.length;
-        
+
         for (const packet of newPackets) {
           if (packet.length < 2) continue;
-          
+
           const statusByte = packet[0];
           const scanCode = packet[1];
-          
+
           // Only track button packets (status 0xF0, 0x02, 0x03, etc)
           // Skip pen data (0xA0, 0xA1, 0xC0, etc) and "no button" state (scanCode 0)
           if (!BUTTON_STATUS_BYTES.includes(statusByte)) {
             continue;
           }
-          
+
           // Skip "no button pressed" state (scanCode 0 with button status)
           if (scanCode === 0) {
             continue;
           }
-          
+
           // Create a key from the packet bytes
           const key = Array.from(packet).join('-');
-          
+
           const existing = buttonPatterns.get(key);
           if (existing) {
             existing.count++;
-            
+
             // Check if we have enough confirmations
             if (existing.count >= minConfirmations) {
-              console.log(`[ButtonDetect] Button ${buttonNumber} DETECTED: scanCode=${scanCode}, status=${statusByte}, count=${existing.count}`);
+              console.log(`[ButtonDetect] Button ${buttonNumber} DETECTED via HID: scanCode=${scanCode}, status=${statusByte}, count=${existing.count}`);
               resolved = true;
               clearInterval(interval);
-              
+              window.removeEventListener('keydown', handleKeyDown);
+
               resolve({
                 buttonNumber,
                 scanCode,
@@ -561,10 +615,10 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
           }
         }
       };
-      
+
       // Check for new packets periodically
       const interval = setInterval(processNewPackets, 50);
-      
+
       // No timeout - user must skip or press button
     });
   }
@@ -945,7 +999,11 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
             <h4>Detected Buttons:</h4>
             ${this.detectedButtons.map(btn => html`
               <div class="detected-button">
-                ✓ Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
+                ${btn.key ? html`
+                  ✓ Button ${btn.buttonNumber}: ${btn.ctrlKey ? 'Ctrl+' : ''}${btn.shiftKey ? 'Shift+' : ''}${btn.altKey ? 'Alt+' : ''}${btn.metaKey ? 'Meta+' : ''}${btn.key} (${btn.code})
+                ` : html`
+                  ✓ Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
+                `}
               </div>
             `)}
           </div>
@@ -1200,13 +1258,23 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
     this.webReaders = result.allDevices.map(device => createWebHIDReader(device));
 
+    // Build collections from ALL devices, not just primaryDevice
+    // This ensures we have all interfaces available for config generation
+    const allCollections = result.allDevices
+      .flatMap(d => d.collections)
+      .filter(c => c.usagePage !== undefined && c.usage !== undefined)
+      .map(c => ({ usagePage: c.usagePage!, usage: c.usage! }));
+
+    // Remove duplicates based on usagePage+usage combination
+    const uniqueCollections = Array.from(
+      new Map(allCollections.map(c => [`${c.usagePage}-${c.usage}`, c])).values()
+    );
+
     this.deviceMetadata = {
       vendorId: result.primaryDevice.vendorId,
       productId: result.primaryDevice.productId,
       productName: result.primaryDevice.productName,
-      collections: result.primaryDevice.collections
-        .filter(c => c.usagePage !== undefined && c.usage !== undefined)
-        .map(c => ({ usagePage: c.usagePage!, usage: c.usage! })),
+      collections: uniqueCollections,
       allInterfaces: result.allDevices
         .flatMap(d => d.collections.map(c => c.usagePage))
         .filter((v): v is number => v !== undefined)
@@ -1285,11 +1353,10 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
     // Track which interface is actually sending data (for accurate config generation)
     // Only track for real devices (not mock which has index -1)
-    if (deviceIndex >= 0 && this.webReaders[deviceIndex] && !this.deviceMetadata.dataSourceUsagePage) {
+    if (deviceIndex >= 0 && this.webReaders[deviceIndex]) {
       const reader = this.webReaders[deviceIndex];
       const usagePage = reader.deviceInfo.usagePage;
-      if (usagePage !== undefined) {
-        console.log(`[HIDDataReader] Data source detected: interface with usagePage=${usagePage}`);
+      if (usagePage !== undefined && !this.deviceMetadata.dataSourceUsagePage) {
         this.deviceMetadata.dataSourceUsagePage = usagePage;
         // Update controller's device info with the data source
         this.controller.setDeviceInfo(this.deviceMetadata);

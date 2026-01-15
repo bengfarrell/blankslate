@@ -268,7 +268,18 @@ class CLIWalkthroughView implements IWalkthroughView {
   }
 
   showButtonDetected(button: DetectedButton): void {
-    console.log(theme.success(`  ✓ Button ${button.buttonNumber}: status=${button.statusByte}, scanCode=${button.scanCode}`));
+    if (button.key) {
+      const modifiers = [
+        button.ctrlKey ? 'Ctrl' : '',
+        button.shiftKey ? 'Shift' : '',
+        button.altKey ? 'Alt' : '',
+        button.metaKey ? 'Meta' : '',
+      ].filter(Boolean).join('+');
+      const keyCombo = modifiers ? `${modifiers}+${button.key}` : button.key;
+      console.log(theme.success(`  ✓ Button ${button.buttonNumber}: ${keyCombo} (${button.code})`));
+    } else {
+      console.log(theme.success(`  ✓ Button ${button.buttonNumber}: status=${button.statusByte}, scanCode=${button.scanCode}`));
+    }
   }
 
   showButtonSkipped(buttonNumber: number): void {
@@ -280,20 +291,44 @@ class CLIWalkthroughView implements IWalkthroughView {
     console.log(theme.dim('─'.repeat(40)));
 
     if (buttons.length > 0) {
-      // Check for conflicts (same scanCode with different status bytes)
-      const scanCodeGroups = new Map<number, DetectedButton[]>();
-      for (const btn of buttons) {
-        const existing = scanCodeGroups.get(btn.scanCode) || [];
-        existing.push(btn);
-        scanCodeGroups.set(btn.scanCode, existing);
-      }
+      // Check if we have keyboard or HID mappings
+      const hasKeyboardMappings = buttons.some(b => b.key !== undefined);
 
-      for (const btn of buttons) {
-        const group = scanCodeGroups.get(btn.scanCode) || [];
-        if (group.length > 1) {
-          console.log(theme.data(`  Button ${btn.buttonNumber}: scanCode=${btn.scanCode} + status=${btn.statusByte} ${theme.dim('(uses status byte)')}`));
-        } else {
-          console.log(theme.data(`  Button ${btn.buttonNumber}: scanCode=${btn.scanCode}`));
+      if (hasKeyboardMappings) {
+        // Display keyboard mappings
+        for (const btn of buttons) {
+          if (btn.key) {
+            const modifiers = [
+              btn.ctrlKey ? 'Ctrl' : '',
+              btn.shiftKey ? 'Shift' : '',
+              btn.altKey ? 'Alt' : '',
+              btn.metaKey ? 'Meta' : '',
+            ].filter(Boolean).join('+');
+            const keyCombo = modifiers ? `${modifiers}+${btn.key}` : btn.key;
+            console.log(theme.data(`  Button ${btn.buttonNumber}: ${keyCombo} (${btn.code})`));
+          }
+        }
+      } else {
+        // Display HID scan code mappings
+        // Check for conflicts (same scanCode with different status bytes)
+        const scanCodeGroups = new Map<number, DetectedButton[]>();
+        for (const btn of buttons) {
+          if (btn.scanCode !== undefined) {
+            const existing = scanCodeGroups.get(btn.scanCode) || [];
+            existing.push(btn);
+            scanCodeGroups.set(btn.scanCode, existing);
+          }
+        }
+
+        for (const btn of buttons) {
+          if (btn.scanCode !== undefined) {
+            const group = scanCodeGroups.get(btn.scanCode) || [];
+            if (group.length > 1) {
+              console.log(theme.data(`  Button ${btn.buttonNumber}: scanCode=${btn.scanCode} + status=${btn.statusByte} ${theme.dim('(uses status byte)')}`));
+            } else {
+              console.log(theme.data(`  Button ${btn.buttonNumber}: scanCode=${btn.scanCode}`));
+            }
+          }
         }
       }
       console.log(theme.success(`\n✓ Detected ${buttons.length}/${totalExpected} buttons\n`));
@@ -460,19 +495,15 @@ class CLIReaderFactory implements IReaderFactory {
         .filter(d => d.usagePage !== undefined && d.usage !== undefined)
         .map(d => ({ usagePage: d.usagePage!, usage: d.usage! }));
 
-      // Determine the correct data source usage page
-      // Priority: 1) Digitizer pen (13, 2), 2) Any digitizer (13), 3) First interface
-      const digitizerPen = collections.find(c => c.usagePage === 13 && c.usage === 2);
-      const anyDigitizer = collections.find(c => c.usagePage === 13);
-      const primaryCollection = digitizerPen || anyDigitizer || collections[0];
-
+      // Store device info - dataSourceUsagePage will be updated after data is received
       this.deviceInfo = {
         vendorId: device.vendorId,
         productId: device.productId,
         productName: device.productName,
         collections,
         allInterfaces: allUsagePages,
-        dataSourceUsagePage: primaryCollection?.usagePage,
+        // Will be set to the actual interface that sends data (from MultiInterfaceReader.activeInterface)
+        dataSourceUsagePage: undefined,
       };
 
       spinner.succeed(strings.messages.deviceReady);
@@ -521,6 +552,9 @@ export async function runCLI(options: CLIWalkthroughOptions = {}): Promise<void>
 
   try {
     await controller.run(options.useMock);
+    // Exit cleanly after completion
+    await controller.cleanup();
+    process.exit(0);
   } catch (error) {
     console.error(theme.error('Error:'), error instanceof Error ? error.message : error);
     await controller.cleanup();

@@ -215,7 +215,7 @@ export class HidDashboard extends LitElement {
 
   private async _loadSampleConfig() {
     try {
-      const response = await fetch('/configs/xp-pen-deco640-osx-webhid-nodriver-config.json');
+      const response = await fetch('/configs/sample.json');
       if (!response.ok) {
         throw new Error('Failed to fetch sample configuration');
       }
@@ -448,6 +448,12 @@ export class HidDashboard extends LitElement {
       return;
     }
 
+    console.log('[Dashboard] Connecting with config:', {
+      vendorId: this.config.deviceInfo.vendor_id,
+      productId: this.config.deviceInfo.product_id,
+      usagePage: this.config.deviceInfo.usage_page
+    });
+
     try {
       // Request HID device access
       const requestedDevices = await navigator.hid.requestDevice({
@@ -462,35 +468,64 @@ export class HidDashboard extends LitElement {
         return;
       }
 
+      console.log('[Dashboard] Requested devices:', requestedDevices.length);
+
       // IMPORTANT: Get ALL authorized devices (like the walkthrough does)
       // The requestDevice picker authorizes access, but we need to get ALL interfaces
       const allDevices = await navigator.hid.getDevices();
-      
+      console.log('[Dashboard] All authorized devices:', allDevices.length);
+
       // Filter to just devices from this tablet (same vendor/product)
-      const tabletDevices = allDevices.filter(d => 
+      const tabletDevices = allDevices.filter(d =>
         d.vendorId === this.config!.deviceInfo.vendor_id &&
         d.productId === this.config!.deviceInfo.product_id
       );
-      
+
+      console.log('[Dashboard] Tablet devices found:', tabletDevices.length);
+      tabletDevices.forEach((d, i) => {
+        const collections = d.collections.map(c => ({
+          usagePage: c.usagePage,
+          usage: c.usage,
+          usagePageHex: c.usagePage ? '0x' + c.usagePage.toString(16) : 'undefined',
+          usageHex: c.usage ? '0x' + c.usage.toString(16) : 'undefined'
+        }));
+        console.log(`[Dashboard] Device ${i}:`, {
+          productName: d.productName,
+          collections
+        });
+      });
+
       // Find the interface matching the config's usage_page
       // This is where the actual pen data comes from (may be vendor-specific like 65290/0xFF0A)
       const configUsagePage = this.config.deviceInfo.usage_page;
-      
-      const configuredDevice = tabletDevices.find(d => 
+
+      const configuredDevice = tabletDevices.find(d =>
         d.collections.some(c => c.usagePage === configUsagePage)
       );
-      
+
       // Fallback to digitizer (13) or first device if config's usage_page not found
-      const digitizerDevice = tabletDevices.find(d => 
+      const digitizerDevice = tabletDevices.find(d =>
         d.collections.some(c => c.usagePage === 13)
       );
       const primaryDevice = configuredDevice || digitizerDevice || tabletDevices[0];
-      
+
       if (!primaryDevice) {
         console.error('[Dashboard] No suitable device interface found');
         return;
       }
-      
+
+      const selectedCollections = primaryDevice.collections.map(c => ({
+        usagePage: c.usagePage,
+        usage: c.usage,
+        usagePageHex: c.usagePage ? '0x' + c.usagePage.toString(16) : 'undefined',
+        usageHex: c.usage ? '0x' + c.usage.toString(16) : 'undefined'
+      }));
+      console.log('[Dashboard] Selected device:', {
+        productName: primaryDevice.productName,
+        collections: selectedCollections,
+        opened: primaryDevice.opened
+      });
+
       this.hidDevice = primaryDevice;
       this.deviceName = primaryDevice.productName || this.config.name;
       this.deviceConnected = true;
@@ -504,12 +539,15 @@ export class HidDashboard extends LitElement {
       primaryDevice.addEventListener('inputreport', (event: HIDInputReportEvent) => {
         const dv = event.data;
         const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
-        
+
+        console.log('[Dashboard] Raw bytes received:', Array.from(bytes));
+
         // Update raw bytes display
         this._updateRawBytes(bytes);
-        
+
         // Process through config mappings using shared processDeviceData
         const processed = processDeviceData(bytes, this.config!.byteCodeMappings);
+        console.log('[Dashboard] Processed data:', processed);
         this._handleTabletData(processed as TabletDataEvent);
       });
 

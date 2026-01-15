@@ -200,6 +200,50 @@ export class TabletWebSocketServer extends TabletReaderBase {
     // Then call parent stop
     await super.stop();
   }
+
+  /**
+   * Override handleDeviceDisconnect to notify WebSocket clients
+   */
+  protected handleDeviceDisconnect(): void {
+    // Notify all connected clients
+    this.broadcastStatus('disconnected', 'Device disconnected, attempting to reconnect...');
+
+    // Call parent implementation
+    super.handleDeviceDisconnect();
+  }
+
+  /**
+   * Override attemptReconnect to notify clients on success
+   */
+  protected async attemptReconnect(): Promise<void> {
+    const previousAttempts = this.reconnectAttempts;
+
+    await super.attemptReconnect();
+
+    // If reconnection succeeded (attempts reset to 0)
+    if (this.reconnectAttempts === 0 && previousAttempts > 0) {
+      this.broadcastStatus('connected', 'Device reconnected successfully');
+    }
+  }
+
+  /**
+   * Broadcast status message to all connected clients
+   */
+  private broadcastStatus(status: 'connected' | 'disconnected', message: string): void {
+    const statusMessage = {
+      type: 'status',
+      status,
+      message,
+      timestamp: Date.now(),
+    };
+
+    const messageStr = JSON.stringify(statusMessage);
+    for (const client of this.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(messageStr);
+      }
+    }
+  }
 }
 
 // CLI Setup - only run if this file is executed directly

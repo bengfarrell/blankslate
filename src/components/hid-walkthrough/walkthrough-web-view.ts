@@ -602,7 +602,11 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
             <h4>Detected Buttons:</h4>
             ${this.detectedButtons.map(btn => html`
               <div class="detected-button">
-                ✓ Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
+                ${btn.key ? html`
+                  ✓ Button ${btn.buttonNumber}: ${btn.ctrlKey ? 'Ctrl+' : ''}${btn.shiftKey ? 'Shift+' : ''}${btn.altKey ? 'Alt+' : ''}${btn.metaKey ? 'Meta+' : ''}${btn.key} (${btn.code})
+                ` : html`
+                  ✓ Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
+                `}
               </div>
             `)}
           </div>
@@ -768,4 +772,3 @@ declare global {
     'walkthrough-web-view': WalkthroughWebView;
   }
 }
-
