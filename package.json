@@ -4,6 +4,9 @@
   "description": "Graphics tablet controller with LitElement web components and Node.js CLI",
   "main": "dist/index.js",
   "type": "module",
+  "workspaces": [
+    "../../spectrumizer"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

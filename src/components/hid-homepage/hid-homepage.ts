@@ -3,6 +3,17 @@ import { customElement, state } from 'lit/decorators.js';
 import { styles } from './hid-homepage.styles.js';
 import { Config } from '../../models/config.js';
 
+// Spectrum icons
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-file-txt.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-folder.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-flash-on.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-alert.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-checkmark-circle.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-wrench.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-target.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-edit.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-save-floppy.js';
+
 /**
  * Homepage component for The Learning Tablet
  * Allows users to load an existing config or create a new one
@@ -123,7 +134,7 @@ export class HidHomepage extends LitElement {
 
         <div class="options">
           <div class="option-card load-config">
-            <div class="card-icon">📄</div>
+            <div class="card-icon"><sp-icon-file-txt size="xxl"></sp-icon-file-txt></div>
             <h2>Load Configuration</h2>
             <p>Already have a tablet configuration file? Load it here.</p>
             
@@ -132,7 +143,7 @@ export class HidHomepage extends LitElement {
               @dragover=${this._handleDragOver}
               @dragleave=${this._handleDragLeave}
               @drop=${this._handleDrop}>
-              <div class="drop-icon">📁</div>
+              <div class="drop-icon"><sp-icon-folder size="xl"></sp-icon-folder></div>
               <p>Drag & drop your JSON config here</p>
               <span class="or-divider">or</span>
               <button class="browse-button" @click=${this._handleFileInputClick}>
@@ -148,28 +159,28 @@ export class HidHomepage extends LitElement {
             <div class="quick-load">
               <span class="or-divider">or try an example</span>
               <button class="example-button" @click=${this._loadExampleConfig}>
-                <span class="example-icon">⚡</span>
+                <span class="example-icon"><sp-icon-flash-on></sp-icon-flash-on></span>
                 Load Sample Config
               </button>
             </div>
 
             ${this.error ? html`
               <div class="error-message">
-                <span class="error-icon">⚠️</span>
+                <span class="error-icon"><sp-icon-alert></sp-icon-alert></span>
                 ${this.error}
               </div>
             ` : ''}
 
             ${this.loadedConfig ? html`
               <div class="success-message">
-                <span class="success-icon">✅</span>
+                <span class="success-icon"><sp-icon-checkmark-circle></sp-icon-checkmark-circle></span>
                 Loaded: ${this.loadedConfig.name}
               </div>
             ` : ''}
           </div>
 
           <div class="option-card create-new">
-            <div class="card-icon">🔧</div>
+            <div class="card-icon"><sp-icon-wrench size="xxl"></sp-icon-wrench></div>
             <h2>Create New Configuration</h2>
             <p>Don't have a config? Use our interactive walkthrough to create one for your tablet.</p>
             
@@ -180,15 +191,15 @@ export class HidHomepage extends LitElement {
 
             <div class="features">
               <div class="feature">
-                <span class="feature-icon">🎯</span>
+                <span class="feature-icon"><sp-icon-target></sp-icon-target></span>
                 <span>Auto-detect byte mappings</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">✏️</span>
+                <span class="feature-icon"><sp-icon-edit></sp-icon-edit></span>
                 <span>Supports pressure & tilt</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">💾</span>
+                <span class="feature-icon"><sp-icon-save-floppy></sp-icon-save-floppy></span>
                 <span>Export reusable config</span>
               </div>
             </div>
