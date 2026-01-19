@@ -3,24 +3,24 @@ import { css } from 'lit';
 export const styles = css`
   :host {
     display: block;
-    color: #333;
+    color: var(--spectrum-gray-900);
   }
 
   .header {
     text-align: center;
     margin-bottom: 30px;
     padding-bottom: 20px;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 2px solid var(--spectrum-gray-300);
   }
 
   .header h2 {
     margin: 0 0 10px 0;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
   }
 
   .header p {
     margin: 0 0 15px 0;
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-size: 14px;
   }
 
@@ -43,9 +43,9 @@ export const styles = css`
   }
 
   .status-badge.connected {
-    background: #e8f5e9;
-    color: #2e7d32;
-    border: 2px solid #4caf50;
+    background: var(--spectrum-positive-background-color-default);
+    color: var(--spectrum-positive-color-1000);
+    border: 2px solid var(--spectrum-positive-color-900);
   }
 
   .status-icon {
@@ -58,27 +58,27 @@ export const styles = css`
   }
 
   .status-detail.warning {
-    color: #f57c00;
+    color: var(--spectrum-notice-color-1000);
   }
 
   .button.connect {
-    background: #4caf50;
+    background: var(--spectrum-positive-color-900);
     padding: 10px 20px;
   }
 
   .button.connect:hover:not(:disabled) {
-    background: #45a049;
+    background: var(--spectrum-positive-color-1000);
   }
 
   .button.disconnect {
-    background: #f44336 !important;
-    color: white;
+    background: var(--spectrum-negative-color-900) !important;
+    color: var(--spectrum-white);
     padding: 8px 16px;
     border: none;
   }
 
   .button.disconnect:hover:not(:disabled) {
-    background: #d32f2f !important;
+    background: var(--spectrum-negative-color-1000) !important;
   }
 
   .content {
@@ -87,15 +87,15 @@ export const styles = css`
   }
 
   .section {
-    background: #f8f9fa;
+    background: var(--spectrum-gray-75);
     border-radius: 8px;
     padding: 20px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--spectrum-gray-300);
   }
 
   .section h3 {
     margin: 0 0 15px 0;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 18px;
   }
 
@@ -128,8 +128,8 @@ export const styles = css`
     padding: 10px 20px;
     border: none;
     border-radius: 6px;
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-white);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -137,9 +137,9 @@ export const styles = css`
   }
 
   .button:hover:not(:disabled) {
-    background: #5568d3;
+    background: var(--spectrum-accent-color-1000);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    
   }
 
   .button:active:not(:disabled) {
@@ -147,57 +147,57 @@ export const styles = css`
   }
 
   .button:disabled {
-    background: #ccc;
+    background: var(--spectrum-gray-300);
     cursor: not-allowed;
     opacity: 0.6;
   }
 
   .button.stop {
-    background: #f44336;
+    background: var(--spectrum-negative-color-900);
   }
 
   .button.stop:hover:not(:disabled) {
-    background: #d32f2f;
-    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+    background: var(--spectrum-negative-color-1000);
+    
   }
 
   .button.clear {
-    background: #ff9800;
+    background: var(--spectrum-notice-color-900);
   }
 
   .button.clear:hover:not(:disabled) {
-    background: #f57c00;
-    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+    background: var(--spectrum-notice-color-1000);
+    
   }
 
   .button.primary {
-    background: #4caf50;
+    background: var(--spectrum-positive-color-900);
     font-size: 16px;
     padding: 12px 24px;
   }
 
   .button.primary:hover:not(:disabled) {
-    background: #45a049;
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    background: var(--spectrum-positive-color-1000);
+    
   }
 
   .button.hover {
-    background: #9c27b0;
+    background: var(--spectrum-accent-color-1000);
   }
 
   .button.hover:hover:not(:disabled) {
-    background: #7b1fa2;
-    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+    background: var(--spectrum-accent-color-1100);
+    
   }
 
   .status-indicator {
     margin: 0;
     padding: 10px 15px;
-    background: #e3f2fd;
-    border: 2px solid #2196f3;
+    background: var(--spectrum-informative-background-color-default);
+    border: 2px solid var(--spectrum-informative-color-900);
     border-radius: 6px;
     font-weight: 500;
-    color: #1565c0;
+    color: var(--spectrum-informative-color-1000);
   }
 
   .byte-info {
@@ -205,14 +205,14 @@ export const styles = css`
     justify-content: space-between;
     margin-bottom: 15px;
     padding: 10px;
-    background: #fff;
+    background: var(--spectrum-white);
     border-radius: 4px;
     font-size: 13px;
-    color: #666;
+    color: var(--spectrum-gray-700);
   }
 
   .byte-display {
-    background: #1e1e1e;
+    background: var(--spectrum-gray-100);
     border-radius: 6px;
     padding: 20px;
     min-height: 100px;
@@ -224,7 +224,7 @@ export const styles = css`
   }
 
   .empty-message {
-    color: #888;
+    color: var(--spectrum-gray-500);
     text-align: center;
     padding: 20px;
     margin: 0;
@@ -235,21 +235,21 @@ export const styles = css`
     flex-direction: column;
     gap: 10px;
     padding: 15px;
-    background: #2d2d2d;
+    background: var(--spectrum-gray-200);
     border-radius: 6px;
-    border: 2px solid #667eea;
+    border: 2px solid var(--spectrum-accent-color-900);
     width: 100%;
   }
 
   .packet-label {
-    color: #888;
+    color: var(--spectrum-gray-500);
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 1px;
   }
 
   .packet-bytes {
-    color: #4ec9b0;
+    color: var(--spectrum-positive-color-900);
     font-weight: 500;
     font-size: 16px;
     word-break: break-all;
@@ -258,17 +258,17 @@ export const styles = css`
 
   /* Walkthrough styles */
   .walkthrough {
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--spectrum-accent-color-900);
   }
 
   .walkthrough.active {
-    border-left-color: #4caf50;
-    background: #e8f5e9;
+    border-left-color: var(--spectrum-positive-color-900);
+    background: var(--spectrum-positive-background-color-default);
   }
 
   .walkthrough.complete {
-    border-left-color: #2196f3;
-    background: #e3f2fd;
+    border-left-color: var(--spectrum-informative-color-900);
+    background: var(--spectrum-informative-background-color-default);
   }
 
   .walkthrough h3 {
@@ -282,10 +282,10 @@ export const styles = css`
 
   .info-message {
     padding: 12px 16px;
-    background: #e3f2fd;
-    border-left: 4px solid #2196f3;
+    background: var(--spectrum-informative-background-color-default);
+    border-left: 4px solid var(--spectrum-informative-color-900);
     border-radius: 4px;
-    color: #1565c0;
+    color: var(--spectrum-informative-color-1000);
     font-size: 14px;
     margin: 15px 0;
   }
@@ -294,9 +294,9 @@ export const styles = css`
   .device-list-minimal {
     margin-bottom: 20px;
     padding: 15px;
-    background: #f8f9fa;
+    background: var(--spectrum-gray-75);
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--spectrum-gray-300);
   }
 
   .device-list-header {
@@ -305,7 +305,7 @@ export const styles = css`
 
   .device-count {
     font-size: 13px;
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -322,16 +322,16 @@ export const styles = css`
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: white;
-    border: 2px solid #e0e0e0;
+    background: var(--spectrum-white);
+    border: 2px solid var(--spectrum-gray-300);
     border-radius: 20px;
     font-size: 13px;
     transition: all 0.2s ease;
   }
 
   .device-chip.active {
-    border-color: #4caf50;
-    background: #f1f8f4;
+    border-color: var(--spectrum-positive-color-900);
+    background: var(--spectrum-positive-background-color-default);
   }
 
   .device-chip.inactive {
@@ -345,13 +345,13 @@ export const styles = css`
 
   .chip-label {
     font-weight: 600;
-    color: #333;
+    color: var(--spectrum-gray-900);
   }
 
   .chip-badge {
     padding: 2px 6px;
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
     border-radius: 10px;
     font-size: 10px;
     font-weight: 700;
@@ -359,14 +359,14 @@ export const styles = css`
   }
 
   .chip-badge.mock-badge {
-    background: #ff9800;
-    color: white;
+    background: var(--spectrum-notice-color-900);
+    color: var(--spectrum-white);
   }
 
   .chip-count {
     padding: 2px 6px;
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-white);
     border-radius: 10px;
     font-size: 10px;
     font-weight: 700;
@@ -376,7 +376,7 @@ export const styles = css`
   .device-details {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--spectrum-gray-300);
   }
 
   .device-detail-row {
@@ -389,22 +389,22 @@ export const styles = css`
 
   .detail-label {
     font-weight: 600;
-    color: #333;
+    color: var(--spectrum-gray-900);
     min-width: 80px;
   }
 
   .detail-value {
-    color: #666;
+    color: var(--spectrum-gray-700);
     padding: 2px 8px;
-    background: rgba(102, 126, 234, 0.1);
+    background: transparent;
     border-radius: 4px;
     font-size: 12px;
   }
 
   .detail-badge {
     padding: 3px 8px;
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
     border-radius: 10px;
     font-size: 11px;
     font-weight: 600;
@@ -412,8 +412,8 @@ export const styles = css`
   }
 
   .detail-badge.mock-badge {
-    background: #ff9800;
-    color: white;
+    background: var(--spectrum-notice-color-900);
+    color: var(--spectrum-white);
   }
 
   /* Active Streams Section */
@@ -423,7 +423,7 @@ export const styles = css`
 
   .active-streams-section h4 {
     margin: 0 0 10px 0;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
@@ -438,16 +438,16 @@ export const styles = css`
   }
 
   .device-stream-panel {
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--spectrum-gray-300);
     border-radius: 8px;
-    background: white;
+    background: var(--spectrum-white);
     transition: all 0.3s ease;
     overflow: hidden;
   }
 
   .device-stream-panel.active {
-    border-color: #4caf50;
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    border-color: var(--spectrum-positive-color-900);
+    
   }
 
   .device-stream-panel.inactive {
@@ -456,12 +456,12 @@ export const styles = css`
 
   .stream-header {
     padding: 15px;
-    background: #fafafa;
-    border-bottom: 1px solid #e0e0e0;
+    background: var(--spectrum-gray-75);
+    border-bottom: 1px solid var(--spectrum-gray-300);
   }
 
   .device-stream-panel.active .stream-header {
-    background: #f1f8f4;
+    background: var(--spectrum-positive-background-color-default);
   }
 
   .stream-title-row {
@@ -480,8 +480,8 @@ export const styles = css`
   }
 
   .active-badge {
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 11px;
@@ -491,7 +491,7 @@ export const styles = css`
 
   .stream-count {
     font-size: 14px;
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 500;
   }
 
@@ -509,12 +509,12 @@ export const styles = css`
   }
 
   .metadata-label {
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 500;
   }
 
   .metadata-value {
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-weight: 600;
     font-family: 'Courier New', monospace;
   }
@@ -528,13 +528,13 @@ export const styles = css`
   }
 
   .metadata-badge.digitizer {
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
   }
 
   .stream-byte-display {
     padding: 15px;
-    background: white;
+    background: var(--spectrum-white);
     min-height: 60px;
   }
 
@@ -542,23 +542,23 @@ export const styles = css`
   .accumulated-results {
     margin-top: 20px;
     padding: 20px;
-    background: #f8f9fa;
+    background: var(--spectrum-gray-75);
     border-radius: 8px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--spectrum-gray-300);
   }
 
   .accumulated-results h3 {
     margin: 0 0 15px 0;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 18px;
   }
 
   .result-item {
     margin-bottom: 20px;
     padding: 15px;
-    background: white;
+    background: var(--spectrum-white);
     border-radius: 6px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--spectrum-accent-color-900);
   }
 
   .result-item:last-child {
@@ -567,13 +567,13 @@ export const styles = css`
 
   .result-item h4 {
     margin: 0 0 5px 0;
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-size: 16px;
   }
 
   .result-description {
     margin: 0 0 15px 0;
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-size: 13px;
   }
 
@@ -587,14 +587,14 @@ export const styles = css`
     flex: 0 0 auto;
     min-width: 180px;
     padding: 12px;
-    background: #f5f5f5;
+    background: var(--spectrum-gray-100);
     border-radius: 6px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--spectrum-gray-300);
   }
 
   .byte-index {
     font-weight: 700;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 14px;
     margin-bottom: 8px;
   }
@@ -610,13 +610,13 @@ export const styles = css`
 
   .range-label,
   .variance-label {
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 500;
   }
 
   .range-value,
   .variance-value {
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-weight: 600;
     font-family: 'Courier New', monospace;
   }
@@ -629,9 +629,9 @@ export const styles = css`
 
   .status-value-card {
     padding: 10px;
-    background: #f5f5f5;
+    background: var(--spectrum-gray-100);
     border-radius: 6px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--spectrum-gray-300);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -639,13 +639,13 @@ export const styles = css`
 
   .status-state {
     font-weight: 600;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     text-transform: capitalize;
   }
 
   .status-value {
     font-family: 'Courier New', monospace;
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-weight: 600;
   }
 
@@ -653,21 +653,21 @@ export const styles = css`
   .live-analysis {
     margin-top: 20px;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
     border-radius: 8px;
-    color: white;
+    color: var(--spectrum-white);
   }
 
   .live-analysis h4 {
     margin: 0 0 5px 0;
-    color: white;
+    color: var(--spectrum-white);
     font-size: 16px;
     font-weight: 700;
   }
 
   .analysis-subtitle {
     margin: 0 0 15px 0;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--spectrum-white);
     font-size: 13px;
   }
 
@@ -692,7 +692,7 @@ export const styles = css`
     min-width: 60px;
     height: 85px;
     padding: 10px 5px 6px 5px;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--spectrum-gray-50);
     border-radius: 6px;
     text-align: center;
     transition: all 0.2s ease;
@@ -700,28 +700,28 @@ export const styles = css`
   }
 
   .live-byte-cell.best-guess {
-    background: rgba(255, 255, 255, 1);
-    border: 2px solid #ffd700;
-    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+    background: var(--spectrum-gray-50);
+    border: 2px solid var(--spectrum-notice-color-800);
+    
     transform: scale(1.05);
   }
 
   .live-byte-cell.identified {
-    background: rgba(255, 255, 255, 1);
-    border: 2px solid #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    background: var(--spectrum-gray-50);
+    border: 2px solid var(--spectrum-accent-color-900);
+    
   }
 
   .live-byte-cell.empty-placeholder {
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px dashed rgba(255, 255, 255, 0.3);
+    background: var(--spectrum-gray-50);
+    border: 2px dashed var(--spectrum-gray-300);
   }
 
   .live-byte-cell.empty-placeholder .byte-label,
   .live-byte-cell.empty-placeholder .byte-value,
   .live-byte-cell.empty-placeholder .byte-hex,
   .live-byte-cell.empty-placeholder .byte-meta {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--spectrum-white);
   }
 
   .byte-type-label {
@@ -730,70 +730,70 @@ export const styles = css`
     left: 50%;
     transform: translateX(-50%);
     padding: 2px 6px;
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-white);
     border-radius: 10px;
     font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
     white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    
   }
 
   .live-byte-cell.best-guess .byte-type-label {
-    background: #ffd700;
-    color: #333;
+    background: var(--spectrum-notice-color-800);
+    color: var(--spectrum-gray-900);
   }
 
   .byte-label {
     font-size: 9px;
     font-weight: 600;
-    color: #666;
+    color: var(--spectrum-gray-700);
     text-transform: uppercase;
     margin-bottom: 3px;
   }
 
   .live-byte-cell.best-guess .byte-label {
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-weight: 700;
   }
 
   .byte-value {
     font-size: 18px;
     font-weight: 900;
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-family: 'Courier New', monospace;
     margin-bottom: 2px;
     line-height: 1;
   }
 
   .live-byte-cell.best-guess .byte-value {
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 20px;
   }
 
   .byte-hex {
     font-size: 10px;
-    color: #999;
+    color: var(--spectrum-gray-600);
     font-family: 'Courier New', monospace;
     margin-bottom: 4px;
   }
 
   .live-byte-cell.best-guess .byte-hex {
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-weight: 600;
   }
 
   .byte-meta {
     font-size: 8px;
-    color: #999;
+    color: var(--spectrum-gray-600);
     font-family: 'Courier New', monospace;
     line-height: 1.2;
     white-space: nowrap;
   }
 
   .live-byte-cell.best-guess .byte-meta {
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 600;
   }
 
@@ -809,17 +809,17 @@ export const styles = css`
   }
 
   .button.secondary {
-    background: #6c757d;
-    color: white;
+    background: var(--spectrum-gray-700);
+    color: var(--spectrum-white);
   }
 
   .button.secondary:hover {
-    background: #5a6268;
+    background: var(--spectrum-gray-800);
   }
 
   .stream-byte-display .empty-message {
     text-align: center;
-    color: #999;
+    color: var(--spectrum-gray-600);
     font-size: 14px;
     font-style: italic;
     margin: 0;
@@ -834,7 +834,7 @@ export const styles = css`
 
   .stream-byte-display .packet-label {
     font-size: 11px;
-    color: #666;
+    color: var(--spectrum-gray-700);
     text-transform: uppercase;
     font-weight: 600;
     letter-spacing: 0.5px;
@@ -843,13 +843,13 @@ export const styles = css`
   .stream-byte-display .packet-bytes {
     font-family: 'Courier New', monospace;
     font-size: 14px;
-    color: #1976d2;
+    color: var(--spectrum-informative-color-1000);
     word-break: break-all;
     line-height: 1.6;
     padding: 10px;
-    background: #f5f5f5;
+    background: var(--spectrum-gray-100);
     border-radius: 4px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--spectrum-gray-300);
   }
 
   .walkthrough .button {
@@ -869,22 +869,22 @@ export const styles = css`
   .progress-step {
     flex: 1;
     padding: 10px;
-    background: #e0e0e0;
+    background: var(--spectrum-gray-300);
     border-radius: 6px;
     text-align: center;
     font-size: 13px;
     font-weight: 500;
-    color: #666;
+    color: var(--spectrum-gray-700);
   }
 
   .progress-step.active {
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
   }
 
   .progress-step.complete {
-    background: #2196f3;
-    color: white;
+    background: var(--spectrum-informative-color-900);
+    color: var(--spectrum-gray-50);
   }
 
   /* Step header with title and progress bar */
@@ -904,8 +904,8 @@ export const styles = css`
   .icon-button {
     width: 32px;
     height: 32px;
-    border: 2px solid #667eea;
-    background: white;
+    border: 2px solid var(--spectrum-accent-color-900);
+    background: var(--spectrum-white);
     border-radius: 50%;
     cursor: pointer;
     font-size: 16px;
@@ -918,9 +918,9 @@ export const styles = css`
   }
 
   .icon-button:hover {
-    background: #667eea;
+    background: var(--spectrum-accent-color-900);
     transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    
   }
 
   .icon-button:active {
@@ -949,9 +949,9 @@ export const styles = css`
   .simulate-button {
     padding: 4px 10px;
     font-size: 12px;
-    border: 1px solid #667eea;
-    background: white;
-    color: #667eea;
+    border: 1px solid var(--spectrum-accent-color-900);
+    background: var(--spectrum-white);
+    color: var(--spectrum-accent-color-900);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -960,8 +960,8 @@ export const styles = css`
   }
 
   .simulate-button:hover:not(:disabled) {
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-white);
   }
 
   .simulate-button:disabled {
@@ -985,7 +985,7 @@ export const styles = css`
 
   .analysis-section h4 {
     margin: 0 0 10px 0;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 16px;
   }
 
@@ -1000,39 +1000,39 @@ export const styles = css`
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    background: #fff;
+    background: var(--spectrum-white);
     border-radius: 6px;
-    border-left: 3px solid #667eea;
+    border-left: 3px solid var(--spectrum-accent-color-900);
     font-family: 'Courier New', monospace;
     font-size: 13px;
   }
 
   .byte-item.pressure {
-    border-left-color: #9c27b0;
+    border-left-color: var(--spectrum-accent-color-1000);
   }
 
   .byte-item.pressure .byte-index {
-    color: #9c27b0;
+    color: var(--spectrum-accent-color-1000);
   }
 
   .byte-index {
     font-weight: 600;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     min-width: 80px;
   }
 
   .byte-range {
-    color: #4caf50;
+    color: var(--spectrum-positive-color-900);
     flex: 1;
   }
 
   .byte-variance {
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-size: 12px;
   }
 
   .no-data {
-    color: #999;
+    color: var(--spectrum-gray-600);
     font-style: italic;
     margin: 10px 0;
   }
@@ -1051,14 +1051,14 @@ export const styles = css`
     align-items: center;
     margin-bottom: 20px;
     padding: 15px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
     border-radius: 8px;
-    color: white;
+    color: var(--spectrum-white);
   }
 
   .config-header h4 {
     margin: 0;
-    color: white;
+    color: var(--spectrum-white);
     font-size: 20px;
   }
 
@@ -1077,12 +1077,12 @@ export const styles = css`
   .button.small {
     padding: 8px 16px;
     font-size: 13px;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--spectrum-gray-50);
     backdrop-filter: blur(10px);
   }
 
   .button.small:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--spectrum-gray-50);
     transform: translateY(-1px);
   }
 
@@ -1093,17 +1093,17 @@ export const styles = css`
   }
 
   .config-card {
-    background: white;
+    background: var(--spectrum-white);
     border-radius: 12px;
     padding: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e0e0e0;
+    
+    border: 1px solid var(--spectrum-gray-300);
     transition: all 0.2s ease;
     overflow: hidden;
   }
 
   .config-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    
     transform: translateY(-2px);
   }
 
@@ -1116,8 +1116,8 @@ export const styles = css`
     align-items: center;
     gap: 10px;
     padding: 15px 20px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    border-bottom: 2px solid #e0e0e0;
+    background: linear-gradient(135deg, var(--spectrum-gray-100) 0%, var(--spectrum-gray-400) 100%);
+    border-bottom: 2px solid var(--spectrum-gray-300);
   }
 
   .card-icon {
@@ -1128,7 +1128,7 @@ export const styles = css`
     margin: 0;
     font-size: 16px;
     font-weight: 600;
-    color: #333;
+    color: var(--spectrum-gray-900);
   }
 
   .card-body {
@@ -1140,7 +1140,7 @@ export const styles = css`
     justify-content: space-between;
     align-items: center;
     padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--spectrum-gray-200);
   }
 
   .config-detail:last-child {
@@ -1149,26 +1149,26 @@ export const styles = css`
 
   .detail-label {
     font-size: 13px;
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 500;
   }
 
   .detail-value {
     font-size: 14px;
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-weight: 600;
     font-family: 'Courier New', monospace;
   }
 
   .detail-value.highlight {
-    color: #4caf50;
+    color: var(--spectrum-positive-color-900);
     font-size: 16px;
   }
 
   .badge {
     padding: 4px 12px;
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-white);
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
@@ -1189,23 +1189,23 @@ export const styles = css`
     align-items: center;
     gap: 8px;
     padding: 12px;
-    background: #f8f9fa;
+    background: var(--spectrum-gray-75);
     border-radius: 8px;
-    border-left: 3px solid #667eea;
+    border-left: 3px solid var(--spectrum-accent-color-900);
   }
 
   .status-byte {
     font-family: 'Courier New', monospace;
     font-weight: 600;
-    color: #667eea;
+    color: var(--spectrum-accent-color-900);
     font-size: 13px;
     min-width: 120px;
   }
 
   .status-state {
     padding: 4px 10px;
-    background: #e3f2fd;
-    color: #1565c0;
+    background: var(--spectrum-informative-background-color-default);
+    color: var(--spectrum-informative-color-1000);
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
@@ -1222,19 +1222,19 @@ export const styles = css`
   }
 
   .status-flag.primary {
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
   }
 
   .status-flag.secondary {
-    background: #ff9800;
-    color: white;
+    background: var(--spectrum-notice-color-900);
+    color: var(--spectrum-white);
   }
 
   /* Config Panel */
   .config-panel {
     margin: 20px 0;
-    border: 2px solid #667eea;
+    border: 2px solid var(--spectrum-accent-color-900);
     border-radius: 8px;
     overflow: hidden;
   }
@@ -1244,15 +1244,15 @@ export const styles = css`
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
+    color: var(--spectrum-white);
     cursor: pointer;
     user-select: none;
     transition: background 0.2s ease;
   }
 
   .config-panel-header:hover {
-    background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+    background: linear-gradient(135deg, var(--spectrum-accent-color-1000) 0%, var(--spectrum-accent-color-1100) 100%);
   }
 
   .config-panel-header h4 {
@@ -1266,4 +1266,3 @@ export const styles = css`
     transition: transform 0.2s ease;
   }
 `;
-

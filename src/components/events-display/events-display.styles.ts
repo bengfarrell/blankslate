@@ -18,7 +18,7 @@ export const styles = css`
     align-items: center;
     gap: 16px;
     padding: 8px 12px;
-    background: #f5f5f5;
+    background: var(--spectrum-gray-100);
     border-radius: 6px;
     font-size: 0.85rem;
   }
@@ -30,12 +30,12 @@ export const styles = css`
   }
 
   .info-label {
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 500;
   }
 
   .info-value {
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-weight: 600;
   }
 
@@ -47,8 +47,8 @@ export const styles = css`
   }
 
   .info-badge.mock {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: var(--spectrum-informative-background-color-default);
+    color: var(--spectrum-informative-color-900);
   }
 
   .empty-state {
@@ -57,7 +57,7 @@ export const styles = css`
     align-items: center;
     justify-content: center;
     height: 200px;
-    color: #999;
+    color: var(--spectrum-gray-600);
   }
 
   .empty-icon {
@@ -81,17 +81,17 @@ export const styles = css`
   }
 
   .event-item {
-    background: #fafafa;
-    border: 1px solid #e0e0e0;
+    background: var(--spectrum-gray-75);
+    border: 1px solid var(--spectrum-gray-300);
     border-radius: 8px;
     padding: 10px 12px;
     transition: all 0.2s ease;
   }
 
   .event-item.latest {
-    background: #e8f5e9;
-    border-color: #4caf50;
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    background: var(--spectrum-positive-background-color-default);
+    border-color: var(--spectrum-positive-color-900);
+    
   }
 
   .event-row {
@@ -103,28 +103,28 @@ export const styles = css`
   }
 
   .event-label {
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 500;
     min-width: 80px;
   }
 
   .event-value {
-    color: #333;
+    color: var(--spectrum-gray-900);
     font-weight: 600;
     font-family: 'Courier New', monospace;
     text-align: right;
   }
 
   .event-value.state-hover {
-    color: #ff9800;
+    color: var(--spectrum-notice-color-900);
   }
 
   .event-value.state-touch {
-    color: #4caf50;
+    color: var(--spectrum-positive-color-900);
   }
 
   .event-value.state-proximity {
-    color: #2196f3;
+    color: var(--spectrum-informative-color-900);
   }
 
   .events-list::-webkit-scrollbar {
@@ -132,17 +132,16 @@ export const styles = css`
   }
 
   .events-list::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--spectrum-gray-200);
     border-radius: 3px;
   }
 
   .events-list::-webkit-scrollbar-thumb {
-    background: #888;
+    background: var(--spectrum-gray-500);
     border-radius: 3px;
   }
 
   .events-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: var(--spectrum-gray-700);
   }
 `;
-

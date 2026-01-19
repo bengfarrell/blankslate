@@ -396,9 +396,9 @@ export class TabletVisualizer extends LitElement {
                     <line 
                         x1="${stringX}" 
                         y1="${stringStartY}" 
-                        x2="${stringX}" 
+                        x2="${stringX}"
                         y2="${activeAreaY + activeAreaHeight}"
-                        stroke="#6c757d"
+                        stroke="var(--svg-gray-700)"
                         stroke-width="1"
                         opacity="0.5"
                         class="${isPlucked ? 'string-plucked' : ''}"
@@ -411,7 +411,7 @@ export class TabletVisualizer extends LitElement {
                             y="${activeAreaY + activeAreaHeight - 5}"
                             text-anchor="middle"
                             font-size="10"
-                            fill="#adb5bd"
+                            fill="var(--svg-gray-500)"
                             font-weight="500"
                             pointer-events="none">
                             ${noteLabel}
@@ -452,10 +452,10 @@ export class TabletVisualizer extends LitElement {
                 return svg`
                     <g class="tablet-button">
                         <!-- Circular button -->
-                        <circle cx="${buttonCx}" cy="${buttonY}" 
+                        <circle cx="${buttonCx}" cy="${buttonY}"
                               r="${buttonRadius}"
-                              fill="${isPressed ? '#51cf66' : '#495057'}"
-                              stroke="#adb5bd"
+                              fill="${isPressed ? 'var(--svg-positive-900)' : 'var(--svg-gray-800)'}"
+                              stroke="var(--svg-gray-500)"
                               stroke-width="1.5"
                               pointer-events="${this.socketMode ? 'none' : 'auto'}"
                               @mousedown=${(e: MouseEvent) => this.handleButtonMouseDown(i + 1, e)}
@@ -466,7 +466,7 @@ export class TabletVisualizer extends LitElement {
                         <text x="${buttonCx}" y="${buttonY + 4}"
                               text-anchor="middle"
                               font-size="11"
-                              fill="${isPressed ? '#000' : '#f8f9fa'}"
+                              fill="${isPressed ? 'var(--svg-gray-900)' : 'var(--svg-gray-50)'}"
                               font-weight="600"
                               pointer-events="none">
                             ${i + 1}
@@ -549,9 +549,9 @@ export class TabletVisualizer extends LitElement {
                         return svg`
                             <!-- Pressure indicator dot -->
                             <circle cx="${this.clickPosition!.x}" 
-                                    cy="${this.clickPosition!.y}" 
-                                    r="12" 
-                                    fill="#ff6b6b"
+                                    cy="${this.clickPosition!.y}"
+                                    r="12"
+                                    fill="var(--svg-negative-900)"
                                     opacity="${this.pressure}"
                                     pointer-events="none" />
                         `;
@@ -584,41 +584,41 @@ export class TabletVisualizer extends LitElement {
                          L 15 ${penWidth/2 - 4}
                          L 15 ${penWidth/2 + 4}
                          Z"
-                      fill="#6c757d"
-                      stroke="#495057"
+                      fill="var(--svg-gray-700)"
+                      stroke="var(--svg-gray-800)"
                       stroke-width="1"
                       stroke-linejoin="round"
                       pointer-events="none" />
                 <!-- Rounded tip cap -->
                 <circle cx="6" cy="${penWidth/2}" r="2"
-                        fill="#6c757d"
+                        fill="var(--svg-gray-700)"
                         pointer-events="none" />
                 
                 <!-- Pen body -->
-                <rect x="15" y="0" 
+                <rect x="15" y="0"
                       width="${penLength - 30}" height="${penWidth}"
                       rx="2"
-                      fill="#343a40"
-                      stroke="#495057"
+                      fill="var(--svg-gray-900)"
+                      stroke="var(--svg-gray-800)"
                       stroke-width="1"
                       pointer-events="none" />
-                
+
                 <!-- Pen eraser end (right side) -->
                 <ellipse cx="${penLength - 12}" cy="${penWidth/2}"
                          rx="3" ry="${penWidth / 2}"
-                         fill="#495057"
+                         fill="var(--svg-gray-800)"
                          pointer-events="none" />
-                <rect x="${penLength - 15}" y="0" 
+                <rect x="${penLength - 15}" y="0"
                       width="8" height="${penWidth}"
-                      fill="#495057"
+                      fill="var(--svg-gray-800)"
                       pointer-events="none" />
                 
                 <!-- Primary Button (closer to tip, on top of pen) -->
-                <rect x="${button1X}" y="${penWidth/2 - buttonWidth/2}" 
+                <rect x="${button1X}" y="${penWidth/2 - buttonWidth/2}"
                       width="${buttonHeight}" height="${buttonWidth}"
                       rx="2"
-                      fill="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? '#51cf66' : '#495057'}"
-                      stroke="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? '#40c057' : '#6c757d'}"
+                      fill="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? 'var(--svg-positive-900)' : 'var(--svg-gray-800)'}"
+                      stroke="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? 'var(--svg-positive-1000)' : 'var(--svg-gray-700)'}"
                       stroke-width="1"
                       pointer-events="${this.socketMode ? 'none' : 'auto'}"
                       @mousedown=${(e: MouseEvent) => this.handleStylusButtonMouseDown(true, e)}
@@ -626,11 +626,11 @@ export class TabletVisualizer extends LitElement {
                       class="button-rect" />
                 
                 <!-- Secondary Button (further from tip, on top of pen) -->
-                <rect x="${button2X}" y="${penWidth/2 - buttonWidth/2}" 
+                <rect x="${button2X}" y="${penWidth/2 - buttonWidth/2}"
                       width="${buttonHeight}" height="${buttonWidth}"
                       rx="2"
-                      fill="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? '#51cf66' : '#495057'}"
-                      stroke="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? '#40c057' : '#6c757d'}"
+                      fill="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? 'var(--svg-positive-900)' : 'var(--svg-gray-800)'}"
+                      stroke="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? 'var(--svg-positive-1000)' : 'var(--svg-gray-700)'}"
                       stroke-width="1"
                       pointer-events="${this.socketMode ? 'none' : 'auto'}"
                       @mousedown=${(e: MouseEvent) => this.handleStylusButtonMouseDown(false, e)}
@@ -704,7 +704,7 @@ export class TabletVisualizer extends LitElement {
                         <circle cx="${centerX}" cy="${centerY}" r="${radius}"
                             class="pressure-ring"
                             fill="none"
-                            stroke="${isActive ? '#ff6b6b' : '#495057'}"
+                            stroke="${isActive ? 'var(--svg-negative-900)' : 'var(--svg-gray-800)'}"
                             stroke-width="${strokeWidth}"
                             opacity="${opacity}"
                             pointer-events="none" />
@@ -712,22 +712,22 @@ export class TabletVisualizer extends LitElement {
                 })}
                 
                 <!-- Center point -->
-                <circle cx="${centerX}" cy="${centerY}" r="4" 
-                    fill="#adb5bd"
+                <circle cx="${centerX}" cy="${centerY}" r="4"
+                    fill="var(--svg-gray-500)"
                     pointer-events="none" />
-                
+
                 <!-- Tilt direction line -->
                 ${isPressingTilt || tiltX !== 0 || tiltY !== 0 ? svg`
-                    <line x1="${centerX}" y1="${centerY}" 
+                    <line x1="${centerX}" y1="${centerY}"
                           x2="${tiltLineEndX}" y2="${tiltLineEndY}"
-                          stroke="#339af0"
+                          stroke="var(--svg-informative-900)"
                           stroke-width="3"
                           stroke-linecap="round"
                           pointer-events="none" />
-                    
+
                     <!-- Tilt indicator dot -->
-                    <circle cx="${tiltLineEndX}" cy="${tiltLineEndY}" r="6" 
-                        fill="#339af0"
+                    <circle cx="${tiltLineEndX}" cy="${tiltLineEndY}" r="6"
+                        fill="var(--svg-informative-900)"
                         pointer-events="none" />
                 ` : ''}
                 

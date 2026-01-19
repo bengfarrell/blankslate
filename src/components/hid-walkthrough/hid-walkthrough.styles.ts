@@ -14,15 +14,15 @@ export const styles = css`
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    
   }
 
   .section.walkthrough.active {
-    border-left: 4px solid #2196f3;
+    border-left: 4px solid var(--spectrum-informative-color-900);
   }
 
   .section.walkthrough.complete {
-    border-left: 4px solid #4caf50;
+    border-left: 4px solid var(--spectrum-positive-color-900);
   }
 
   .step-header {
@@ -36,12 +36,12 @@ export const styles = css`
     margin: 0;
     flex: 1;
     font-size: 18px;
-    color: #333;
+    color: var(--spectrum-gray-800);
   }
 
   .icon-button {
-    background: #f5f5f5;
-    border: 1px solid #ddd;
+    background: var(--spectrum-gray-75);
+    border: 1px solid var(--spectrum-gray-300);
     border-radius: 4px;
     padding: 8px 12px;
     cursor: pointer;
@@ -50,7 +50,7 @@ export const styles = css`
   }
 
   .icon-button:hover:not(:disabled) {
-    background: #e0e0e0;
+    background: var(--spectrum-gray-200);
   }
 
   .icon-button:disabled {
@@ -59,7 +59,7 @@ export const styles = css`
   }
 
   .step-description {
-    color: #666;
+    color: var(--spectrum-gray-700);
     line-height: 1.6;
   }
 
@@ -68,8 +68,8 @@ export const styles = css`
   }
 
   .simulate-button {
-    background: #2196f3;
-    color: white;
+    background: var(--spectrum-informative-color-900);
+    color: var(--spectrum-gray-50);
     border: none;
     border-radius: 4px;
     padding: 10px 20px;
@@ -81,11 +81,11 @@ export const styles = css`
   }
 
   .simulate-button:hover:not(:disabled) {
-    background: #1976d2;
+    background: var(--spectrum-informative-color-1000);
   }
 
   .simulate-button:disabled {
-    background: #ccc;
+    background: var(--spectrum-gray-300);
     cursor: not-allowed;
   }
 
@@ -97,14 +97,14 @@ export const styles = css`
   }
 
   .button-detection-status {
-    background: #f5f5f5;
+    background: var(--spectrum-gray-75);
     border-radius: 4px;
     padding: 12px;
     margin: 12px 0;
   }
 
   .button-detection-status strong {
-    color: #2196f3;
+    color: var(--spectrum-informative-color-900);
   }
 
   .detected-states {
@@ -115,8 +115,8 @@ export const styles = css`
   }
 
   .state-badge {
-    background: #2196f3;
-    color: white;
+    background: var(--spectrum-informative-color-900);
+    color: var(--spectrum-gray-50);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
@@ -137,4 +137,3 @@ export const styles = css`
     }
   }
 `;
-

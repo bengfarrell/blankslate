@@ -7,9 +7,9 @@ export const styles = css`
 
   .device-list-minimal {
     padding: 15px;
-    background: #f8f9fa;
+    background: var(--spectrum-gray-75);
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--spectrum-gray-300);
   }
 
   .device-list-header {
@@ -18,7 +18,7 @@ export const styles = css`
 
   .device-count {
     font-size: 13px;
-    color: #666;
+    color: var(--spectrum-gray-700);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -35,16 +35,16 @@ export const styles = css`
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: white;
-    border: 2px solid #e0e0e0;
+    background: var(--spectrum-gray-50);
+    border: 2px solid var(--spectrum-gray-300);
     border-radius: 20px;
     font-size: 13px;
     transition: all 0.2s ease;
   }
 
   .device-chip.active {
-    border-color: #4caf50;
-    background: #f1f8f4;
+    border-color: var(--spectrum-positive-color-900);
+    background: var(--spectrum-positive-background-color-default);
   }
 
   .device-chip.inactive {
@@ -58,13 +58,13 @@ export const styles = css`
 
   .chip-label {
     font-weight: 600;
-    color: #333;
+    color: var(--spectrum-gray-900);
   }
 
   .chip-badge {
     padding: 2px 6px;
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
     border-radius: 10px;
     font-size: 10px;
     font-weight: 700;
@@ -72,14 +72,14 @@ export const styles = css`
   }
 
   .chip-badge.mock-badge {
-    background: #ff9800;
-    color: white;
+    background: var(--spectrum-notice-color-900);
+    color: var(--spectrum-white);
   }
 
   .chip-count {
     padding: 2px 6px;
-    background: #667eea;
-    color: white;
+    background: var(--spectrum-accent-color-900);
+    color: var(--spectrum-white);
     border-radius: 10px;
     font-size: 10px;
     font-weight: 700;
@@ -88,7 +88,7 @@ export const styles = css`
   .device-details {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--spectrum-gray-300);
   }
 
   .device-detail-row {
@@ -101,22 +101,22 @@ export const styles = css`
 
   .detail-label {
     font-weight: 600;
-    color: #333;
+    color: var(--spectrum-gray-900);
     min-width: 80px;
   }
 
   .detail-value {
-    color: #666;
+    color: var(--spectrum-gray-700);
     padding: 2px 8px;
-    background: rgba(102, 126, 234, 0.1);
+    background: var(--spectrum-accent-background-color-default);
     border-radius: 4px;
     font-size: 12px;
   }
 
   .detail-badge {
     padding: 3px 8px;
-    background: #4caf50;
-    color: white;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
     border-radius: 10px;
     font-size: 11px;
     font-weight: 600;
@@ -124,8 +124,7 @@ export const styles = css`
   }
 
   .detail-badge.mock-badge {
-    background: #ff9800;
-    color: white;
+    background: var(--spectrum-notice-color-900);
+    color: var(--spectrum-white);
   }
 `;
-

@@ -1,6 +1,7 @@
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { styles } from './viewer-mode-selector.styles.js';
+import '@spectrum-web-components/button/sp-button.js';
 
 export type ViewerMode = 'webhid' | 'mock-raw' | 'mock-translated' | 'websocket';
 
@@ -31,77 +32,65 @@ export class ViewerModeSelector extends LitElement {
         <div class="modes-grid">
           <!-- WebHID Mode -->
           <div class="mode-card webhid" @click=${() => this._handleModeSelect('webhid')}>
-            <div class="card-icon">🔌</div>
+            <div class="card-icon">HID</div>
             <h2>Live WebHID</h2>
             <p>Connect to your tablet via WebHID and view live data with raw bytes</p>
             <div class="features">
               <div class="feature">
-                <span class="feature-icon">📦</span>
-                <span>Raw byte display</span>
+                <span>• Raw byte display</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">🎯</span>
-                <span>Real-time tablet input</span>
+                <span>• Real-time tablet input</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">🔍</span>
-                <span>Debug byte mappings</span>
+                <span>• Debug byte mappings</span>
               </div>
             </div>
-            <button class="select-button">
-              Select
-              <span class="arrow">→</span>
-            </button>
+            <sp-button variant="primary" data-spectrum-pattern="button-primary">
+              Select →
+            </sp-button>
           </div>
 
           <!-- Mock Data Mode -->
           <div class="mode-card mock-data" @click=${() => this._handleModeSelect('mock-translated')}>
-            <div class="card-icon">🎲</div>
+            <div class="card-icon">MOCK</div>
             <h2>Mock Data</h2>
             <p>Test with simulated tablet data - no physical device needed</p>
             <div class="features">
               <div class="feature">
-                <span class="feature-icon">🤖</span>
-                <span>Simulated gestures</span>
+                <span>• Simulated gestures</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">📋</span>
-                <span>Event stream display</span>
+                <span>• Event stream display</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">🧪</span>
-                <span>Perfect for testing</span>
+                <span>• Perfect for testing</span>
               </div>
             </div>
-            <button class="select-button">
-              Select
-              <span class="arrow">→</span>
-            </button>
+            <sp-button variant="primary" data-spectrum-pattern="button-primary">
+              Select →
+            </sp-button>
           </div>
 
           <!-- WebSocket Mode -->
           <div class="mode-card websocket" @click=${() => this._handleModeSelect('websocket')}>
-            <div class="card-icon">🌐</div>
+            <div class="card-icon">WS</div>
             <h2>WebSocket</h2>
             <p>Connect to a WebSocket server for remote tablet data streaming</p>
             <div class="features">
               <div class="feature">
-                <span class="feature-icon">🔗</span>
-                <span>Remote connection</span>
+                <span>• Remote connection</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">📡</span>
-                <span>Event stream display</span>
+                <span>• Event stream display</span>
               </div>
               <div class="feature">
-                <span class="feature-icon">🖥️</span>
-                <span>Node.js server support</span>
+                <span>• Node.js server support</span>
               </div>
             </div>
-            <button class="select-button">
-              Select
-              <span class="arrow">→</span>
-            </button>
+            <sp-button variant="primary" data-spectrum-pattern="button-primary">
+              Select →
+            </sp-button>
           </div>
         </div>
       </div>

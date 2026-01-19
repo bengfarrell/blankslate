@@ -9,6 +9,19 @@ import type { TabletEvent, EventsDeviceInfo } from '../events-display/events-dis
 import { Config, type ConfigData } from '../../models/config.js';
 import { MockTabletDevice } from '../../mockbytes/mock-tablet-device.js';
 import { processDeviceData } from '../../utils/data-helpers.js';
+import '@spectrum-web-components/button/sp-button.js';
+import '@spectrum-web-components/action-button/sp-action-button.js';
+import '@spectrum-web-components/action-menu/sp-action-menu.js';
+import '@spectrum-web-components/menu/sp-menu.js';
+import '@spectrum-web-components/menu/sp-menu-item.js';
+import '@spectrum-web-components/textfield/sp-textfield.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-settings.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-folder-open.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-document.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-magic-wand.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-stop.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-play.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-link.js';
 
 export type ViewerMode = 'webhid' | 'mock-raw' | 'mock-translated' | 'websocket';
 
@@ -62,7 +75,6 @@ interface TabletDataEvent {
 interface MockDataOption {
   id: string;
   label: string;
-  icon: string;
   action: (device: MockTabletDevice) => void;
 }
 
@@ -113,11 +125,7 @@ export class HidDashboard extends LitElement {
   @state()
   private isSimulating = false;
 
-  @state()
-  private showSimulationMenu = false;
 
-  @state()
-  private showConfigMenu = false;
 
   @state()
   private currentSimulation = '';
@@ -145,26 +153,22 @@ export class HidDashboard extends LitElement {
   private websocket: WebSocket | null = null;
 
   private readonly mockDataOptions: MockDataOption[] = [
-    { id: 'circle', label: 'Draw Circle', icon: '⭕', action: (d) => d.playCircle() },
-    { id: 'line', label: 'Draw Line', icon: '📏', action: (d) => d.playLine() },
-    { id: 'scribble', label: 'Scribble', icon: '✏️', action: (d) => d.playScribble() },
-    { id: 'horizontal', label: 'Horizontal Drag', icon: '↔️', action: (d) => d.playHorizontalDrag() },
-    { id: 'vertical', label: 'Vertical Drag', icon: '↕️', action: (d) => d.playVerticalDrag() },
-    { id: 'hover-h', label: 'Hover Horizontal', icon: '👆', action: (d) => d.playHoverHorizontalDrag() },
-    { id: 'hover-v', label: 'Hover Vertical', icon: '👇', action: (d) => d.playHoverVerticalDrag() },
-    { id: 'tilt-x', label: 'Tilt X Sweep', icon: '↗️', action: (d) => d.playTiltXDrag() },
-    { id: 'tilt-y', label: 'Tilt Y Sweep', icon: '↘️', action: (d) => d.playTiltYDrag() },
-    { id: 'primary-btn', label: 'Primary Button', icon: '🔘', action: (d) => d.playPrimaryButtonDrag() },
-    { id: 'secondary-btn', label: 'Secondary Button', icon: '⚪', action: (d) => d.playSecondaryButtonDrag() },
-    { id: 'tablet-btns', label: 'Tablet Buttons', icon: '🎹', action: (d) => d.playTabletButtons(8) },
+    { id: 'circle', label: 'Draw Circle', action: (d) => d.playCircle() },
+    { id: 'line', label: 'Draw Line', action: (d) => d.playLine() },
+    { id: 'scribble', label: 'Scribble', action: (d) => d.playScribble() },
+    { id: 'horizontal', label: 'Horizontal Drag', action: (d) => d.playHorizontalDrag() },
+    { id: 'vertical', label: 'Vertical Drag', action: (d) => d.playVerticalDrag() },
+    { id: 'hover-h', label: 'Hover Horizontal', action: (d) => d.playHoverHorizontalDrag() },
+    { id: 'hover-v', label: 'Hover Vertical', action: (d) => d.playHoverVerticalDrag() },
+    { id: 'tilt-x', label: 'Tilt X Sweep', action: (d) => d.playTiltXDrag() },
+    { id: 'tilt-y', label: 'Tilt Y Sweep', action: (d) => d.playTiltYDrag() },
+    { id: 'primary-btn', label: 'Primary Button', action: (d) => d.playPrimaryButtonDrag() },
+    { id: 'secondary-btn', label: 'Secondary Button', action: (d) => d.playSecondaryButtonDrag() },
+    { id: 'tablet-btns', label: 'Tablet Buttons', action: (d) => d.playTabletButtons(8) },
   ];
 
   connectedCallback() {
     super.connectedCallback();
-    // Close dropdown when clicking outside
-    this._handleOutsideClick = this._handleOutsideClick.bind(this);
-    document.addEventListener('click', this._handleOutsideClick);
-
     // Auto-initialize based on viewer mode
     this._initializeViewerMode();
   }
@@ -195,23 +199,9 @@ export class HidDashboard extends LitElement {
     this._disconnect();
     this._disconnectWebSocket();
     this._stopSimulation();
-    document.removeEventListener('click', this._handleOutsideClick);
   }
 
-  private _handleOutsideClick(e: Event) {
-    if (this.showSimulationMenu) {
-      const path = e.composedPath();
-      const menu = this.shadowRoot?.querySelector('.simulation-dropdown');
-      if (menu && !path.includes(menu)) {
-        this.showSimulationMenu = false;
-      }
-    }
-  }
 
-  private _toggleSimulationMenu(e: Event) {
-    e.stopPropagation();
-    this.showSimulationMenu = !this.showSimulationMenu;
-  }
 
   private async _loadSampleConfig() {
     try {
@@ -282,14 +272,7 @@ export class HidDashboard extends LitElement {
     }));
   }
 
-  private _toggleConfigMenu() {
-    this.showConfigMenu = !this.showConfigMenu;
-  }
 
-  private _handleConfigMenuAction(action: () => void) {
-    this.showConfigMenu = false;
-    action();
-  }
 
   private _initMockDevice() {
     if (this.mockDevice) return;
@@ -386,7 +369,6 @@ export class HidDashboard extends LitElement {
 
     this.isSimulating = true;
     this.currentSimulation = option.label;
-    this.showSimulationMenu = false;
 
     // Run the simulation
     option.action(this.mockDevice);
@@ -849,84 +831,90 @@ export class HidDashboard extends LitElement {
           <div class="header-controls">
             <!-- Config loading options for WebHID mode -->
             ${this.viewerMode === 'webhid' ? html`
-              <div class="config-dropdown">
-                <button
-                  class="config-menu-button"
-                  @click=${this._toggleConfigMenu}
-                  title="Config options">
-                  <span class="button-icon">⚙️</span>
-                  <span>Config</span>
-                  <span class="dropdown-arrow">▼</span>
-                </button>
-
-                ${this.showConfigMenu ? html`
-                  <div class="dropdown-menu">
-                    <div class="dropdown-header">Configuration</div>
-                    <button
-                      class="dropdown-item"
-                      @click=${() => this._handleConfigMenuAction(this._handleLoadLocalConfig.bind(this))}>
-                      <span class="item-icon">📁</span>
-                      <span class="item-label">Load from File</span>
-                    </button>
-                    <button
-                      class="dropdown-item"
-                      @click=${() => this._handleConfigMenuAction(this._loadSampleConfig.bind(this))}>
-                      <span class="item-icon">📄</span>
-                      <span class="item-label">Load Sample Config</span>
-                    </button>
-                    <button
-                      class="dropdown-item"
-                      @click=${() => this._handleConfigMenuAction(this._handleGoToGenerator.bind(this))}>
-                      <span class="item-icon">✨</span>
-                      <span class="item-label">Generate New Config</span>
-                    </button>
-                  </div>
-                ` : ''}
-              </div>
+              <sp-action-menu
+                data-spectrum-pattern="action-menu"
+                placement="bottom-start"
+                @change=${(e: Event) => {
+                  const menu = e.target as any;
+                  const selectedItem = menu.selectedItem;
+                  if (selectedItem) {
+                    const action = selectedItem.value;
+                    if (action === 'load-file') {
+                      this._handleLoadLocalConfig();
+                    } else if (action === 'load-sample') {
+                      this._loadSampleConfig();
+                    } else if (action === 'generate') {
+                      this._handleGoToGenerator();
+                    }
+                  }
+                }}>
+                <sp-icon-settings slot="icon"></sp-icon-settings>
+                <span slot="label">Config</span>
+                <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
+                  <sp-menu-item value="load-file" data-spectrum-pattern="menu-item">
+                    <sp-icon-folder-open slot="icon"></sp-icon-folder-open>
+                    Load from File
+                  </sp-menu-item>
+                  <sp-menu-item value="load-sample" data-spectrum-pattern="menu-item">
+                    <sp-icon-document slot="icon"></sp-icon-document>
+                    Load Sample Config
+                  </sp-menu-item>
+                  <sp-menu-item value="generate" data-spectrum-pattern="menu-item">
+                    <sp-icon-magic-wand slot="icon"></sp-icon-magic-wand>
+                    Generate New Config
+                  </sp-menu-item>
+                </sp-menu>
+              </sp-action-menu>
             ` : ''}
 
             <!-- Load Sample Config button (only in mock-translated mode without config) -->
             ${this.viewerMode === 'mock-translated' && !this.config ? html`
-              <button class="load-config-button" @click=${this._loadSampleConfig}>
-                📄 Load Sample Config
-              </button>
+              <sp-button
+                variant="secondary"
+                data-spectrum-pattern="button-secondary"
+                @click=${this._loadSampleConfig}>
+                <sp-icon-document slot="icon"></sp-icon-document>
+                Load Sample Config
+              </sp-button>
             ` : ''}
 
             <!-- Simulation Dropdown (only show in mock modes) -->
             ${this.viewerMode === 'mock-raw' || this.viewerMode === 'mock-translated' ? html`
               <div class="simulation-dropdown">
-                <button
-                  class="simulation-button ${this.isSimulating ? 'active' : ''}"
-                  @click=${this._toggleSimulationMenu}>
-                  <span class="button-icon">🎮</span>
-                  ${this.isSimulating ? html`
-                    <span class="simulation-label">${this.currentSimulation}</span>
-                    <span class="spinner"></span>
-                  ` : html`
-                    <span>Simulate</span>
-                    <span class="dropdown-arrow">▼</span>
-                  `}
-                </button>
-
-                ${this.showSimulationMenu ? html`
-                  <div class="dropdown-menu">
-                    <div class="dropdown-header">Mock Data Patterns</div>
-                    ${this.mockDataOptions.map(option => html`
-                      <button
-                        class="dropdown-item"
-                        @click=${() => this._runSimulation(option)}>
-                        <span class="item-icon">${option.icon}</span>
-                        <span class="item-label">${option.label}</span>
-                      </button>
-                    `)}
-                  </div>
-                ` : ''}
-
                 ${this.isSimulating ? html`
-                  <button class="stop-button" @click=${this._stopSimulation}>
-                    ⏹ Stop
-                  </button>
-                ` : ''}
+                  <sp-button
+                    variant="negative"
+                    data-spectrum-pattern="button-negative"
+                    @click=${this._stopSimulation}>
+                    <sp-icon-stop slot="icon"></sp-icon-stop>
+                    Stop ${this.currentSimulation}
+                  </sp-button>
+                ` : html`
+                  <sp-action-menu
+                    data-spectrum-pattern="action-menu"
+                    placement="bottom-start"
+                    @change=${(e: Event) => {
+                      const menu = e.target as any;
+                      const selectedItem = menu.selectedItem;
+                      if (selectedItem) {
+                        const optionLabel = selectedItem.value;
+                        const option = this.mockDataOptions.find(o => o.label === optionLabel);
+                        if (option) {
+                          this._runSimulation(option);
+                        }
+                      }
+                    }}>
+                    <sp-icon-play slot="icon"></sp-icon-play>
+                    <span slot="label">Simulate</span>
+                    <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
+                      ${this.mockDataOptions.map(option => html`
+                        <sp-menu-item value="${option.label}" data-spectrum-pattern="menu-item">
+                          ${option.label}
+                        </sp-menu-item>
+                      `)}
+                    </sp-menu>
+                  </sp-action-menu>
+                `}
               </div>
             ` : ''}
 
@@ -948,44 +936,58 @@ export class HidDashboard extends LitElement {
                 `}
 
                 ${this.deviceConnected ? html`
-                  <button class="disconnect-button" @click=${this._disconnect}>
+                  <sp-button
+                    variant="negative"
+                    data-spectrum-pattern="button-negative"
+                    @click=${this._disconnect}>
                     Disconnect
-                  </button>
+                  </sp-button>
                 ` : this.websocketConnected ? html`
-                  <button class="disconnect-button" @click=${this._disconnectWebSocket}>
+                  <sp-button
+                    variant="negative"
+                    data-spectrum-pattern="button-negative"
+                    @click=${this._disconnectWebSocket}>
                     Disconnect WS
-                  </button>
+                  </sp-button>
                 ` : html`
                   <div class="connect-options">
                     ${this.viewerMode === 'webhid' ? html`
-                      <button
-                        class="connect-button"
+                      <sp-button
+                        variant="accent"
+                        data-spectrum-pattern="button-accent"
                         @click=${this._handleConnect}
                         ?disabled=${!this.config}
                         title=${!this.config ? 'Load a config first' : 'Connect to tablet'}>
-                        🔌 Connect Tablet
-                      </button>
+                        <sp-icon-link slot="icon"></sp-icon-link>
+                        Connect Tablet
+                      </sp-button>
                     ` : ''}
                     ${this.viewerMode === 'websocket' ? html`
                       <div class="websocket-dropdown">
-                        <button class="connect-button websocket-btn" @click=${this._toggleWebSocketInput}>
-                          🌐 WebSocket ${this.showWebSocketInput ? '▲' : '▼'}
-                        </button>
+                        <sp-action-button
+                          quiet
+                          data-spectrum-pattern="action-button"
+                          @click=${this._toggleWebSocketInput}>
+                          WebSocket ${this.showWebSocketInput ? '▲' : '▼'}
+                        </sp-action-button>
                         ${this.showWebSocketInput ? html`
                           <div class="websocket-input-panel">
-                            <input
-                              type="text"
+                            <sp-textfield
                               class="websocket-url-input"
+                              data-spectrum-pattern="textfield"
                               .value=${this.websocketUrl}
                               @input=${this._handleWebSocketUrlChange}
                               @keydown=${(e: KeyboardEvent) => {
                                 if (e.key === 'Enter') this._connectWebSocket();
                               }}
-                              placeholder="ws://localhost:8765"
-                            />
-                            <button class="connect-ws-btn" @click=${this._connectWebSocket}>
+                              placeholder="ws://localhost:8765">
+                            </sp-textfield>
+                            <sp-button
+                              variant="accent"
+                              data-spectrum-pattern="button-accent"
+                              @click=${this._connectWebSocket}>
                               Connect
-                            </button>
+                            </sp-button>
                           </div>
                         ` : ''}
                       </div>
@@ -1000,7 +1002,7 @@ export class HidDashboard extends LitElement {
         <div class="visualizers-grid">
           <!-- Coordinates Panel -->
           <div class="visualizer-card compact">
-            <h2><span class="card-icon">📍</span> Position</h2>
+            <h2>Position</h2>
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tablet"
@@ -1030,7 +1032,7 @@ export class HidDashboard extends LitElement {
 
           <!-- Pressure & Tilt Panel -->
           <div class="visualizer-card compact">
-            <h2><span class="card-icon">🎯</span> Pressure & Tilt</h2>
+            <h2>Pressure & Tilt</h2>
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tilt"
@@ -1067,7 +1069,7 @@ export class HidDashboard extends LitElement {
           <!-- Raw Bytes or Events Panel (50% width) -->
           ${this.viewerMode === 'webhid' || this.viewerMode === 'mock-raw' || (this.viewerMode === 'websocket' && this.websocketDataMode === 'raw') ? html`
             <div class="visualizer-card half-width">
-              <h2><span class="card-icon">📊</span> Raw Bytes</h2>
+              <h2>Raw Bytes</h2>
               <bytes-display
                 .bytes=${this.rawBytes}
                 .isEmpty=${this.rawBytes.length === 0}
@@ -1082,7 +1084,7 @@ export class HidDashboard extends LitElement {
             </div>
           ` : html`
             <div class="visualizer-card half-width">
-              <h2><span class="card-icon">📋</span> Event Stream</h2>
+              <h2>Event Stream</h2>
               <events-display
                 .events=${this.tabletEvents}
                 .isEmpty=${this.tabletEvents.length === 0}

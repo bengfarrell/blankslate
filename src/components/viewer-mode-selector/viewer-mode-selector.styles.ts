@@ -19,7 +19,7 @@ export const styles = css`
     font-size: 2.5rem;
     font-weight: 800;
     margin: 0 0 12px 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -28,7 +28,7 @@ export const styles = css`
 
   .tagline {
     font-size: 1.15rem;
-    color: #666;
+    color: var(--spectrum-gray-700);
     margin: 0;
     font-weight: 400;
   }
@@ -42,10 +42,10 @@ export const styles = css`
   }
 
   .mode-card {
-    background: white;
+    background: var(--spectrum-gray-50);
     border-radius: 16px;
     padding: 28px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    
     border: 2px solid transparent;
     transition: all 0.3s ease;
     cursor: pointer;
@@ -55,19 +55,19 @@ export const styles = css`
 
   .mode-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    
   }
 
   .mode-card.webhid:hover {
-    border-color: #667eea;
+    border-color: var(--spectrum-accent-color-900);
   }
 
   .mode-card.mock-data:hover {
-    border-color: #ff9800;
+    border-color: var(--spectrum-notice-color-900);
   }
 
   .mode-card.websocket:hover {
-    border-color: #00bcd4;
+    border-color: var(--spectrum-informative-color-900);
   }
 
   .card-icon {
@@ -86,19 +86,19 @@ export const styles = css`
   }
 
   .badge.config-required {
-    background: #fff3e0;
-    color: #f57c00;
+    background: var(--spectrum-notice-background-color-default);
+    color: var(--spectrum-notice-color-900);
   }
 
   .mode-card h2 {
     font-size: 1.35rem;
     font-weight: 700;
     margin: 0 0 12px 0;
-    color: #333;
+    color: var(--spectrum-gray-900);
   }
 
   .mode-card > p {
-    color: #666;
+    color: var(--spectrum-gray-700);
     margin: 0 0 20px 0;
     line-height: 1.5;
     font-size: 0.95rem;
@@ -117,7 +117,7 @@ export const styles = css`
     align-items: center;
     gap: 10px;
     font-size: 0.85rem;
-    color: #555;
+    color: var(--spectrum-gray-800);
   }
 
   .feature-icon {
@@ -131,8 +131,8 @@ export const styles = css`
     gap: 8px;
     width: 100%;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
+    color: var(--spectrum-white);
     border: none;
     border-radius: 8px;
     font-size: 1rem;
@@ -142,20 +142,20 @@ export const styles = css`
   }
 
   .mode-card.webhid .select-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1100) 100%);
   }
 
   .mode-card.mock-data .select-button {
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    background: linear-gradient(135deg, var(--spectrum-notice-color-900) 0%, var(--spectrum-notice-color-1000) 100%);
   }
 
   .mode-card.websocket .select-button {
-    background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
+    background: linear-gradient(135deg, var(--spectrum-informative-color-900) 0%, var(--spectrum-informative-color-1000) 100%);
   }
 
   .select-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    
   }
 
   .select-button:active {

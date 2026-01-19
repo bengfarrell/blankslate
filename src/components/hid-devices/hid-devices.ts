@@ -5,6 +5,7 @@ import '../device-list-minimal/device-list-minimal.js';
 import '../bytes-display/bytes-display.js';
 import type { DeviceStream, DeviceDetails } from '../device-list-minimal/device-list-minimal.js';
 import type { ByteData, DeviceInfo } from '../bytes-display/bytes-display.js';
+import '@spectrum-web-components/button/sp-button.js';
 
 /**
  * Component that wraps device list and bytes display together
@@ -59,9 +60,12 @@ export class HidDevices extends LitElement {
                 ? html`<span class="status-detail">• Opened</span>`
                 : html`<span class="status-detail warning">• Not Opened</span>`}
             </div>
-            <button class="button small disconnect" @click="${this._handleDisconnect}">
+            <sp-button
+              size="s"
+              variant="negative"
+              @click="${this._handleDisconnect}">
               Disconnect
-            </button>
+            </sp-button>
           ` : ''}
         </div>
 
@@ -86,4 +90,3 @@ declare global {
     'hid-devices': HidDevices;
   }
 }
-

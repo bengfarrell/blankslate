@@ -8,6 +8,12 @@
 
 import { LitElement, html, css } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
+import '@spectrum-web-components/button/sp-button.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-play.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-link.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-close.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-save-floppy.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-checkmark-circle.js';
 
 import {
   WalkthroughController,
@@ -306,7 +312,7 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
       e.preventDefault();
       this.handleNavigation('next');
     }
-    
+
     // Escape key can skip current gesture (during capture)
     if (e.key === 'Escape' && this.pendingGestureComplete) {
       e.preventDefault();
@@ -552,15 +558,18 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
       <div class="data-source-selection">
         <h3>Select Data Source</h3>
         <div class="navigation-buttons">
-          <button class="nav-button" @click=${() => this.handleDataSourceSelect('mock')}>
-            🎮 Use mock data (for testing)
-          </button>
-          <button class="nav-button primary" @click=${() => this.handleDataSourceSelect('device')}>
-            🔌 Connect to real HID device
-          </button>
-          <button class="nav-button danger" @click=${() => this.handleDataSourceSelect('exit')}>
-            🚪 Exit
-          </button>
+          <sp-button @click=${() => this.handleDataSourceSelect('mock')}>
+            <sp-icon-play slot="icon"></sp-icon-play>
+            Use mock data (for testing)
+          </sp-button>
+          <sp-button variant="accent" @click=${() => this.handleDataSourceSelect('device')}>
+            <sp-icon-link slot="icon"></sp-icon-link>
+            Connect to real HID device
+          </sp-button>
+          <sp-button variant="negative" @click=${() => this.handleDataSourceSelect('exit')}>
+            <sp-icon-close slot="icon"></sp-icon-close>
+            Exit
+          </sp-button>
         </div>
       </div>
     `;
@@ -594,12 +603,13 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
             ${this.isCapturing ? '⏳ Simulating...' : `🤖 ${strings.ui.buttons.simulate}`}
           </button>
         ` : html`
-          <button 
-            class="nav-button primary"
+          <sp-button
+            variant="accent"
             ?disabled=${this.isCapturing}
             @click=${this.handleGestureComplete}>
-            ✓ Done with gesture
-          </button>
+            <sp-icon-checkmark-circle slot="icon"></sp-icon-checkmark-circle>
+            Done with gesture
+          </sp-button>
         `}
       </div>
 
@@ -628,9 +638,9 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
       <div class="button-detection">
         ${this.currentButtonPrompt !== null ? html`
           <p class="button-prompt">
-            👆 Press Button ${this.currentButtonPrompt} three times (or click Skip)
+            Press Button ${this.currentButtonPrompt} three times (or click Skip)
           </p>
-          <button class="nav-button" @click=${this.handleSkipButton}>Skip this button</button>
+          <sp-button @click=${this.handleSkipButton}>Skip this button</sp-button>
         ` : ''}
 
         ${this.detectedButtons.length > 0 ? html`
@@ -643,6 +653,7 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
                 ` : html`
                   ✓ Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
                 `}
+                • Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
               </div>
             `)}
           </div>
@@ -715,12 +726,13 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
 
           ${this.pendingSaveConfig ? html`
             <div class="navigation-buttons" style="justify-content: center; margin-top: 1rem;">
-              <button class="nav-button primary" @click=${() => this.handleSaveConfig(true, 'config.json')}>
-                💾 Save Configuration
-              </button>
-              <button class="nav-button" @click=${() => this.handleSaveConfig(false)}>
+              <sp-button variant="accent" @click=${() => this.handleSaveConfig(true, 'config.json')}>
+                <sp-icon-save-floppy slot="icon"></sp-icon-save-floppy>
+                Save Configuration
+              </sp-button>
+              <sp-button @click=${() => this.handleSaveConfig(false)}>
                 Skip
-              </button>
+              </sp-button>
             </div>
           ` : ''}
         ` : ''}
@@ -749,7 +761,7 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
 
     return html`
       <div class="bytes-detected">
-        <h4>✓ Bytes Detected:</h4>
+        <h4>Bytes Detected:</h4>
         ${this.detectedBytes.map(b => html`
           <div class="byte-item">
             Byte ${b.byteIndex}: min=${b.min}, max=${b.max}, variance=${b.variance.toFixed(0)}

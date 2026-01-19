@@ -28,6 +28,16 @@ import type { DeviceStream, DeviceDetails } from '../device-list-minimal/device-
 import type { ByteData, DeviceInfo } from '../bytes-display/bytes-display.js';
 import '../hid-json-config/hid-json-config.js';
 import '../hid-walkthrough-progress/hid-walkthrough-progress.js';
+import '@spectrum-web-components/button/sp-button.js';
+import '@spectrum-web-components/action-button/sp-action-button.js';
+import '@spectrum-web-components/textfield/sp-textfield.js';
+import '@spectrum-web-components/field-label/sp-field-label.js';
+import '@spectrum-web-components/help-text/sp-help-text.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-play.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-link.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-refresh.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-document.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-save-floppy.js';
 import '../device-metadata-form/device-metadata-form.js';
 import { WALKTHROUGH_STRINGS } from '../../strings/walkthrough-strings.js';
 import type { IHIDReader } from '../../core/hid/hid-interface.js';
@@ -765,15 +775,17 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
   private _renderDeviceStatus() {
     return html`
       <div class="device-status">
-        ${this.isRealDevice 
-          ? html`<span class="connected">🟢 ${this.realDeviceName}</span>`
+        ${this.isRealDevice
+          ? html`<span class="connected">● ${this.realDeviceName}</span>`
           : html`
-              <button
-                class="button small connect"
+              <sp-button
+                size="s"
+                variant="accent"
                 ?disabled="${this.isConnecting}"
                 @click="${this._connectRealDevice}">
-                ${this.isConnecting ? '⏳ Connecting...' : '🔌 Connect Real Tablet'}
-              </button>
+                <sp-icon-link slot="icon"></sp-icon-link>
+                ${this.isConnecting ? 'Connecting...' : 'Connect Real Tablet'}
+              </sp-button>
             `
         }
       </div>
@@ -815,9 +827,11 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       <div class="section walkthrough">
         <h2>${strings.header.emoji} ${strings.header.title}</h2>
         <p>This walkthrough will help you configure your graphics tablet.</p>
-        <button class="button primary" @click="${() => this.handleStartWalkthrough()}">
+        <sp-button
+          variant="accent"
+          @click="${() => this.handleStartWalkthrough()}">
           Start Walkthrough
-        </button>
+        </sp-button>
       </div>
     `;
   }
@@ -827,16 +841,24 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       <div class="section walkthrough">
         <h3>Select Data Source</h3>
         <div class="button-row">
-          <button class="button" @click=${() => this.handleDataSourceSelect('mock')}>
-            🎮 Use Mock Data
-          </button>
-          <button class="button primary" @click=${() => this.handleDataSourceSelect('device')}
-                  ?disabled="${!this.isRealDevice}">
-            🔌 Use Real Device ${!this.isRealDevice ? '(connect first)' : ''}
-          </button>
-          <button class="button danger" @click=${() => this.handleDataSourceSelect('exit')}>
+          <sp-button
+            variant="secondary"
+            @click=${() => this.handleDataSourceSelect('mock')}>
+            <sp-icon-play slot="icon"></sp-icon-play>
+            Use Mock Data
+          </sp-button>
+          <sp-button
+            variant="accent"
+            @click=${() => this.handleDataSourceSelect('device')}
+            ?disabled="${!this.isRealDevice}">
+            <sp-icon-link slot="icon"></sp-icon-link>
+            Use Real Device ${!this.isRealDevice ? '(connect first)' : ''}
+          </sp-button>
+          <sp-button
+            variant="negative"
+            @click=${() => this.handleDataSourceSelect('exit')}>
             Cancel
-          </button>
+          </sp-button>
         </div>
       </div>
     `;
@@ -845,12 +867,18 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
   private _renderGestureStep() {
     const info = this.stepInfo!;
     const hasData = this.captureStatus.packetCount > 0;
-    
+
     return html`
       <div class="section walkthrough active">
         <div class="step-header">
           <h3>Step ${info.number}/10: ${info.title}</h3>
-          <button class="icon-button" @click="${this.handleReset}" title="Reset">🔄</button>
+          <sp-action-button
+            quiet
+            data-spectrum-pattern="action-button"
+            @click="${this.handleReset}"
+            title="Reset">
+            <sp-icon-refresh slot="icon"></sp-icon-refresh>
+          </sp-action-button>
           <hid-walkthrough-progress currentStep="${info.number - 1}" totalSteps="10"></hid-walkthrough-progress>
         </div>
 
@@ -864,12 +892,13 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
         <div class="button-row">
           ${this.isMockMode ? html`
-            <button 
-              class="button" 
+            <sp-button
+              variant="secondary"
+              data-spectrum-pattern="button-secondary"
               ?disabled=${this.isPlaying}
               @click=${this.handleSimulate}>
               ${this.isPlaying ? '⏳ Simulating...' : `🤖 ${strings.ui.buttons.simulate}`}
-            </button>
+            </sp-button>
           ` : ''}
         </div>
 
@@ -877,25 +906,36 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       </div>
     `;
   }
-  
+
   private _renderStepNavigation(hasData: boolean) {
     return html`
       <div class="navigation-buttons">
-        <button 
-          class="button primary" 
+        <sp-button
+          variant="accent"
+          data-spectrum-pattern="button-accent"
           ?disabled=${!hasData || this.isPlaying}
           @click=${() => this._handleStepNext()}>
           → ${strings.ui.buttons.next}
-        </button>
-        <button class="button" @click=${() => this._handleStepRetry()}>
+        </sp-button>
+        <sp-button
+          variant="secondary"
+          data-spectrum-pattern="button-secondary"
+          @click=${() => this._handleStepRetry()}>
           ↻ Retry
-        </button>
-        <button class="button" ?disabled=${this.walkthroughStep === 'step1-horizontal'} @click=${() => this._handleStepPrevious()}>
+        </sp-button>
+        <sp-button
+          variant="secondary"
+          data-spectrum-pattern="button-secondary"
+          ?disabled=${this.walkthroughStep === 'step1-horizontal'}
+          @click=${() => this._handleStepPrevious()}>
           ← Back
-        </button>
-        <button class="button danger" @click=${() => this._resetWalkthrough()}>
+        </sp-button>
+        <sp-button
+          variant="negative"
+          data-spectrum-pattern="button-negative"
+          @click=${() => this._resetWalkthrough()}>
           ✕ Cancel
-        </button>
+        </sp-button>
       </div>
     `;
   }
@@ -950,7 +990,9 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       <div class="section walkthrough active">
         <div class="step-header">
           <h3>Step ${info.number}/10: ${info.title}</h3>
-          <button class="icon-button" @click="${this.handleReset}" title="Reset">🔄</button>
+          <sp-action-button quiet @click="${this.handleReset}" title="Reset">
+            <sp-icon-refresh slot="icon"></sp-icon-refresh>
+          </sp-action-button>
           <hid-walkthrough-progress currentStep="${info.number - 1}" totalSteps="10"></hid-walkthrough-progress>
         </div>
 
@@ -963,36 +1005,43 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         ${this._renderDetectedBytes()}
 
         ${this.pendingButtonCount ? html`
-          <div class="button-count-prompt">
-            <label>How many tablet buttons does your device have?</label>
-            <input 
-              type="number" 
+          <div class="button-count-prompt" data-spectrum-pattern="form">
+            <sp-field-label for="buttonCountInput" data-spectrum-pattern="field-label">How many tablet buttons does your device have?</sp-field-label>
+            <sp-textfield
+              type="number"
               id="buttonCountInput"
-              min="0" 
-              max="20" 
+              data-spectrum-pattern="textfield"
+              min="0"
+              max="20"
               value="0"
               @keydown=${(e: KeyboardEvent) => {
                 if (e.key === 'Enter') {
                   const input = e.target as HTMLInputElement;
                   this.handleButtonCountSubmit(parseInt(input.value) || 0);
                 }
-              }}
-            />
-            <button 
-              class="button primary"
+              }}>
+            </sp-textfield>
+            <sp-button
+              variant="accent"
+              data-spectrum-pattern="button-accent"
               @click=${() => {
                 const input = this.shadowRoot?.getElementById('buttonCountInput') as HTMLInputElement;
                 this.handleButtonCountSubmit(parseInt(input?.value) || 0);
               }}>
               Continue
-            </button>
+            </sp-button>
           </div>
         ` : ''}
-        
+
         ${this.currentButtonPrompt !== null ? html`
           <div class="button-prompt">
-            <p>👆 Press Button ${this.currentButtonPrompt} three times</p>
-            <button class="button" @click=${this.handleSkipButton}>Skip this button</button>
+            <p>Press Button ${this.currentButtonPrompt} three times</p>
+            <sp-button
+              variant="secondary"
+              data-spectrum-pattern="button-secondary"
+              @click=${this.handleSkipButton}>
+              Skip this button
+            </sp-button>
           </div>
         ` : ''}
 
@@ -1013,12 +1062,13 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
         <div class="button-row">
           ${this.isMockMode ? html`
-            <button 
-              class="button" 
+            <sp-button
+              variant="secondary"
+              data-spectrum-pattern="button-secondary"
               ?disabled=${this.isPlaying}
               @click=${this.handleSimulate}>
               ${this.isPlaying ? '⏳ Simulating...' : `🤖 ${strings.ui.buttons.simulate}`}
-            </button>
+            </sp-button>
           ` : ''}
         </div>
 
@@ -1054,7 +1104,13 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       <div class="section walkthrough complete">
         <div class="step-header">
           <h3>✅ Configuration Complete!</h3>
-          <button class="icon-button" @click="${this._resetWalkthrough}" title="Start Over">🔄</button>
+          <sp-action-button
+            quiet
+            data-spectrum-pattern="action-button"
+            @click="${this._resetWalkthrough}"
+            title="Start Over">
+            <sp-icon-refresh slot="icon"></sp-icon-refresh>
+          </sp-action-button>
         </div>
 
         <p>Your device configuration has been generated.</p>
@@ -1062,7 +1118,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         ${this.completeConfig ? html`
           <div class="config-panel">
             <div class="config-panel-header" @click="${() => this.isConfigPanelExpanded = !this.isConfigPanelExpanded}">
-              <h4>📄 Device Configuration</h4>
+              <h4>Device Configuration</h4>
               <span class="collapse-icon">${this.isConfigPanelExpanded ? '▼' : '▶'}</span>
             </div>
             ${this.isConfigPanelExpanded ? html`
@@ -1072,12 +1128,19 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
           ${this.pendingSaveConfig ? html`
             <div class="button-row">
-              <button class="button primary" @click=${() => this.handleSaveConfig(true)}>
-                💾 Download Configuration
-              </button>
-              <button class="button" @click=${() => this.handleSaveConfig(false)}>
+              <sp-button
+                variant="accent"
+                data-spectrum-pattern="button-accent"
+                @click=${() => this.handleSaveConfig(true)}>
+                <sp-icon-save-floppy slot="icon"></sp-icon-save-floppy>
+                Download Configuration
+              </sp-button>
+              <sp-button
+                variant="secondary"
+                data-spectrum-pattern="button-secondary"
+                @click=${() => this.handleSaveConfig(false)}>
                 Skip
-              </button>
+              </sp-button>
             </div>
           ` : ''}
         ` : ''}

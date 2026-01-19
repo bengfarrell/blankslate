@@ -17,6 +17,8 @@ import { WALKTHROUGH_STRINGS } from '../../strings/walkthrough-strings.js';
 
 import '../hid-walkthrough-progress/hid-walkthrough-progress.js';
 import '../device-metadata-form/device-metadata-form.js';
+import '@spectrum-web-components/action-button/sp-action-button.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-refresh.js';
 
 // Re-export types for consumers
 export type { WalkthroughStep };
@@ -129,7 +131,9 @@ export class HidWalkthrough extends LitElement {
     return html`
       <div class="step-header">
         <h3>${title}</h3>
-        <button class="icon-button" @click="${this._handleReset}" title="Reset">🔄</button>
+        <sp-action-button quiet @click="${this._handleReset}" title="Reset">
+          <sp-icon-refresh slot="icon"></sp-icon-refresh>
+        </sp-action-button>
         <hid-walkthrough-progress currentStep="${stepNumber}" totalSteps="10"></hid-walkthrough-progress>
         ${hasNextButton ? html`
           <button 
