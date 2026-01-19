@@ -55,7 +55,9 @@ class HIDReader:
         
         # Check Report ID - some interfaces (like button interface) don't use status codes
         report_id = data_list[0] if len(data_list) > 0 else 0
-        is_button_interface = (report_id == 6)  # Report ID 6 is button-only interface on Linux
+        # Use config's buttonInterfaceReportId if specified, otherwise don't assume
+        button_interface_report_id = getattr(self.config, 'button_interface_report_id', None)
+        is_button_interface = (button_interface_report_id is not None and report_id == button_interface_report_id)
         
         # First, parse the status to determine device state (if using single-interface mode)
         device_state = None

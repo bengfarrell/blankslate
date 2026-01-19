@@ -53,7 +53,8 @@ class ConfigBasedGenerator:
     def _get_max_value(self, key: str) -> int:
         """Get max value for a coordinate/pressure mapping"""
         mapping = self.mappings.get(key, {})
-        return mapping.get('max', 16000 if key in ['x', 'y'] else 8192)
+        # Generic fallbacks: 16-bit for coordinates, 13-bit for pressure
+        return mapping.get('max', 65535 if key in ['x', 'y'] else 8191)
 
     def _convert_tilt_to_byte(self, tilt: float, tilt_key: str) -> int:
         """

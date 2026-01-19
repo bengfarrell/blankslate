@@ -40,7 +40,7 @@ export class MockHIDReader implements IHIDReader {
 
   constructor(config: MockHIDReaderConfig = {}) {
     this.config = {
-      vendorId: config.vendorId ?? 0x056a, // Wacom vendor ID
+      vendorId: config.vendorId ?? 0x0000, // Generic mock device
       productId: config.productId ?? 0x0001,
       productName: config.productName ?? 'Mock Graphics Tablet',
       reportId: config.reportId ?? 2,
@@ -59,8 +59,8 @@ export class MockHIDReader implements IHIDReader {
     };
 
     this.generator = new TabletDataGenerator({
-      maxX: config.maxX ?? 16000,
-      maxY: config.maxY ?? 9000,
+      maxX: config.maxX ?? 65535,
+      maxY: config.maxY ?? 65535,
       reportId: this.config.reportId!,
       sampleRate: config.sampleRate ?? 200,
       pressureVariation: config.pressureVariation ?? 0.2,

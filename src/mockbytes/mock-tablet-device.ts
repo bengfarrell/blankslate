@@ -37,7 +37,7 @@ export class MockTabletDevice {
     this.config = config;
     this.generator = new TabletDataGenerator(config);
     this.deviceName = config.deviceName || 'Mock Graphics Tablet';
-    this.vendorId = config.vendorId || 0x056a; // Wacom vendor ID
+    this.vendorId = config.vendorId || 0x0000; // Generic mock device
     this.productId = config.productId || 0x0001;
   }
 

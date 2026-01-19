@@ -45,8 +45,9 @@ export function inferCapabilities(
   }
 
   // Use max values as resolution
-  const resolutionX = byteCodeMappings.x.max || 16000;
-  const resolutionY = byteCodeMappings.y.max || 9000;
+  // Use config values; fallback to generic 16-bit max if not specified
+  const resolutionX = byteCodeMappings.x.max || 65535;
+  const resolutionY = byteCodeMappings.y.max || 65535;
 
   return {
     hasButtons: false, // Will be set based on user input

@@ -399,8 +399,8 @@ class CLIReaderFactory implements IReaderFactory {
   createMockReader(): IHIDReader {
     return createMockHIDReader({
       productName: 'Mock Tablet (CLI)',
-      vendorId: 0x28bd,
-      productId: 0x2904,
+      vendorId: 0x0000,  // Generic mock device
+      productId: 0x0000,
     });
   }
 

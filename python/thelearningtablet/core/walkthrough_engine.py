@@ -56,7 +56,7 @@ class WalkthroughEngine:
         self.duplicate_count: int = 0
         self.idle_packet_count: int = 0
         self.button_mappings: List[Dict] = []
-        self.detected_report_id: int = 7  # Default report ID (matches XP-Pen Deco 640 stable config)
+        self.detected_report_id: Optional[int] = None  # Will be set to first valid report ID seen
         self.candidate_report_ids: Set[int] = set()  # Track all seen report IDs before locking in
         self.report_id_locked: bool = False  # Flag to track if we've locked onto a report ID
     
@@ -171,19 +171,12 @@ class WalkthroughEngine:
                 if is_pen_packet:
                     self.candidate_report_ids.add(report_id)
 
-            # Lock onto a report ID immediately when we see pen data
-            # Prefer report ID 7 for digitizer usage page (XP-Pen Deco 640 uses report ID 7)
-            # This must happen BEFORE we start filtering packets by report ID
+            # Lock onto the first report ID that sends valid pen data
+            # No preference for any specific report ID - just use whichever sends data first
             if self.candidate_report_ids and not self.report_id_locked:
-                if 7 in self.candidate_report_ids:
-                    # Prefer report ID 7 (digitizer usage page for XP-Pen Deco 640)
-                    self.detected_report_id = 7
-                    self.report_id_locked = True
-                elif len(self.candidate_report_ids) == 1:
-                    # Only one report ID seen so far, use it
-                    self.detected_report_id = list(self.candidate_report_ids)[0]
-                    self.report_id_locked = True
-                # If multiple report IDs but no 7, wait a bit longer to see if 7 arrives
+                # Lock onto the first (or only) report ID seen
+                self.detected_report_id = list(self.candidate_report_ids)[0]
+                self.report_id_locked = True
 
             # For button step, accept all packets (handled separately in controller)
             if not is_button_step:
@@ -659,8 +652,8 @@ class WalkthroughEngine:
                 'usage': device_info.usage,
                 'interfaces': device_info.interfaces
             },
-            'reportId': self.detected_report_id,
-            'digitizerUsagePage': 13,
+            'reportId': self.detected_report_id if self.detected_report_id is not None else 2,
+            'digitizerUsagePage': device_info.usage_page if device_info.usage_page else 13,
             'capabilities': {
                 'hasButtons': user_meta.button_count > 0,
                 'buttonCount': user_meta.button_count,

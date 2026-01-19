@@ -156,11 +156,15 @@ export function parseBitFlags(
  * 
  * // WebHID - browser strips report ID, subtract 1 from config indices
  * const result = processDeviceData(rawData, config.byteCodeMappings, -1);
+ * 
+ * // With button interface report ID from config
+ * const result = processDeviceData(rawData, config.byteCodeMappings, 0, { buttonInterfaceReportId: 6 });
  */
 export function processDeviceData(
   data: Uint8Array,
   mappings: Record<string, any>,
-  byteIndexOffset: number = 0
+  byteIndexOffset: number = 0,
+  options?: { buttonInterfaceReportId?: number }
 ): Record<string, string | number | boolean> {
   // Convert Uint8Array to number array
   const dataList = Array.from(data);
@@ -168,10 +172,11 @@ export function processDeviceData(
 
   // Check Report ID - only valid when packet includes report ID (byteIndexOffset === 0)
   // WebHID strips the report ID, so this check only applies to Node.js/Python
+  // Uses config's buttonInterfaceReportId if specified, otherwise don't assume
   let isButtonInterface = false;
-  if (byteIndexOffset === 0 && dataList.length > 0) {
+  if (byteIndexOffset === 0 && dataList.length > 0 && options?.buttonInterfaceReportId !== undefined) {
     const reportId = dataList[0];
-    isButtonInterface = reportId === 6;  // Report ID 6 is button-only interface
+    isButtonInterface = reportId === options.buttonInterfaceReportId;
   }
 
   // Parse the status to determine device state

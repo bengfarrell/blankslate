@@ -79,7 +79,7 @@ export class WalkthroughEngine {
   private buttonMappings: ButtonMapping[] = [];
   
   // Report ID detection (matches Python implementation)
-  private detectedReportId: number = 7;  // Default report ID (matches XP-Pen Deco 640)
+  private detectedReportId: number | undefined = undefined;  // Will be set to first valid report ID seen
   private candidateReportIds: Set<number> = new Set();
   private reportIdLocked: boolean = false;
 
@@ -191,7 +191,7 @@ export class WalkthroughEngine {
     this.statusByteValues.clear();
     this.allPackets = [];
     // Reset report ID tracking
-    this.detectedReportId = 7;
+    this.detectedReportId = undefined;
     this.candidateReportIds.clear();
     this.reportIdLocked = false;
     this.emit({ type: 'step-changed', step: 'idle' });
@@ -272,16 +272,11 @@ export class WalkthroughEngine {
         }
       }
 
-      // Lock onto a report ID when we see pen data
-      // Prefer report ID 7 for digitizer usage page (XP-Pen Deco 640 uses report ID 7)
+      // Lock onto the first report ID that sends valid pen data
+      // No preference for any specific report ID - just use whichever sends data first
       if (this.candidateReportIds.size > 0 && !this.reportIdLocked) {
-        if (this.candidateReportIds.has(7)) {
-          this.detectedReportId = 7;
-          this.reportIdLocked = true;
-        } else if (this.candidateReportIds.size === 1) {
-          this.detectedReportId = [...this.candidateReportIds][0];
-          this.reportIdLocked = true;
-        }
+        this.detectedReportId = [...this.candidateReportIds][0];
+        this.reportIdLocked = true;
       }
 
       // For gesture steps, only accept packets with the detected report ID
@@ -687,7 +682,7 @@ export class WalkthroughEngine {
   /**
    * Get the detected report ID
    */
-  getDetectedReportId(): number {
+  getDetectedReportId(): number | undefined {
     return this.detectedReportId;
   }
 

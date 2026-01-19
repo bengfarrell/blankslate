@@ -192,8 +192,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         self.isMockMode = true;
         self.mockReader = createMockHIDReader({
           productName: 'Mock Graphics Tablet',
-          vendorId: 0x28bd,
-          productId: 0x2904,
+          vendorId: 0x0000,  // Generic mock device
+          productId: 0x0000,
         });
         return self.mockReader;
       },
@@ -705,8 +705,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       this.isMockMode = true;
       this.controller.setReader(this.mockReader!);
       this.controller.setDeviceInfo({
-        vendorId: 0x28bd,
-        productId: 0x2904,
+        vendorId: 0x0000,  // Generic mock device
+        productId: 0x0000,
         productName: 'Mock Tablet',
       });
     } else {
@@ -1203,8 +1203,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
   private _setupMockReader() {
     this.mockReader = createMockHIDReader({
       productName: 'Mock Graphics Tablet',
-      vendorId: 0x28bd,
-      productId: 0x2904,
+      vendorId: 0x0000,  // Generic mock device
+      productId: 0x0000,
     });
 
     this.deviceDataStreams.set(-1, {

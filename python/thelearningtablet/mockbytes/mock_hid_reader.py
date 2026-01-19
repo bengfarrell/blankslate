@@ -13,14 +13,17 @@ from .tablet_data_generator import TabletDataGenerator, GeneratorConfig
 
 @dataclass
 class MockHIDReaderConfig:
-    """Configuration for mock HID reader"""
-    vendor_id: int = 0x056a  # Wacom vendor ID
-    product_id: int = 0x0001
+    """Configuration for mock HID reader
+    
+    Defaults are generic; actual device values should come from config.
+    """
+    vendor_id: int = 0x0000  # Generic mock device
+    product_id: int = 0x0000
     product_name: str = 'Mock Graphics Tablet'
-    report_id: int = 2
+    report_id: int = 2      # Most common report ID
     packet_interval: int = 5  # milliseconds between packets
-    max_x: int = 16000
-    max_y: int = 9000
+    max_x: int = 65535      # Generic 16-bit max (actual value from config)
+    max_y: int = 65535      # Generic 16-bit max (actual value from config)
     sample_rate: int = 200
 
 

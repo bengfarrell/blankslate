@@ -2,7 +2,7 @@
   "name": "XP Pen Deco 640",
   "manufacturer": "XP Pen",
   "model": "Deco 640",
-  "description": "XP Pen Deco 640, OSX, Python, with driver",
+  "description": "XP Pen Deco 640, OSX, Python, with driver (works both driver and driver-less)",
   "vendorId": "0x28bd",
   "productId": "0x2904",
   "deviceInfo": {
@@ -12,16 +12,19 @@
     "usage_page": 13,
     "usage": 2,
     "interfaces": [
+      13,
+      1,
       65290
     ]
   },
   "reportId": 2,
   "digitizerUsagePage": 13,
+  "stylusModeStatusByte": 160,
   "capabilities": {
     "hasButtons": true,
     "buttonCount": 8,
     "hasPressure": true,
-    "pressureLevels": 16383,
+    "pressureLevels": 16384,
     "hasTilt": true,
     "resolution": {
       "x": 31998,
@@ -29,54 +32,6 @@
     }
   },
   "byteCodeMappings": {
-    "status": {
-      "byteIndex": [
-        1
-      ],
-      "type": "code",
-      "values": {
-        "160": {
-          "state": "hover"
-        },
-        "161": {
-          "state": "contact"
-        },
-        "192": {
-          "state": "none"
-        },
-        "240": {
-          "state": "buttons"
-        },
-        "164": {
-          "state": "hover",
-          "primaryButtonPressed": true
-        },
-        "165": {
-          "state": "contact",
-          "primaryButtonPressed": true
-        },
-        "162": {
-          "state": "hover",
-          "secondaryButtonPressed": true
-        },
-        "163": {
-          "state": "contact",
-          "secondaryButtonPressed": true
-        },
-        "0": {
-          "state": "keyboard"
-        },
-        "1": {
-          "state": "buttons"
-        },
-        "3": {
-          "state": "buttons"
-        },
-        "6": {
-          "state": "buttons"
-        }
-      }
-    },
     "x": {
       "byteIndex": [
         2,
@@ -100,6 +55,42 @@
       ],
       "max": 16383,
       "type": "multi-byte-range"
+    },
+    "status": {
+      "byteIndex": [
+        1
+      ],
+      "type": "code",
+      "values": {
+        "160": {
+          "state": "hover"
+        },
+        "161": {
+          "state": "contact"
+        },
+        "162": {
+          "state": "hover",
+          "secondaryButtonPressed": true
+        },
+        "163": {
+          "state": "contact",
+          "secondaryButtonPressed": true
+        },
+        "164": {
+          "state": "hover",
+          "primaryButtonPressed": true
+        },
+        "165": {
+          "state": "contact",
+          "primaryButtonPressed": true
+        },
+        "192": {
+          "state": "none"
+        },
+        "240": {
+          "state": "buttons"
+        }
+      }
     },
     "tiltX": {
       "byteIndex": [
@@ -152,6 +143,5 @@
         }
       }
     }
-  },
-  "stylusModeStatusByte": 160
+  }
 }

@@ -84,8 +84,8 @@ export function loadConfig(configPath: string): Config {
 export function createMockReader(config: Config): IHIDReader {
   return createMockHIDReader({
     productName: 'Mock Tablet',
-    vendorId: config.deviceInfo?.vendor_id || 0x28bd,
-    productId: config.deviceInfo?.product_id || 0x2904,
+    vendorId: config.deviceInfo?.vendor_id || 0x0000,  // Use config value or generic mock ID
+    productId: config.deviceInfo?.product_id || 0x0000,
   });
 }
 
@@ -359,7 +359,9 @@ export abstract class TabletReaderBase {
    * Process a raw packet through the config mappings
    */
   protected processPacket(data: Uint8Array): Record<string, string | number | boolean> {
-    return processDeviceData(data, this.configData.byteCodeMappings);
+    return processDeviceData(data, this.configData.byteCodeMappings, 0, {
+      buttonInterfaceReportId: this.configData.buttonInterfaceReportId,
+    });
   }
 
   /**

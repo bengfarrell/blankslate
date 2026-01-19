@@ -17,6 +17,7 @@ export interface HIDDeviceInfo {
   path?: string; // For node-hid
   usagePage?: number;
   usage?: number;
+  interface?: number; // HID interface number
   collections?: Array<{ usagePage: number; usage: number }>;
 }
 

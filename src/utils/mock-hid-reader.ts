@@ -1,7 +1,9 @@
 /**
  * Mock HID Reader Module
- * Simulates a real HID device (XP-Pen Deco 640) for testing and development
+ * Simulates a real HID device for testing and development
  * Generates realistic device data that can be processed by processDeviceData
+ * 
+ * Defaults are generic values; actual device specs come from the provided config.
  */
 
 import { processDeviceData } from './data-helpers.js';
@@ -75,23 +77,25 @@ export class MockHIDReader {
     updateInterval: 16, // ~60Hz
   };
 
-  // XP-Pen Deco 640 specifications (from config)
-  private readonly specs = {
-    reportId: 7,
-    buttonReportId: 6,
-    maxX: 16000,
-    maxY: 9000,
-    maxPressure: 16383,
+  // Device specifications - populated from config in constructor
+  // Defaults are generic values that work for most tablets
+  private specs = {
+    reportId: 2,              // Most common report ID (will be read from config)
+    buttonReportId: 6,        // Common button interface report ID
+    maxX: 65535,              // Generic 16-bit max (will be read from config)
+    maxY: 65535,              // Generic 16-bit max (will be read from config)
+    maxPressure: 8191,        // Generic 13-bit max (will be read from config)
     tiltRange: { positive: 60, negativeMin: 196, negativeMax: 256 },
+    // Common status codes (HID Digitizer standard values)
     statusCodes: {
-      none: 192,
-      hover: 160,
-      hoverSecondary: 162,
-      hoverPrimary: 164,
-      contact: 161,
-      contactSecondary: 163,
-      contactPrimary: 165,
-      buttons: 240,
+      none: 192,              // 0xC0
+      hover: 160,             // 0xA0
+      hoverSecondary: 162,    // 0xA2
+      hoverPrimary: 164,      // 0xA4
+      contact: 161,           // 0xA1
+      contactSecondary: 163,  // 0xA3
+      contactPrimary: 165,    // 0xA5
+      buttons: 240,           // 0xF0
     },
   };
 
@@ -102,6 +106,21 @@ export class MockHIDReader {
   ) {
     this.config = config;
     this.dataCallback = dataCallback;
+    
+    // Populate specs from config (use defaults if not specified)
+    const mappings = config.mappings as Record<string, any>;
+    if (config.reportId !== undefined) {
+      this.specs.reportId = config.reportId;
+    }
+    if (mappings?.x?.max !== undefined) {
+      this.specs.maxX = mappings.x.max;
+    }
+    if (mappings?.y?.max !== undefined) {
+      this.specs.maxY = mappings.y.max;
+    }
+    if (mappings?.pressure?.max !== undefined) {
+      this.specs.maxPressure = mappings.pressure.max;
+    }
   }
 
   /**

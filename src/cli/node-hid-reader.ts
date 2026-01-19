@@ -20,6 +20,7 @@ function toDeviceInfo(device: HID.Device): HIDDeviceInfo {
     path: device.path,
     usagePage: device.usagePage,
     usage: device.usage,
+    interface: device.interface,
   };
 }
 
@@ -483,7 +484,8 @@ export class NodeHIDDeviceManager implements IHIDDeviceManager {
 
   /**
    * List devices that look like graphics tablets
-   * Filters by common digitizer usage pages
+   * Filters by common digitizer usage pages and collapses by vendor/product ID
+   * (matches Python behavior - one entry per unique device with all interfaces listed)
    */
   async listTabletDevices(): Promise<HIDDeviceInfo[]> {
     const allDevices = await this.listDevices();
@@ -498,11 +500,34 @@ export class NodeHIDDeviceManager implements IHIDDeviceManager {
       0x5543, // UC-Logic
     ];
 
-    return allDevices.filter(device => 
+    const tabletDevices = allDevices.filter(device => 
       device.usagePage === 13 || // Digitizer
       (device.usagePage && device.usagePage >= 0xFF00) || // Vendor-specific (often required on macOS)
       tabletVendors.includes(device.vendorId)
     );
+
+    // Group by vendor_id + product_id to collapse multiple interfaces into one entry
+    // (matches Python behavior - user selects a device, we open all its interfaces)
+    const deviceMap = new Map<string, HIDDeviceInfo & { allUsagePages: number[] }>();
+    
+    for (const device of tabletDevices) {
+      const key = `${device.vendorId}:${device.productId}`;
+      
+      if (!deviceMap.has(key)) {
+        deviceMap.set(key, {
+          ...device,
+          allUsagePages: device.usagePage !== undefined ? [device.usagePage] : [],
+        });
+      } else {
+        // Add this interface's usage page to the list
+        const existing = deviceMap.get(key)!;
+        if (device.usagePage !== undefined && !existing.allUsagePages.includes(device.usagePage)) {
+          existing.allUsagePages.push(device.usagePage);
+        }
+      }
+    }
+
+    return Array.from(deviceMap.values());
   }
 
   /**
@@ -550,8 +575,30 @@ export function listAllDevices(): HIDDeviceInfo[] {
 /**
  * Format device info for display
  */
-export function formatDeviceInfo(device: HIDDeviceInfo): string {
+export function formatDeviceInfo(device: HIDDeviceInfo & { allUsagePages?: number[] }): string {
   const vendor = device.vendorId.toString(16).padStart(4, '0');
   const product = device.productId.toString(16).padStart(4, '0');
-  return `${vendor}:${product} - ${device.productName} (${device.manufacturer || 'Unknown'})`;
+  const base = `${vendor}:${product} - ${device.productName} (${device.manufacturer || 'Unknown'})`;
+  
+  // Add usage page info - show all if collapsed, otherwise show single
+  const details: string[] = [];
+  
+  if (device.allUsagePages && device.allUsagePages.length > 0) {
+    // Collapsed view - show all usage pages
+    details.push(`UP:[${device.allUsagePages.join(',')}]`);
+  } else if (device.usagePage !== undefined) {
+    details.push(`UP:${device.usagePage}`);
+  }
+  
+  if (device.usage !== undefined && !device.allUsagePages) {
+    details.push(`U:${device.usage}`);
+  }
+  if (device.interface !== undefined && !device.allUsagePages) {
+    details.push(`IF:${device.interface}`);
+  }
+  
+  if (details.length > 0) {
+    return `${base} [${details.join(' ')}]`;
+  }
+  return base;
 }

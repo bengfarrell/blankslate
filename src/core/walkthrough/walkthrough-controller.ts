@@ -284,10 +284,10 @@ export class WalkthroughController {
       this.isMockMode = true;
       this.reader = this.readerFactory.createMockReader();
       
-      // Set mock device info on engine
+      // Set mock device info on engine (generic mock IDs)
       this.engine.setDeviceInfo({
-        vendorId: 0x28bd,
-        productId: 0x2904,
+        vendorId: 0x0000,  // Generic mock device
+        productId: 0x0000,
         productName: 'Mock Tablet',
         collections: [{ usagePage: 13, usage: 2 }],
         allInterfaces: [13],

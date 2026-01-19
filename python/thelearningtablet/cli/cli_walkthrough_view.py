@@ -68,7 +68,20 @@ class CLIWalkthroughView:
         
         choices = []
         for i, device in enumerate(devices):
-            label = f"{device.product_string} (VID: 0x{device.vendor_id:04x}, PID: 0x{device.product_id:04x})"
+            # Build detailed label with usage page and interface info
+            base = f"{device.product_string} (VID: 0x{device.vendor_id:04x}, PID: 0x{device.product_id:04x})"
+            details = []
+            if hasattr(device, 'usage_page') and device.usage_page:
+                details.append(f"UP:{device.usage_page}")
+            if hasattr(device, 'usage') and device.usage:
+                details.append(f"U:{device.usage}")
+            if hasattr(device, 'interfaces') and device.interfaces:
+                details.append(f"IF:{device.interfaces}")
+            
+            if details:
+                label = f"{base} [{' '.join(details)}]"
+            else:
+                label = base
             choices.append((label, device))
         
         choices.append(('Cancel', None))

@@ -10,40 +10,50 @@ from dataclasses import dataclass
 
 @dataclass
 class GeneratorConfig:
-    """Configuration for tablet data generator"""
-    max_x: int = 15999  # Match XP-Pen Deco 640 stable config
-    max_y: int = 8999   # Match XP-Pen Deco 640 stable config
-    max_pressure: int = 16383  # Match XP-Pen Deco 640 stable config
-    report_id: int = 7  # Match XP-Pen Deco 640 stable config (reportId: 7)
+    """Configuration for tablet data generator
+    
+    Defaults are generic values that work for most tablets.
+    Use device-specific presets (like XPPEN_DECO640_*) for known devices.
+    """
+    max_x: int = 65535      # Generic 16-bit max (actual value comes from config)
+    max_y: int = 65535      # Generic 16-bit max (actual value comes from config)
+    max_pressure: int = 8191  # Generic 13-bit max (common range)
+    report_id: int = 2      # Most common report ID (detected during walkthrough)
     sample_rate: int = 200
     pressure_variation: float = 0.2
     driver_mode: bool = False  # Use driver-mode button encoding (status byte 240)
 
 
-# Preset for driver-enabled mode (XP-Pen Deco 640 with driver active)
-# Note: Resolution is determined by hardware, same as driverless mode
-# The only difference is the button status byte (240 vs 1/3/6)
-DRIVER_MODE_CONFIG = GeneratorConfig(
-    max_x=15999,        # Same resolution as driverless (hardware constant)
-    max_y=8999,         # Same resolution as driverless (hardware constant)
+# ============================================================================
+# Device-Specific Presets
+# These are for testing with known device configurations
+# ============================================================================
+
+# XP-Pen Deco 640 preset (driver-enabled mode)
+XPPEN_DECO640_DRIVER_CONFIG = GeneratorConfig(
+    max_x=15999,
+    max_y=8999,
     max_pressure=16383,
-    report_id=2,        # Driver mode may use different report ID
+    report_id=2,
     sample_rate=200,
     pressure_variation=0.2,
     driver_mode=True    # Uses status byte 240 for buttons
 )
 
-
-# Preset for driverless mode (default, XP-Pen Deco 640 without driver)
-DRIVERLESS_MODE_CONFIG = GeneratorConfig(
+# XP-Pen Deco 640 preset (driverless mode)
+XPPEN_DECO640_DRIVERLESS_CONFIG = GeneratorConfig(
     max_x=15999,
     max_y=8999,
     max_pressure=16383,
-    report_id=7,
+    report_id=2,        # Current observed report ID (was 7 historically)
     sample_rate=200,
     pressure_variation=0.2,
     driver_mode=False   # Uses status bytes 1/3/6 for buttons
 )
+
+# Legacy aliases for backward compatibility
+DRIVER_MODE_CONFIG = XPPEN_DECO640_DRIVER_CONFIG
+DRIVERLESS_MODE_CONFIG = XPPEN_DECO640_DRIVERLESS_CONFIG
 
 
 class TabletDataGenerator:

@@ -71,8 +71,8 @@ export class EventStreamer extends TabletReaderBase {
 
     // Start reading - set up callback BEFORE any data comes in
     console.log(chalk.gray('Setting up data callback...'));
-    this.reader.startReading((data) => {
-      this.handlePacket(data);
+    this.reader.startReading((data, reportId) => {
+      this.handlePacket(data, reportId);
     });
 
     console.log(chalk.green('✓ Started reading data'));
@@ -89,9 +89,12 @@ export class EventStreamer extends TabletReaderBase {
     await new Promise(() => {});
   }
 
-  protected handlePacket(data: Uint8Array): void {
+  protected lastReportId: number | undefined;
+
+  protected handlePacket(data: Uint8Array, reportId?: number): void {
     try {
       this.packetCount++;
+      this.lastReportId = reportId;
 
       // Process the data using the config
       const events = this.processPacket(data);
@@ -206,6 +209,11 @@ export class EventStreamer extends TabletReaderBase {
   private printCompact(events: Record<string, string | number | boolean>, data: Uint8Array): void {
     const parts: string[] = [];
 
+    // Report ID
+    if (this.lastReportId !== undefined) {
+      parts.push(`rid:${this.lastReportId}`);
+    }
+
     // Position
     if (events.x !== undefined && events.y !== undefined) {
       parts.push(`pos:(${events.x},${events.y})`);
@@ -245,7 +253,8 @@ export class EventStreamer extends TabletReaderBase {
     const lines: string[] = [];
 
     lines.push(chalk.gray(`─────────────────────────────────────────────────────`));
-    lines.push(chalk.cyan(`Packet #${this.packetCount}`) + chalk.gray(` @ ${timestamp}`));
+    const reportIdStr = this.lastReportId !== undefined ? chalk.yellow(` [ReportID: ${this.lastReportId}]`) : '';
+    lines.push(chalk.cyan(`Packet #${this.packetCount}`) + reportIdStr + chalk.gray(` @ ${timestamp}`));
 
     if (this.showRaw) {
       const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');

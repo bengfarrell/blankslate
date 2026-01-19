@@ -265,8 +265,8 @@ class WalkthroughController:
                     # Convert to DeviceInfo object
                     from .walkthrough_types import DeviceInfo
                     device_info = DeviceInfo(
-                        vendor_id=device_info_dict.get('vendor_id', 0x28bd),
-                        product_id=device_info_dict.get('product_id', 0x2904),
+                        vendor_id=device_info_dict.get('vendor_id', 0x0000),  # Generic mock device
+                        product_id=device_info_dict.get('product_id', 0x0000),
                         product_string=device_info_dict.get('product_string', 'Mock Tablet'),
                         usage_page=device_info_dict.get('usage_page', 13),
                         usage=device_info_dict.get('usage', 2),

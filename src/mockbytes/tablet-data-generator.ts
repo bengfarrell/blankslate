@@ -30,6 +30,7 @@ export interface DrawingPath {
 export interface GeneratorConfig {
   maxX: number;
   maxY: number;
+  maxPressure: number;  // Maximum pressure value (e.g., 8191 for 13-bit, 16383 for 14-bit)
   reportId: number;
   statusByte: number;
   sampleRate: number; // Hz (samples per second)
@@ -38,15 +39,18 @@ export interface GeneratorConfig {
 
 /**
  * Generates realistic tablet data packets for testing
+ * 
+ * Default values are generic; device-specific values should come from config.
  */
 export class TabletDataGenerator {
   private config: GeneratorConfig;
   private defaultConfig: GeneratorConfig = {
-    maxX: 16000,      // Match XP-Pen Deco 640 X resolution
-    maxY: 9000,       // Match XP-Pen Deco 640 Y resolution
-    reportId: 2,
-    statusByte: 0xa0, // Stylus mode
-    sampleRate: 200,  // 200 Hz
+    maxX: 65535,        // Generic 16-bit max (actual value from config)
+    maxY: 65535,        // Generic 16-bit max (actual value from config)
+    maxPressure: 8191,  // Generic 13-bit max (actual value from config)
+    reportId: 2,        // Most common report ID (actual value from config)
+    statusByte: 0xa0,   // Stylus hover (0xa0 = 160)
+    sampleRate: 200,    // 200 Hz
     pressureVariation: 0.2,
   };
 
@@ -93,7 +97,7 @@ export class TabletDataGenerator {
     return {
       x: this.lastPacketState.x / this.config.maxX,
       y: this.lastPacketState.y / this.config.maxY,
-      pressure: this.lastPacketState.pressure / 16383,
+      pressure: this.lastPacketState.pressure / this.config.maxPressure,
       tiltX: this.lastPacketState.tiltX,
       tiltY: this.lastPacketState.tiltY,
       status: status,
@@ -112,8 +116,8 @@ export class TabletDataGenerator {
     // Normalize coordinates to device range
     const normalizedX = Math.round((x / 1.0) * this.config.maxX);
     const normalizedY = Math.round((y / 1.0) * this.config.maxY);
-    // Pressure is 2-byte (0-16383) to match XP-Pen Deco 640
-    const normalizedPressure = Math.round((pressure / 1.0) * 16383);
+    // Pressure is 2-byte, scaled to config max
+    const normalizedPressure = Math.round((pressure / 1.0) * this.config.maxPressure);
 
     // Convert tilt to byte range (-1 to 1 becomes 0-255)
     const tiltXByte = Math.round(((tiltX + 1) / 2) * 255);

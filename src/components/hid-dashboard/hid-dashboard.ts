@@ -295,8 +295,8 @@ export class HidDashboard extends LitElement {
     if (this.mockDevice) return;
 
     // Create mock device with config matching the loaded config
-    const maxX = this.config?.byteCodeMappings.x?.max ?? 16000;
-    const maxY = this.config?.byteCodeMappings.y?.max ?? 9000;
+    const maxX = this.config?.byteCodeMappings.x?.max ?? 65535;
+    const maxY = this.config?.byteCodeMappings.y?.max ?? 65535;
 
     this.mockDevice = new MockTabletDevice({
       maxX,
