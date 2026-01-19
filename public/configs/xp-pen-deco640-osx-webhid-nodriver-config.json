@@ -1,8 +1,8 @@
 {
-  "name": "XP Pen Deco 640",
-  "manufacturer": "XP Pen",
-  "model": "Deco 640",
-  "description": "XP Pen Deco 640, OSX, WebHID, no driver",
+  "name": "sdfsd",
+  "manufacturer": "sdfsd",
+  "model": "sdfsd",
+  "description": "sdfds",
   "vendorId": "0x28bd",
   "productId": "0x2904",
   "deviceInfo": {
@@ -12,9 +12,9 @@
     "usage_page": 65290,
     "usage": 1,
     "interfaces": [
-      13,
+      1,
       65290,
-      1
+      13
     ]
   },
   "reportId": 0,
@@ -34,31 +34,31 @@
   "byteCodeMappings": {
     "x": {
       "byteIndex": [
-        1,
-        2
+        2,
+        3
       ],
       "max": 31998,
       "type": "multi-byte-range"
     },
     "y": {
       "byteIndex": [
-        3,
-        4
+        4,
+        5
       ],
       "max": 17998,
       "type": "multi-byte-range"
     },
     "pressure": {
       "byteIndex": [
-        5,
-        6
+        6,
+        7
       ],
       "max": 16383,
       "type": "multi-byte-range"
     },
     "status": {
       "byteIndex": [
-        0
+        1
       ],
       "type": "code",
       "values": {
@@ -94,7 +94,7 @@
     },
     "tiltX": {
       "byteIndex": [
-        7
+        8
       ],
       "positiveMax": 60,
       "negativeMin": 196,
@@ -103,7 +103,7 @@
     },
     "tiltY": {
       "byteIndex": [
-        8
+        9
       ],
       "positiveMax": 60,
       "negativeMin": 196,
@@ -112,7 +112,7 @@
     },
     "tabletButtons": {
       "byteIndex": [
-        1
+        2
       ],
       "buttonCount": 8,
       "type": "code",

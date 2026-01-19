@@ -278,6 +278,42 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
   private pendingSaveConfig: ((value: { save: boolean; filename?: string }) => void) | null = null;
   private pendingGestureComplete: (() => void) | null = null;
 
+  // Bound keyboard handler for cleanup
+  private boundKeyboardHandler = this.handleKeyboard.bind(this);
+
+  // -------------------- Lifecycle --------------------
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    // Add keyboard listener for Enter key to trigger Next
+    window.addEventListener('keydown', this.boundKeyboardHandler);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    // Clean up keyboard listener
+    window.removeEventListener('keydown', this.boundKeyboardHandler);
+  }
+
+  private handleKeyboard(e: KeyboardEvent): void {
+    // Enter key triggers Next step (if navigation is pending)
+    if (e.key === 'Enter' && this.pendingNavigation) {
+      // Don't trigger if user is typing in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return;
+      }
+      e.preventDefault();
+      this.handleNavigation('next');
+    }
+    
+    // Escape key can skip current gesture (during capture)
+    if (e.key === 'Escape' && this.pendingGestureComplete) {
+      e.preventDefault();
+      this.handleGestureComplete();
+    }
+  }
+
   // -------------------- IWalkthroughView Implementation --------------------
 
   showHeader(): void {

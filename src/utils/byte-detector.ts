@@ -406,20 +406,27 @@ export function generateDeviceConfig(
   // WebHID offset: when packets don't include report ID, detected indices are 1 less
   // than physical truth, so we add 1 to convert to config indices
   const indexOffset = packetIncludesReportId ? 0 : 1;
-  // Group consecutive bytes for multi-byte values and apply WebHID offset if needed
-  const xBytes = groupConsecutiveBytes(horizontalBytes).map(i => i + indexOffset);
-  const yBytes = groupConsecutiveBytes(verticalBytes).map(i => i + indexOffset);
-  const pressureByteIndices = groupConsecutiveBytes(pressureBytes).map(i => i + indexOffset);
+  
+  // Keep ORIGINAL indices for max calculation (these match the raw packet structure)
+  const xOriginalIndices = groupConsecutiveBytes(horizontalBytes);
+  const yOriginalIndices = groupConsecutiveBytes(verticalBytes);
+  const pressureOriginalIndices = groupConsecutiveBytes(pressureBytes);
 
-  // Calculate max values from the actual raw packets (not per-byte analysis)
+  // Calculate max values using ORIGINAL indices (raw packet structure)
   // Enable debug logging to help diagnose any calibration issues
   const debug = typeof process !== 'undefined' && process.env?.DEBUG_WALKTHROUGH === '1';
   if (debug) {
     console.log('\n[DEBUG] Calculating max values from', allPackets.length, 'packets:');
+    console.log(`  packetIncludesReportId: ${packetIncludesReportId}, indexOffset: ${indexOffset}`);
   }
-  const xMax = calculateMultiByteMax(xBytes, allPackets, debug);
-  const yMax = calculateMultiByteMax(yBytes, allPackets, debug);
-  const pressureMax = calculateMultiByteMax(pressureByteIndices, allPackets, debug);
+  const xMax = calculateMultiByteMax(xOriginalIndices, allPackets, debug);
+  const yMax = calculateMultiByteMax(yOriginalIndices, allPackets, debug);
+  const pressureMax = calculateMultiByteMax(pressureOriginalIndices, allPackets, debug);
+  
+  // Apply offset for CONFIG indices (these go into the final config file)
+  const xBytes = xOriginalIndices.map(i => i + indexOffset);
+  const yBytes = yOriginalIndices.map(i => i + indexOffset);
+  const pressureByteIndices = pressureOriginalIndices.map(i => i + indexOffset);
 
   // Add button status values FIRST (before building status config)
   // This ensures keyboard/button states are included in the status mapping
@@ -610,7 +617,11 @@ export function generateDeviceConfig(
       }
 
       const tabletButtonsConfig: TabletButtonsConfig = {
-        byteIndex: [2 + indexOffset], // Button scan codes at byte 2 in packet (after report ID and status), +offset for config
+        // Button scan code is always at position 1 after status byte
+        // Config index is always 2 (works for both Report ID and WebHID cases):
+        // - With Report ID: raw index 2, read offset 0 → read from index 2
+        // - Without Report ID: raw index 1, read offset -1 → config 2 - 1 = index 1
+        byteIndex: [2],
         buttonCount: buttonMappings.length,
         type: 'code',
         values,

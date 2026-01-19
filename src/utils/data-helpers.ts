@@ -249,7 +249,16 @@ export function processDeviceData(
     if (key === 'tabletButtons' && mappingType === MappingType.CODE) {
       // Process button codes when in button mode
       // Use status byte at actual index (already computed with offset)
-      const statusByte = statusByteActualIndex !== null ? dataList[statusByteActualIndex] : 0;
+      // For WebHID (byteIndexOffset < 0), status byte is at raw index 0
+      let statusByte: number;
+      if (statusByteActualIndex !== null) {
+        statusByte = dataList[statusByteActualIndex];
+      } else if (byteIndexOffset < 0 && dataList.length > 0) {
+        // WebHID fallback: status byte is at index 0 when no status mapping exists
+        statusByte = dataList[0];
+      } else {
+        statusByte = 0;
+      }
       const inButtonMode = isButtonInterface || deviceState === 'buttons' || statusByte === 240;
       if (inButtonMode) {
         // Use 0-based indexing directly
@@ -264,11 +273,11 @@ export function processDeviceData(
             buttonNum = valuesMap[byteValue].button;
             
             // Check for status byte overrides (buttons sharing same scan code)
-            if (statusOverrides && statusByteActualIndex !== null) {
+            // Use the statusByte we already computed (handles WebHID fallback)
+            if (statusOverrides) {
               const scanCode = parseInt(byteValue, 10);
-              const currentStatusByte = dataList[statusByteActualIndex];
               const override = statusOverrides.find(
-                o => o.scanCode === scanCode && o.statusByte === currentStatusByte
+                o => o.scanCode === scanCode && o.statusByte === statusByte
               );
               if (override) {
                 buttonNum = override.buttonNumber;

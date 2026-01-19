@@ -165,6 +165,7 @@ export class WalkthroughController {
       autoAdvance: options.autoAdvance ?? false,
       skipDuplicates: options.skipDuplicates ?? true,
       filterIdlePackets: options.filterIdlePackets ?? true,
+      packetIncludesReportId: options.packetIncludesReportId ?? true, // Node.js default, WebHID sets false
       autoPlayMockGestures: options.autoPlayMockGestures ?? true,
       gesturePlayDuration: options.gesturePlayDuration ?? 2000,
       buttonConfirmations: options.buttonConfirmations ?? 3,
@@ -176,6 +177,7 @@ export class WalkthroughController {
       autoAdvance: this.options.autoAdvance,
       skipDuplicates: this.options.skipDuplicates,
       filterIdlePackets: this.options.filterIdlePackets,
+      packetIncludesReportId: this.options.packetIncludesReportId, // Critical for WebHID!
     });
 
     this.setupEngineEvents();
@@ -522,12 +524,14 @@ export class WalkthroughController {
       const dataHandler = (data: Uint8Array, _reportId?: number) => {
         if (finished) return;
 
-        // Packet structure (with report ID at byte 0):
-        // Byte 0: Report ID
-        // Byte 1: Status byte  
-        // Byte 2: Scan code for buttons
-        const statusByte = data.length > 1 ? data[1] : 0;
-        const scanCode = data.length > 2 ? data[2] : 0;
+        // Packet structure depends on packetIncludesReportId:
+        // Node.js (true):  [reportId, status, scanCode, ...]
+        // WebHID (false):  [status, scanCode, ...]
+        const statusIndex = this.options.packetIncludesReportId ? 1 : 0;
+        const scanCodeIndex = this.options.packetIncludesReportId ? 2 : 1;
+        
+        const statusByte = data.length > statusIndex ? data[statusIndex] : 0;
+        const scanCode = data.length > scanCodeIndex ? data[scanCodeIndex] : 0;
 
         // Skip idle packets
         if (scanCode === 0) return;
