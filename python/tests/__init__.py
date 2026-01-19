@@ -1,1 +1,1 @@
-"""Tests for thelearningtablet package"""
+"""Tests for blankslate package"""

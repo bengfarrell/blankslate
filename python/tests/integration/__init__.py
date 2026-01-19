@@ -1,1 +1,1 @@
-# Integration tests for thelearningtablet
+# Integration tests for blankslate

@@ -13,9 +13,9 @@ import argparse
 import asyncio
 import signal
 
-from thelearningtablet.core.walkthrough_controller import WalkthroughController, WalkthroughControllerOptions
-from thelearningtablet.core.hid_reader_factory import HIDReaderFactory
-from thelearningtablet.cli.cli_walkthrough_view import CLIWalkthroughView
+from blankslate.core.walkthrough_controller import WalkthroughController, WalkthroughControllerOptions
+from blankslate.core.hid_reader_factory import HIDReaderFactory
+from blankslate.cli.cli_walkthrough_view import CLIWalkthroughView
 
 # Global controller reference for signal handler
 _controller = None

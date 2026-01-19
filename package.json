@@ -1,5 +1,5 @@
 {
-  "name": "thelearningtablet",
+  "name": "blankslate",
   "version": "1.0.0",
   "description": "Graphics tablet controller with LitElement web components and Node.js CLI",
   "main": "dist/index.js",
@@ -82,7 +82,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bengfarrell/thelearningtablet.git"
+    "url": "https://github.com/bengfarrell/blankslate.git"
   },
   "dependencies": {
     "@spectrum-web-components/bundle": "^1.8.0",

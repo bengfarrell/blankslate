@@ -12,4 +12,4 @@ echo "Starting event viewer..."
 echo "To stop: run ./kill_tablet_processes.sh in another terminal"
 echo ""
 
-python -m thelearningtablet.cli.event_viewer -c my-tablet-config.json
+python -m blankslate.cli.event_viewer -c my-tablet-config.json

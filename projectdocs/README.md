@@ -62,7 +62,7 @@ npm run build         # Build for production
 
 ### Project Structure
 ```
-thelearningtablet/
+blankslate/
 ├── src/
 │   ├── components/        # LitElement web components
 │   │   ├── hid-data-reader/

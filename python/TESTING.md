@@ -12,7 +12,7 @@ pip install -e ".[dev]"
 pytest
 
 # Run with coverage
-pytest --cov=thelearningtablet --cov-report=html
+pytest --cov=blankslate --cov-report=html
 
 # Use the test runner script
 ./run_tests.sh
@@ -82,7 +82,7 @@ pytest -vv
 After running tests with coverage, open the HTML report:
 
 ```bash
-pytest --cov=thelearningtablet --cov-report=html
+pytest --cov=blankslate --cov-report=html
 open htmlcov/index.html  # macOS
 xdg-open htmlcov/index.html  # Linux
 ```
@@ -154,7 +154,7 @@ These tests are designed to run in CI/CD pipelines:
   run: |
     cd python
     pip install -e ".[dev]"
-    pytest --cov=thelearningtablet --cov-report=xml
+    pytest --cov=blankslate --cov-report=xml
 ```
 
 ## Comparison with TypeScript Tests

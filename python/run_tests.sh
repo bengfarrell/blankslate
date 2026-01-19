@@ -16,7 +16,7 @@ fi
 
 # Run tests with coverage
 echo "Running tests with coverage..."
-python3 -m pytest -v --cov=thelearningtablet --cov-report=term-missing --cov-report=html
+python3 -m pytest -v --cov=blankslate --cov-report=term-missing --cov-report=html
 
 echo
 echo "✅ Tests complete!"

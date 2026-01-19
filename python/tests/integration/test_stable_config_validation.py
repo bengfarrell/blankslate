@@ -15,11 +15,11 @@ import json
 import sys
 from pathlib import Path
 
-from thelearningtablet.core.walkthrough_controller import WalkthroughController, WalkthroughControllerOptions, UserMetadata
-from thelearningtablet.core.hid_reader_factory import HIDReaderFactory
-from thelearningtablet.mockbytes.mock_hid_reader import MockHIDReader
-from thelearningtablet.mockbytes.tablet_data_generator import TabletDataGenerator, GeneratorConfig
-from thelearningtablet.cli.cli_walkthrough_view import CLIWalkthroughView
+from blankslate.core.walkthrough_controller import WalkthroughController, WalkthroughControllerOptions, UserMetadata
+from blankslate.core.hid_reader_factory import HIDReaderFactory
+from blankslate.mockbytes.mock_hid_reader import MockHIDReader
+from blankslate.mockbytes.tablet_data_generator import TabletDataGenerator, GeneratorConfig
+from blankslate.cli.cli_walkthrough_view import CLIWalkthroughView
 
 
 # Path to stable config (relative to this file's location)

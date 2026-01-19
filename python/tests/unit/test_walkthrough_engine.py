@@ -5,8 +5,8 @@ Tests button status byte handling and config generation
 """
 
 import pytest
-from thelearningtablet.core.walkthrough_engine import WalkthroughEngine, WalkthroughEngineOptions
-from thelearningtablet.core.walkthrough_types import UserMetadata, DeviceInfo
+from blankslate.core.walkthrough_engine import WalkthroughEngine, WalkthroughEngineOptions
+from blankslate.core.walkthrough_types import UserMetadata, DeviceInfo
 
 
 class TestButtonStatusByteHandling:
@@ -159,7 +159,7 @@ class TestButtonStatusByteHandling:
         End-to-end test: Generate a config with driver-mode buttons,
         then verify it can correctly identify button packets.
         """
-        from thelearningtablet.core.data_helpers import process_device_data
+        from blankslate.core.data_helpers import process_device_data
 
         engine.set_device_info(device_info)
         engine.set_user_metadata(user_metadata)

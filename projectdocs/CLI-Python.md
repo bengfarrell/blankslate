@@ -55,17 +55,17 @@ After installing with `pip install -e .`:
 
 ```bash
 # Interactive configuration generator
-python -m thelearningtablet.cli.config_generator
+python -m blankslate.cli.config_generator
 # or
 tablet-config
 
 # View tablet events
-python -m thelearningtablet.cli.event_viewer -c path/to/config.json --live
+python -m blankslate.cli.event_viewer -c path/to/config.json --live
 # or
 tablet-events -c path/to/config.json --live
 
 # Start WebSocket server
-python -m thelearningtablet.cli.websocket_server -c path/to/config.json
+python -m blankslate.cli.websocket_server -c path/to/config.json
 # or
 tablet-websocket -c path/to/config.json
 ```

@@ -144,7 +144,7 @@ python/
 ├── view_events.py              # Standalone event viewer
 ├── run_config_gen.sh           # Shell wrapper for config gen
 ├── run_viewer.sh               # Shell wrapper for event viewer
-├── thelearningtablet/          # Main package
+├── blankslate/          # Main package
 │   ├── cli/                    # CLI modules
 │   ├── core/                   # Core functionality
 │   ├── mockbytes/              # Mock data generation

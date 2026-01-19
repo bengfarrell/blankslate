@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "thelearningtablet"
+name = "blankslate"
 version = "1.0.0"
 description = "Graphics tablet controller with HID data reading and processing"
 readme = "README.md"
@@ -56,19 +56,19 @@ build = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bengfarrell/thelearningtablet"
-Repository = "https://github.com/bengfarrell/thelearningtablet"
-Documentation = "https://github.com/bengfarrell/thelearningtablet#readme"
-Issues = "https://github.com/bengfarrell/thelearningtablet/issues"
+Homepage = "https://github.com/bengfarrell/blankslate"
+Repository = "https://github.com/bengfarrell/blankslate"
+Documentation = "https://github.com/bengfarrell/blankslate#readme"
+Issues = "https://github.com/bengfarrell/blankslate/issues"
 
 [project.scripts]
-tablet-config-generator = "thelearningtablet.cli.config_generator:main"
-tablet-events = "thelearningtablet.cli.event_viewer:main"
-tablet-websocket = "thelearningtablet.cli.websocket_server:main"
+tablet-config-generator = "blankslate.cli.config_generator:main"
+tablet-events = "blankslate.cli.event_viewer:main"
+tablet-websocket = "blankslate.cli.websocket_server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["thelearningtablet*"]
+include = ["blankslate*"]
 exclude = ["tests*"]
 
 [tool.black]

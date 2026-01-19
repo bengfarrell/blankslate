@@ -12,7 +12,7 @@ Usage:
 import sys
 import argparse
 
-from thelearningtablet.cli.event_viewer import EventViewer
+from blankslate.cli.event_viewer import EventViewer
 
 def main():
     parser = argparse.ArgumentParser(description='View tablet events')

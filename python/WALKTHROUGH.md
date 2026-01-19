@@ -58,12 +58,12 @@ tablet-config-generator --mock
 
 ```python
 import asyncio
-from thelearningtablet.core import (
+from blankslate.core import (
     WalkthroughController,
     WalkthroughControllerOptions,
     HIDReaderFactory
 )
-from thelearningtablet.cli import CLIWalkthroughView
+from blankslate.cli import CLIWalkthroughView
 
 async def run_walkthrough():
     view = CLIWalkthroughView()
@@ -127,7 +127,7 @@ The engine automatically detects which bytes represent different tablet features
 The mock tablet generator creates realistic HID packets:
 
 ```python
-from thelearningtablet.mockbytes import TabletDataGenerator
+from blankslate.mockbytes import TabletDataGenerator
 
 generator = TabletDataGenerator()
 
@@ -148,7 +148,7 @@ for packet in packets:
 The mock reader can play back gestures automatically:
 
 ```python
-from thelearningtablet.mockbytes import create_mock_hid_reader
+from blankslate.mockbytes import create_mock_hid_reader
 
 reader = create_mock_hid_reader()
 reader.start_reading(lambda packet: print(packet.hex()))
@@ -190,7 +190,7 @@ config = engine.get_complete_config()
 
 ```
 python/
-├── thelearningtablet/
+├── blankslate/
 │   ├── core/
 │   │   ├── walkthrough_types.py       # Type definitions
 │   │   ├── walkthrough_engine.py      # Core state machine

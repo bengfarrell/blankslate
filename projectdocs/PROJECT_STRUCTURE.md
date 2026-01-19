@@ -5,7 +5,7 @@ Complete overview of The Learning Tablet project organization.
 ## 📁 Directory Structure
 
 ```
-thelearningtablet/
+blankslate/
 ├── projectdocs/                     # 📚 All project documentation
 │   ├── README.md                    # Documentation index
 │   ├── QUICKSTART.md                # Quick start guide
@@ -54,7 +54,7 @@ thelearningtablet/
 │   └── setup.ts                     # Test configuration
 │
 ├── dist/                            # 📦 Build output (gitignored)
-│   └── thelearningtablet.js
+│   └── blankslate.js
 │
 ├── node_modules/                    # 📚 Dependencies (gitignored)
 │
@@ -211,7 +211,7 @@ npm run build
 ```
 
 **Outputs**:
-- `dist/thelearningtablet.js` - Bundled library
+- `dist/blankslate.js` - Bundled library
 - Type definitions for consumers
 
 ### Development

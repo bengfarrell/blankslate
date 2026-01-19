@@ -56,14 +56,14 @@ All documentation is organized in the [`projectdocs/`](./projectdocs) folder:
 ## 🛠️ Installation
 
 ```bash
-npm install thelearningtablet
+npm install blankslate
 ```
 
 Or for development:
 
 ```bash
-git clone https://github.com/bengfarrell/thelearningtablet.git
-cd thelearningtablet
+git clone https://github.com/bengfarrell/blankslate.git
+cd blankslate
 npm install
 ```
 
@@ -72,7 +72,7 @@ npm install
 ### As a Library
 
 ```typescript
-import { Config, analyzeBytes, calculateMultiByteMax } from 'thelearningtablet';
+import { Config, analyzeBytes, calculateMultiByteMax } from 'blankslate';
 
 // Load configuration
 const config = await Config.load('path/to/config.json');
@@ -89,7 +89,7 @@ const xMax = calculateMultiByteMax(xBytes.map(b => b.byteIndex), packets);
 ### Web Components
 
 ```typescript
-import 'thelearningtablet/components';
+import 'blankslate/components';
 
 // Use in HTML
 <hid-app></hid-app>
@@ -163,7 +163,7 @@ npm run preview
 ## 📁 Project Structure
 
 ```
-thelearningtablet/
+blankslate/
 ├── src/
 │   ├── components/           # LitElement web components
 │   │   ├── hid-data-reader/  # Main HID data reader component
@@ -274,7 +274,7 @@ pytest
 ### As a Library
 
 ```python
-from thelearningtablet import Config, HIDReader, find_and_open_device
+from blankslate import Config, HIDReader, find_and_open_device
 
 # Load configuration
 config = Config.load('path/to/config.json')
@@ -333,7 +333,7 @@ pytest
 ```
 python/
 ├── pyproject.toml              # Modern Python packaging
-├── thelearningtablet/
+├── blankslate/
 │   ├── __init__.py            # Main package exports
 │   ├── core/                  # Core functionality
 │   │   ├── data_helpers.py    # Data parsing functions

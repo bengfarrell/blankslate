@@ -25,7 +25,7 @@ pytest
 
 ### Run with coverage
 ```bash
-pytest --cov=thelearningtablet --cov-report=html
+pytest --cov=blankslate --cov-report=html
 ```
 
 ### Run specific test file

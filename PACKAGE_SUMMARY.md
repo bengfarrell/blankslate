@@ -11,16 +11,16 @@ This repository now contains two complete implementations of The Learning Tablet
 
 ### Installation
 ```bash
-npm install thelearningtablet
+npm install blankslate
 ```
 
 ### Usage
 ```typescript
 // As library
-import { Config, analyzeBytes } from 'thelearningtablet';
+import { Config, analyzeBytes } from 'blankslate';
 
 // Web components
-import 'thelearningtablet/components';
+import 'blankslate/components';
 
 // CLI
 npx tablet-config
@@ -52,7 +52,7 @@ pip install -e .
 ### Usage
 ```python
 # As library
-from thelearningtablet import Config, HIDReader, find_and_open_device
+from blankslate import Config, HIDReader, find_and_open_device
 
 # CLI
 tablet-config
@@ -62,20 +62,20 @@ tablet-websocket -c config.json
 
 ### Files Created
 - ✅ `python/pyproject.toml` - Modern Python packaging with dependencies and CLI entry points
-- ✅ `python/thelearningtablet/__init__.py` - Main package exports
-- ✅ `python/thelearningtablet/core/` - Core functionality
+- ✅ `python/blankslate/__init__.py` - Main package exports
+- ✅ `python/blankslate/core/` - Core functionality
   - ✅ `__init__.py`
   - ✅ `data_helpers.py` - Ported from TypeScript
   - ✅ `hid_reader.py` - Copied from temppython
   - ✅ `byte_detector.py` - Ported from TypeScript
-- ✅ `python/thelearningtablet/models/` - Data models
+- ✅ `python/blankslate/models/` - Data models
   - ✅ `__init__.py`
   - ✅ `config.py` - Ported from TypeScript
-- ✅ `python/thelearningtablet/utils/` - Utilities
+- ✅ `python/blankslate/utils/` - Utilities
   - ✅ `__init__.py`
   - ✅ `finddevice.py` - Copied from temppython
   - ✅ `websocket_server.py` - Copied from temppython
-- ✅ `python/thelearningtablet/cli/` - CLI tools
+- ✅ `python/blankslate/cli/` - CLI tools
   - ✅ `__init__.py`
   - ✅ `config_generator.py` - NEW
   - ✅ `event_viewer.py` - NEW
@@ -102,7 +102,7 @@ npx tablet-events --help
 npx tablet-websocket --help
 
 # Test library imports
-node -e "import('thelearningtablet').then(m => console.log(Object.keys(m)))"
+node -e "import('blankslate').then(m => console.log(Object.keys(m)))"
 
 # Run existing tests
 npm test
@@ -120,13 +120,13 @@ tablet-events --help
 tablet-websocket --help
 
 # Test library imports
-python -c "from thelearningtablet import Config, HIDReader; print('OK')"
+python -c "from blankslate import Config, HIDReader; print('OK')"
 
 # Run tests
 pytest
 
 # Run tests with coverage
-pytest --cov=thelearningtablet --cov-report=html
+pytest --cov=blankslate --cov-report=html
 
 # Or use the test runner script
 ./run_tests.sh

@@ -5,7 +5,7 @@ Tests the core data parsing functions that interpret HID bytes.
 """
 
 import pytest
-from thelearningtablet.core.data_helpers import (
+from blankslate.core.data_helpers import (
     parse_code,
     parse_range_data,
     parse_multi_byte_range_data,

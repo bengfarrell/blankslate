@@ -60,7 +60,7 @@ tablet-events --help
 tablet-websocket --help
 
 # Test Python imports
-python -c "from thelearningtablet import Config, HIDReader; print('✅ Import successful!')"
+python -c "from blankslate import Config, HIDReader; print('✅ Import successful!')"
 ```
 
 ## Daily Workflow
@@ -94,7 +94,7 @@ source venv/bin/activate
 pytest
 
 # Run with coverage
-pytest --cov=thelearningtablet --cov-report=html
+pytest --cov=blankslate --cov-report=html
 
 # Run specific test file
 pytest tests/unit/test_config.py
@@ -146,7 +146,7 @@ tablet-events --config ../configs/wacom-intuos-s.json
 tablet-events --config ../configs/wacom-intuos-s.json --format json
 ```
 
-**Note for WebStorm users:** If Ctrl+C doesn't work when running as a module (`python -m thelearningtablet.cli.event_viewer`), use the direct script wrapper instead:
+**Note for WebStorm users:** If Ctrl+C doesn't work when running as a module (`python -m blankslate.cli.event_viewer`), use the direct script wrapper instead:
 
 ```bash
 # Run as direct script (Ctrl+C works in WebStorm)
@@ -181,36 +181,36 @@ tablet-websocket --config ../configs/wacom-intuos-s.json --verbose
 
 ```bash
 # Format code with black
-black thelearningtablet tests
+black blankslate tests
 
 # Check formatting without changes
-black --check thelearningtablet tests
+black --check blankslate tests
 ```
 
 ### Linting
 
 ```bash
 # Run ruff linter
-ruff check thelearningtablet tests
+ruff check blankslate tests
 
 # Auto-fix issues
-ruff check --fix thelearningtablet tests
+ruff check --fix blankslate tests
 ```
 
 ### Type Checking
 
 ```bash
 # Run mypy type checker
-mypy thelearningtablet
+mypy blankslate
 ```
 
 ### Run All Checks
 
 ```bash
 # Format, lint, type check, and test
-black thelearningtablet tests && \
-ruff check thelearningtablet tests && \
-mypy thelearningtablet && \
+black blankslate tests && \
+ruff check blankslate tests && \
+mypy blankslate && \
 pytest
 ```
 
@@ -220,7 +220,7 @@ pytest
 
 ```python
 #!/usr/bin/env python3
-from thelearningtablet import Config, HIDReader, parse_multi_byte_range_data
+from blankslate import Config, HIDReader, parse_multi_byte_range_data
 
 # Load a tablet configuration
 config = Config.load('../configs/wacom-intuos-s.json')
@@ -243,10 +243,10 @@ If you want to use this package in another project:
 
 ```bash
 # Install from local directory
-pip install /path/to/thelearningtablet/python
+pip install /path/to/blankslate/python
 
 # Or install in editable mode
-pip install -e /path/to/thelearningtablet/python
+pip install -e /path/to/blankslate/python
 ```
 
 ## Troubleshooting
@@ -280,7 +280,7 @@ pip install -e ".[dev]"
 
 Use the direct script wrapper instead of the module:
 ```bash
-# Instead of: python -m thelearningtablet.cli.event_viewer
+# Instead of: python -m blankslate.cli.event_viewer
 # Use:
 python view_events.py -c my-tablet-config.json
 ```
@@ -305,7 +305,7 @@ If you accidentally suspended a process with Ctrl+Z, this script will clean it u
 ```
 python/
 ├── venv/                    # Virtual environment (git-ignored)
-├── thelearningtablet/       # Source code
+├── blankslate/       # Source code
 │   ├── __init__.py
 │   ├── models/              # Data models
 │   ├── core/                # Core functionality
@@ -398,7 +398,7 @@ jobs:
       - name: Run tests
         run: |
           cd python
-          pytest --cov=thelearningtablet --cov-report=xml
+          pytest --cov=blankslate --cov-report=xml
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 ```

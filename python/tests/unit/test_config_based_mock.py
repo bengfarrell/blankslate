@@ -7,7 +7,7 @@ import pytest
 import json
 from pathlib import Path
 
-from thelearningtablet.mockbytes import (
+from blankslate.mockbytes import (
     ConfigBasedGenerator,
     create_config_based_generator,
     TabletDataGenerator,
@@ -15,7 +15,7 @@ from thelearningtablet.mockbytes import (
     DRIVER_MODE_CONFIG,
     DRIVERLESS_MODE_CONFIG
 )
-from thelearningtablet.core.data_helpers import process_device_data
+from blankslate.core.data_helpers import process_device_data
 
 
 @pytest.fixture
@@ -211,7 +211,7 @@ class TestMockReaderIntegration:
 
     def test_mock_reader_with_config_generator(self, xp_pen_generator):
         """Test that MockHIDReader works with config generator"""
-        from thelearningtablet.mockbytes import MockHIDReader
+        from blankslate.mockbytes import MockHIDReader
 
         # Create mock reader with config generator
         reader = MockHIDReader(custom_generator=xp_pen_generator)
@@ -226,7 +226,7 @@ class TestMockReaderIntegration:
 
     def test_mock_reader_gesture_playback(self, xp_pen_generator):
         """Test that gestures work with config generator"""
-        from thelearningtablet.mockbytes import MockHIDReader
+        from blankslate.mockbytes import MockHIDReader
         import asyncio
 
         reader = MockHIDReader(custom_generator=xp_pen_generator)

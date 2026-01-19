@@ -5,7 +5,7 @@ Tests byte analysis and detection algorithms.
 """
 
 import pytest
-from thelearningtablet.core.byte_detector import (
+from blankslate.core.byte_detector import (
     analyze_bytes,
     get_best_guess_bytes_by_variance,
     calculate_multi_byte_max,

@@ -12,4 +12,4 @@ echo "Starting config generator..."
 echo "To stop: Press Ctrl+C or run ./kill_tablet_processes.sh in another terminal"
 echo ""
 
-python -m thelearningtablet.cli.config_generator "$@"
+python -m blankslate.cli.config_generator "$@"

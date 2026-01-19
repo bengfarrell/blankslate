@@ -9,7 +9,7 @@ import json
 import os
 from pathlib import Path
 
-from thelearningtablet.models import Config
+from blankslate.models import Config
 
 
 class TestConfigUtilities:

@@ -133,7 +133,7 @@ npm run websocket -- -c config.json --port 8765
 
 ```
 python/
-├── thelearningtablet/
+├── blankslate/
 │   ├── core/
 │   │   ├── walkthrough_types.py          ✅ Complete
 │   │   ├── walkthrough_engine.py         ✅ Complete
@@ -212,7 +212,7 @@ pytest
 pytest tests/unit/test_config.py -v
 
 # Run with coverage
-pytest --cov=thelearningtablet --cov-report=html
+pytest --cov=blankslate --cov-report=html
 ```
 
 ### Test Coverage
