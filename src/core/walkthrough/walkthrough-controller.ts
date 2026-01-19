@@ -438,9 +438,9 @@ export class WalkthroughController {
 
     this.view.onCaptureStart();
 
-    // Start reading
-    this.reader.startReading((data) => {
-      this.engine.processPacket(data);
+    // Start reading - pass report ID for multi-interface device handling
+    this.reader.startReading((data, reportId) => {
+      this.engine.processPacket(data, reportId);
     });
 
     this.engine.startCapture();
@@ -519,18 +519,28 @@ export class WalkthroughController {
         }
       });
 
-      const dataHandler = (data: Uint8Array) => {
+      const dataHandler = (data: Uint8Array, _reportId?: number) => {
         if (finished) return;
 
-        const statusByte = data[0];
-        const scanCode = data.length > 1 ? data[1] : 0;
+        // Packet structure (with report ID at byte 0):
+        // Byte 0: Report ID
+        // Byte 1: Status byte  
+        // Byte 2: Scan code for buttons
+        const statusByte = data.length > 1 ? data[1] : 0;
+        const scanCode = data.length > 2 ? data[2] : 0;
 
         // Skip idle packets
         if (scanCode === 0) return;
 
-        // Skip known pen status bytes
+        // Skip known pen status bytes (160-165, 192)
         if (statusByte >= 0xA0 && statusByte <= 0xA5) return;
         if (statusByte === 0xC0) return;
+        
+        // Only process button mode packets:
+        //   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
+        //   With driver: 240 (0xF0) - bit-flags at byte 1
+        const BUTTON_MODE_STATUS = new Set([0, 1, 3, 6, 240]);
+        if (!BUTTON_MODE_STATUS.has(statusByte)) return;
 
         seenPackets.push({ status: statusByte, scanCode });
 
@@ -622,8 +632,8 @@ export class WalkthroughController {
     this.captureStatus.isCapturing = true;
     this.captureStatus.packetCount = 0;
     
-    this.reader.startReading((data) => {
-      this.engine.processPacket(data);
+    this.reader.startReading((data, reportId) => {
+      this.engine.processPacket(data, reportId);
     });
     this.engine.startCapture();
     this.view.onCaptureStart();
@@ -673,8 +683,8 @@ export class WalkthroughController {
   /**
    * Process a packet (for external feeding)
    */
-  processPacket(data: Uint8Array): void {
-    this.engine.processPacket(data);
+  processPacket(data: Uint8Array, reportId?: number): void {
+    this.engine.processPacket(data, reportId);
   }
 
   /**

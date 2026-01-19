@@ -127,6 +127,50 @@ Both platforms guide users through the same steps (defined in `walkthrough-engin
 
 ---
 
+## Packet Format Handling
+
+The walkthrough accounts for differences in how each platform receives HID packets:
+
+### Platform Differences
+
+| Platform | Report ID in Packet | Status Byte Index |
+|----------|--------------------|--------------------|
+| **Python/Node.js** | Yes (byte 0) | 1 |
+| **WebHID** | No (stripped by browser) | 0 |
+
+### Byte Index Offset in Config Generation
+
+When generating configs, the walkthrough engine applies an offset for WebHID to ensure all configs use the same indexing convention (report ID at byte 0):
+
+```typescript
+// Node.js CLI walkthrough
+new WalkthroughController(view, reader, {
+  packetIncludesReportId: true  // Detected indices used as-is
+});
+
+// WebHID browser walkthrough  
+new WalkthroughController(view, reader, {
+  packetIncludesReportId: false  // +1 added to detected indices
+});
+```
+
+### Generated Config Example
+
+Both platforms produce configs with the same byte index convention:
+
+```json
+{
+  "status": { "byteIndex": [1] },     // Always 1 (after report ID)
+  "x": { "byteIndex": [2, 3] },       // Always 2,3
+  "y": { "byteIndex": [4, 5] },       // Always 4,5
+  "pressure": { "byteIndex": [6, 7] }  // Always 6,7
+}
+```
+
+This unified format allows configs generated on any platform to work with any viewer.
+
+---
+
 ## Key Design Decisions
 
 1. **`WalkthroughEngine` is platform-agnostic** - All step logic, state transitions, and byte analysis happen in shared code
@@ -138,3 +182,5 @@ Both platforms guide users through the same steps (defined in `walkthrough-engin
 4. **Shared strings for consistency** - Both platforms use the same instructional text from `walkthrough-strings.ts`
 
 5. **Mock mode for development** - Both platforms support `--mock` flag for testing without physical hardware
+
+6. **Unified config byte indices** - The `packetIncludesReportId` option ensures all generated configs use consistent indexing (report ID at byte 0) regardless of which platform created them

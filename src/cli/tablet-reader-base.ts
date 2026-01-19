@@ -505,7 +505,7 @@ export abstract class TabletReaderBase {
       }
 
       // Restart reading
-      this.reader.startReading((data, _reportId) => {
+      this.reader.startReading((data) => {
         this.handlePacket(data);
       });
 

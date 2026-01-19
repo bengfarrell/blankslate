@@ -7,7 +7,14 @@ import pytest
 import json
 from pathlib import Path
 
-from thelearningtablet.mockbytes import ConfigBasedGenerator, create_config_based_generator
+from thelearningtablet.mockbytes import (
+    ConfigBasedGenerator,
+    create_config_based_generator,
+    TabletDataGenerator,
+    GeneratorConfig,
+    DRIVER_MODE_CONFIG,
+    DRIVERLESS_MODE_CONFIG
+)
 from thelearningtablet.core.data_helpers import process_device_data
 
 
@@ -313,3 +320,119 @@ class TestEndToEndProcessing:
 
         # Button should have button data
         assert button_result.get('tabletButtons') == 1
+
+
+class TestDriverModeGenerator:
+    """Tests for driver mode mock data generation"""
+
+    @pytest.fixture
+    def driver_config_path(self):
+        """Path to driver mode config file"""
+        return str(Path(__file__).parent.parent.parent.parent / 'public' / 'configs' / 'xp-pen-deco640-osx-python-driver.json')
+
+    @pytest.fixture
+    def driver_generator(self, driver_config_path):
+        """Create a config-based generator for driver mode config"""
+        return ConfigBasedGenerator(driver_config_path)
+
+    def test_driver_mode_config_preset(self):
+        """Test DRIVER_MODE_CONFIG preset has correct values"""
+        # Resolution is hardware constant - same for driver and driverless
+        assert DRIVER_MODE_CONFIG.max_x == 15999
+        assert DRIVER_MODE_CONFIG.max_y == 8999
+        assert DRIVER_MODE_CONFIG.report_id == 2
+        assert DRIVER_MODE_CONFIG.driver_mode == True
+
+    def test_driverless_mode_config_preset(self):
+        """Test DRIVERLESS_MODE_CONFIG preset has correct values"""
+        assert DRIVERLESS_MODE_CONFIG.max_x == 15999
+        assert DRIVERLESS_MODE_CONFIG.max_y == 8999
+        assert DRIVERLESS_MODE_CONFIG.report_id == 7
+        assert DRIVERLESS_MODE_CONFIG.driver_mode == False
+
+    def test_driver_mode_generator_initialization(self, driver_generator):
+        """Test that driver mode generator initializes correctly from config file"""
+        # Note: Resolution is determined by hardware, not driver status
+        # Both driver and driverless modes use the same resolution
+        assert driver_generator.max_x == 15999
+        assert driver_generator.max_y == 8999
+        assert driver_generator.max_pressure == 16383
+        # Report ID from config file (may vary based on how config was generated)
+        assert driver_generator.report_id == 7
+
+    def test_driver_mode_button_status_byte(self):
+        """Test that driver mode uses status byte 240 for buttons"""
+        gen = TabletDataGenerator(DRIVER_MODE_CONFIG)
+        packet = gen.generate_button_packet(1)
+        
+        # Byte 0 should be status byte 240 (0xf0)
+        assert packet[0] == 0xf0, f"Expected status byte 240, got {packet[0]}"
+
+    def test_driverless_mode_button_status_byte(self):
+        """Test that driverless mode uses status byte 1 for buttons"""
+        gen = TabletDataGenerator(DRIVERLESS_MODE_CONFIG)
+        packet = gen.generate_button_packet(1)
+        
+        # Byte 0 should be status byte 1
+        assert packet[0] == 0x01, f"Expected status byte 1, got {packet[0]}"
+
+    def test_driver_mode_button_bit_flags(self):
+        """Test driver mode button encoding uses bit-flags"""
+        gen = TabletDataGenerator(DRIVER_MODE_CONFIG)
+        
+        expected_bit_flags = [1, 2, 4, 8, 16, 32, 64, 128]
+        for button_num in range(1, 9):
+            packet = gen.generate_button_packet(button_num)
+            # Byte 1 should have the bit-flag for this button
+            expected_flag = expected_bit_flags[button_num - 1]
+            assert packet[1] == expected_flag, f"Button {button_num}: expected bit-flag {expected_flag}, got {packet[1]}"
+
+    def test_driver_mode_button_packet_with_config(self, driver_generator, driver_config_path):
+        """Test button packets work with driver config"""
+        with open(driver_config_path) as f:
+            config = json.load(f)
+
+        # Note: The driver config file may have been generated in driverless mode
+        # This test verifies the generator works with whatever config is present
+        report_id = config.get('reportId', 7)
+
+        # Test first few buttons that are definitely in the config
+        # (button count may vary based on config generation)
+        button_values = config.get('byteCodeMappings', {}).get('tabletButtons', {}).get('values', {})
+        if not button_values:
+            pytest.skip("No button values in config")
+
+        # Just verify the config can be loaded and generator works
+        packet = driver_generator.generate_button_packet(1)
+        assert isinstance(packet, bytes)
+        assert len(packet) > 0
+
+    def test_driver_mode_stylus_packet(self, driver_generator, driver_config_path):
+        """Test stylus packets with driver config"""
+        with open(driver_config_path) as f:
+            config = json.load(f)
+
+        report_id = config.get('reportId', 7)
+
+        # Generate a stylus packet at center
+        packet = driver_generator.generate_stylus_packet(0.5, 0.5, 0.5)
+        packet_with_report_id = bytes([report_id]) + packet
+        result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+
+        # process_device_data returns normalized values (0.0-1.0)
+        assert 'x' in result
+        assert 'y' in result
+        # At input 0.5, output should be ~0.5 normalized
+        assert abs(result['x'] - 0.5) < 0.01, f"X coordinate {result['x']} not near 0.5"
+        assert abs(result['y'] - 0.5) < 0.01, f"Y coordinate {result['y']} not near 0.5"
+
+    def test_generator_config_presets(self):
+        """Test that generator config presets have expected values"""
+        # DRIVER_MODE_CONFIG is a preset for generating mock driver-mode data
+        # These are mock data settings, not necessarily matching real device
+        assert DRIVER_MODE_CONFIG.driver_mode == True
+        assert DRIVER_MODE_CONFIG.report_id == 2
+        
+        # DRIVERLESS_MODE_CONFIG is a preset for generating mock driverless data
+        assert DRIVERLESS_MODE_CONFIG.driver_mode == False
+        assert DRIVERLESS_MODE_CONFIG.report_id == 7

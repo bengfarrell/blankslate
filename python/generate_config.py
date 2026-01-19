@@ -12,8 +12,6 @@ import sys
 import argparse
 import asyncio
 import signal
-import logging
-from datetime import datetime
 
 from thelearningtablet.core.walkthrough_controller import WalkthroughController, WalkthroughControllerOptions
 from thelearningtablet.core.hid_reader_factory import HIDReaderFactory
@@ -21,18 +19,6 @@ from thelearningtablet.cli.cli_walkthrough_view import CLIWalkthroughView
 
 # Global controller reference for signal handler
 _controller = None
-
-# Set up logging to file
-log_filename = f"walkthrough_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_filename),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
 
 
 def signal_handler(signum, frame):
@@ -64,9 +50,6 @@ async def run_walkthrough(use_mock: bool = False) -> int:
     global _controller
 
     try:
-        logger.info(f"Starting walkthrough (mock={use_mock})")
-        logger.info(f"Log file: {log_filename}")
-
         # Create view and reader factory
         view = CLIWalkthroughView()
         reader_factory = HIDReaderFactory()
@@ -87,7 +70,6 @@ async def run_walkthrough(use_mock: bool = False) -> int:
         # Run the walkthrough
         await controller.run(force_mock=use_mock)
 
-        logger.info("Walkthrough completed successfully")
         return 0
 
     except KeyboardInterrupt:

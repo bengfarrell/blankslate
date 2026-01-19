@@ -49,6 +49,17 @@ export interface WalkthroughEngineOptions {
   skipDuplicates?: boolean;
   /** Filter out idle/out-of-range packets (default: true) */
   filterIdlePackets?: boolean;
+  /** 
+   * Whether packets include the report ID at byte 0 (default: true for Node.js)
+   * Set to false for WebHID since browser strips the report ID
+   * 
+   * When true: byte 0 = report ID, byte 1 = status, byte 2+ = data
+   * When false: byte 0 = status, byte 1+ = data
+   * 
+   * Config generation will adjust indices to always represent physical truth
+   * (report ID at byte 0, status at byte 1)
+   */
+  packetIncludesReportId?: boolean;
 }
 
 /**
@@ -66,6 +77,11 @@ export class WalkthroughEngine {
   private duplicateCount: number = 0;
   private idlePacketCount: number = 0;
   private buttonMappings: ButtonMapping[] = [];
+  
+  // Report ID detection (matches Python implementation)
+  private detectedReportId: number = 7;  // Default report ID (matches XP-Pen Deco 640)
+  private candidateReportIds: Set<number> = new Set();
+  private reportIdLocked: boolean = false;
 
   constructor(options: WalkthroughEngineOptions = {}) {
     this.options = {
@@ -74,6 +90,7 @@ export class WalkthroughEngine {
       autoAdvance: options.autoAdvance ?? false,
       skipDuplicates: options.skipDuplicates ?? true,
       filterIdlePackets: options.filterIdlePackets ?? true,
+      packetIncludesReportId: options.packetIncludesReportId ?? true, // Node.js default
     };
 
     this.state = this.createInitialState();
@@ -173,6 +190,10 @@ export class WalkthroughEngine {
     this.captureBuffer = [];
     this.statusByteValues.clear();
     this.allPackets = [];
+    // Reset report ID tracking
+    this.detectedReportId = 7;
+    this.candidateReportIds.clear();
+    this.reportIdLocked = false;
     this.emit({ type: 'step-changed', step: 'idle' });
   }
 
@@ -223,9 +244,51 @@ export class WalkthroughEngine {
 
   /**
    * Process incoming HID packet
+   * @param packet Raw HID packet (report ID stripped by reader)
+   * @param reportId Report ID (passed separately by HID reader)
    */
-  processPacket(packet: Uint8Array): void {
+  processPacket(packet: Uint8Array, reportId?: number): void {
     if (!this.state.isCapturing) return;
+
+    const isButtonStep = this.state.currentStep === 'step9-tablet-buttons';
+    
+    // Status byte location depends on whether packet includes report ID
+    // Node.js: [reportId at 0][status at 1][data at 2+] -> statusIndex = 1, dataStart = 2
+    // WebHID:  [status at 0][data at 1+] -> statusIndex = 0, dataStart = 1
+    const statusIndex = this.options.packetIncludesReportId ? 1 : 0;
+    const dataStartIndex = this.options.packetIncludesReportId ? 2 : 1;
+
+    // Report ID detection and locking (matches Python implementation)
+    // Only relevant when packets include report ID
+    if (reportId !== undefined && this.options.packetIncludesReportId) {
+      // Track all report IDs we see with pen data
+      if (packet.length > statusIndex) {
+        const statusByte = packet[statusIndex];
+        // Pen status bytes: 0xA0-0xA5 (160-165)
+        const isPenPacket = statusByte >= 0xA0 && statusByte <= 0xA5;
+
+        if (isPenPacket) {
+          this.candidateReportIds.add(reportId);
+        }
+      }
+
+      // Lock onto a report ID when we see pen data
+      // Prefer report ID 7 for digitizer usage page (XP-Pen Deco 640 uses report ID 7)
+      if (this.candidateReportIds.size > 0 && !this.reportIdLocked) {
+        if (this.candidateReportIds.has(7)) {
+          this.detectedReportId = 7;
+          this.reportIdLocked = true;
+        } else if (this.candidateReportIds.size === 1) {
+          this.detectedReportId = [...this.candidateReportIds][0];
+          this.reportIdLocked = true;
+        }
+      }
+
+      // For gesture steps, only accept packets with the detected report ID
+      if (!isButtonStep && this.reportIdLocked && reportId !== this.detectedReportId) {
+        return;
+      }
+    }
 
     // Skip duplicate packets if enabled
     if (this.options.skipDuplicates && this.lastPacket) {
@@ -239,9 +302,8 @@ export class WalkthroughEngine {
     // Idle packets typically have status byte indicating pen is out of range
     // Common idle status bytes: 0xC0 (out of range), 0x00 (no data)
     // NOTE: Skip filtering for step9-tablet-buttons since button packets have different structures
-    const isButtonStep = this.state.currentStep === 'step9-tablet-buttons';
-    if (this.options.filterIdlePackets && packet.length > 0 && !isButtonStep) {
-      const statusByte = packet[0];
+    if (this.options.filterIdlePackets && packet.length > statusIndex && !isButtonStep) {
+      const statusByte = packet[statusIndex];
       
       // Check for common "out of range" or "idle" status bytes
       // 0xC0 = pen out of range (common)
@@ -254,8 +316,8 @@ export class WalkthroughEngine {
         return;
       }
       
-      // Check if packet is essentially empty (all zeros except maybe status)
-      const hasData = packet.slice(1).some(b => b !== 0);
+      // Check if packet is essentially empty (all zeros except reportId and status)
+      const hasData = packet.slice(dataStartIndex).some(b => b !== 0);
       if (!hasData) {
         this.idlePacketCount++;
         this.trackStatusByte(statusByte);
@@ -276,8 +338,9 @@ export class WalkthroughEngine {
     });
 
     // Track status byte values for button detection
-    if (packet.length > 0) {
-      const statusByte = packet[0];
+    // Use dynamic status index based on packet format
+    if (packet.length > statusIndex) {
+      const statusByte = packet[statusIndex];
       this.trackStatusByte(statusByte);
     }
   }
@@ -557,7 +620,8 @@ export class WalkthroughEngine {
       tabletButtonData?.detectedBytes ?? [],
       tiltXData?.packets ?? [],  // Pass tilt X packets for accurate range detection
       tiltYData?.packets ?? [],  // Pass tilt Y packets for accurate range detection
-      this.buttonMappings        // Pass interactive button mappings
+      this.buttonMappings,       // Pass interactive button mappings
+      this.options.packetIncludesReportId  // Pass packet format flag for WebHID offset
     );
 
     this.state.generatedConfig = config;
@@ -583,6 +647,13 @@ export class WalkthroughEngine {
    */
   getStatusByteValues(): Map<number, StatusValue> {
     return new Map(this.statusByteValues);
+  }
+
+  /**
+   * Get the detected report ID
+   */
+  getDetectedReportId(): number {
+    return this.detectedReportId;
   }
 
   /**

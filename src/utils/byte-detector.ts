@@ -380,11 +380,14 @@ export function findStatusByte(
 
 /**
  * Generates the final device configuration from detected bytes.
- * Uses 0-based indexing for all byte positions.
+ * Config byte indices represent the physical packet structure with report ID at byte 0.
  * 
  * @param tiltXPackets - Optional: packets captured during tilt X gesture (for accurate range detection)
  * @param tiltYPackets - Optional: packets captured during tilt Y gesture (for accurate range detection)
  * @param buttonMappings - Optional: interactive button mappings from per-button detection
+ * @param packetIncludesReportId - Whether captured packets include report ID at byte 0 (default: true)
+ *                                  For WebHID (browser), set to false since browser strips report ID
+ *                                  For Node.js/Python, set to true since full packet is captured
  */
 export function generateDeviceConfig(
   horizontalBytes: ByteAnalysis[],
@@ -397,12 +400,16 @@ export function generateDeviceConfig(
   tabletButtonBytes: ByteAnalysis[] = [],
   tiltXPackets: Uint8Array[] = [],
   tiltYPackets: Uint8Array[] = [],
-  buttonMappings: ButtonMapping[] = []
+  buttonMappings: ButtonMapping[] = [],
+  packetIncludesReportId: boolean = true
 ): DeviceByteCodeMappings {
-  // Group consecutive bytes for multi-byte values
-  const xBytes = groupConsecutiveBytes(horizontalBytes);
-  const yBytes = groupConsecutiveBytes(verticalBytes);
-  const pressureByteIndices = groupConsecutiveBytes(pressureBytes);
+  // WebHID offset: when packets don't include report ID, detected indices are 1 less
+  // than physical truth, so we add 1 to convert to config indices
+  const indexOffset = packetIncludesReportId ? 0 : 1;
+  // Group consecutive bytes for multi-byte values and apply WebHID offset if needed
+  const xBytes = groupConsecutiveBytes(horizontalBytes).map(i => i + indexOffset);
+  const yBytes = groupConsecutiveBytes(verticalBytes).map(i => i + indexOffset);
+  const pressureByteIndices = groupConsecutiveBytes(pressureBytes).map(i => i + indexOffset);
 
   // Calculate max values from the actual raw packets (not per-byte analysis)
   // Enable debug logging to help diagnose any calibration issues
@@ -426,8 +433,12 @@ export function generateDeviceConfig(
       if (!statusByteValues.has(statusByte)) {
         if (statusByte === 0) {
           statusByteValues.set(0, { state: 'keyboard' });
-        } else if (statusByte >= 1 && statusByte <= 3) {
+        } else if (statusByte >= 1 && statusByte <= 6) {
+          // Status bytes 1, 3, 6 are button mode (no driver)
           statusByteValues.set(statusByte, { state: 'buttons' });
+        } else if (statusByte === 240) {
+          // Status byte 240 (0xF0) is button mode (with driver)
+          statusByteValues.set(240, { state: 'buttons' });
         }
       }
     }
@@ -455,14 +466,20 @@ export function generateDeviceConfig(
   // Add status byte mappings if detected
   if (statusByteValues.size > 0) {
     const excludeIndices = new Set([
-      ...xBytes,
-      ...yBytes,
-      ...pressureByteIndices,
+      // Only exclude byte 0 (report ID) if packets include it
+      // For WebHID, byte 0 IS the status byte, so don't exclude it
+      ...(packetIncludesReportId ? [0] : []),
+      // Exclude detected data bytes (using original indices before offset)
+      ...horizontalBytes.map(b => b.byteIndex),
+      ...verticalBytes.map(b => b.byteIndex),
+      ...pressureBytes.map(b => b.byteIndex),
       ...tiltXBytes.map(b => b.byteIndex),
       ...tiltYBytes.map(b => b.byteIndex),
     ]);
 
-    const statusByteIndex = findStatusByte(allPackets, excludeIndices);
+    const detectedStatusIndex = findStatusByte(allPackets, excludeIndices);
+    // Apply offset to status byte index
+    const statusByteIndex = detectedStatusIndex !== null ? detectedStatusIndex + indexOffset : null;
 
     if (statusByteIndex !== null) {
       const values: Record<string, StatusValue> = {};
@@ -480,9 +497,10 @@ export function generateDeviceConfig(
 
   // Add tilt X if detected - use actual captured packets to determine range
   if (tiltXBytes.length > 0) {
-    const tiltXIndices = tiltXBytes.map(b => b.byteIndex);
+    const tiltXIndices = tiltXBytes.map(b => b.byteIndex + indexOffset);
     const packetsToUse = tiltXPackets.length > 0 ? tiltXPackets : allPackets;
-    const tiltXRange = calculateBipolarRange(tiltXIndices[0], packetsToUse);
+    // Use original index for range calculation (matches packet structure)
+    const tiltXRange = calculateBipolarRange(tiltXBytes[0].byteIndex, packetsToUse);
     
     if (debug) {
       console.log(`  Tilt X range: positiveMax=${tiltXRange.positiveMax}, negativeMin=${tiltXRange.negativeMin}, negativeMax=${tiltXRange.negativeMax}`);
@@ -499,9 +517,10 @@ export function generateDeviceConfig(
 
   // Add tilt Y if detected - use actual captured packets to determine range
   if (tiltYBytes.length > 0) {
-    const tiltYIndices = tiltYBytes.map(b => b.byteIndex);
+    const tiltYIndices = tiltYBytes.map(b => b.byteIndex + indexOffset);
     const packetsToUse = tiltYPackets.length > 0 ? tiltYPackets : allPackets;
-    const tiltYRange = calculateBipolarRange(tiltYIndices[0], packetsToUse);
+    // Use original index for range calculation (matches packet structure)
+    const tiltYRange = calculateBipolarRange(tiltYBytes[0].byteIndex, packetsToUse);
     
     if (debug) {
       console.log(`  Tilt Y range: positiveMax=${tiltYRange.positiveMax}, negativeMin=${tiltYRange.negativeMin}, negativeMax=${tiltYRange.negativeMax}`);
@@ -553,8 +572,9 @@ export function generateDeviceConfig(
         keyMappings,
       };
     } else if (hasHIDMappings) {
-      // HID scan code detection (no driver)
+      // HID scan code detection (works for both driver and no-driver mode)
       const values: Record<string, { button: number }> = {};
+      const conflictingButtons: Array<{ scanCode: number; statusByte: number; buttonNumber: number }> = [];
 
       // Check for scan code conflicts and track status byte overrides
       const scanCodeGroups = new Map<number, ButtonMapping[]>();
@@ -566,15 +586,10 @@ export function generateDeviceConfig(
         }
       }
 
-      // Track conflicting buttons (share same scan code, differentiated by status byte)
-      const conflictingButtons: Array<{ scanCode: number; statusByte: number; buttonNumber: number }> = [];
-
       // Build value mappings - for conflicts, use the lower button number as default
       for (const [scanCode, mappings] of scanCodeGroups) {
         if (mappings.length > 1) {
           // Multiple buttons share this scan code
-          // Use the lowest button number as the default mapping
-          // Store the others as conflicts for status-byte-based override
           const sorted = [...mappings].sort((a, b) => a.buttonNumber - b.buttonNumber);
           values[String(scanCode)] = { button: sorted[0].buttonNumber };
 
@@ -594,10 +609,8 @@ export function generateDeviceConfig(
         }
       }
 
-      // Note: Button status values are added earlier in this function
-
       const tabletButtonsConfig: TabletButtonsConfig = {
-        byteIndex: [1], // Button scan codes are typically at byte index 1
+        byteIndex: [1 + indexOffset], // Button scan codes at byte 1 in packet, +offset for config
         buttonCount: buttonMappings.length,
         type: 'code',
         values,
@@ -612,9 +625,9 @@ export function generateDeviceConfig(
     }
   } else if (tabletButtonBytes.length > 0) {
     // Fallback: auto-detected bytes with bit-flags type
-    const buttonByteIndices = tabletButtonBytes.map(b => b.byteIndex);
+    const buttonByteIndices = tabletButtonBytes.map(b => b.byteIndex + indexOffset);
     config.tabletButtons = {
-      byteIndex: buttonByteIndices, // Use 0-based indexing
+      byteIndex: buttonByteIndices,
       buttonCount: 8, // Default to 8 buttons
       type: 'bit-flags',
     };

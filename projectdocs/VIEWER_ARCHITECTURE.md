@@ -88,6 +88,70 @@ MockHIDReader → processDeviceData() → Terminal Output
 
 ---
 
+## Packet Format and Byte Index Architecture
+
+The HID packet format differs between platforms due to how each API handles the report ID:
+
+### Physical Packet Structure (on the wire)
+```
+[Report ID][Status][X_lo][X_hi][Y_lo][Y_hi][Pressure_lo][Pressure_hi][TiltX][TiltY]...
+    0         1       2     3     4     5       6            7          8      9
+```
+
+### How Each Platform Sees the Packet
+
+| Platform | Report ID Handling | Packet Start | Status Index |
+|----------|-------------------|--------------|--------------|
+| **Python (hidapi)** | Included in data | Report ID | 1 |
+| **Node.js (node-hid)** | Included in data | Report ID | 1 |
+| **WebHID (browser)** | Stripped by browser | Status | 0 |
+
+### Unified Configuration Format
+
+**Config files always represent physical truth** - byte indices are based on the full packet with report ID at byte 0:
+
+```json
+{
+  "byteCodeMappings": {
+    "status": { "byteIndex": [1] },
+    "x": { "byteIndex": [2, 3] },
+    "y": { "byteIndex": [4, 5] },
+    "pressure": { "byteIndex": [6, 7] },
+    "tiltX": { "byteIndex": [8] },
+    "tiltY": { "byteIndex": [9] },
+    "tabletButtons": { "byteIndex": [2] }
+  }
+}
+```
+
+### Byte Index Offset Handling
+
+Since WebHID strips the report ID, the browser viewer subtracts 1 from config indices:
+
+```typescript
+// Node.js/Python - use config indices directly
+processDeviceData(packet, mappings, 0);   // offset = 0
+
+// WebHID - subtract 1 from config indices
+processDeviceData(packet, mappings, -1);  // offset = -1
+```
+
+### Walkthrough Config Generation
+
+The walkthrough engine also accounts for this:
+
+```typescript
+// Node.js CLI - packets include report ID, detected indices are final
+new WalkthroughController(view, reader, { packetIncludesReportId: true });
+
+// WebHID browser - packets don't include report ID, add 1 to detected indices
+new WalkthroughController(view, reader, { packetIncludesReportId: false });
+```
+
+This ensures configs generated from either platform have consistent byte indices.
+
+---
+
 ## Key Design Decisions
 
 1. **`processDeviceData()` is the single source of truth** - Both platforms use the exact same function to parse raw bytes into tablet events
@@ -97,3 +161,5 @@ MockHIDReader → processDeviceData() → Terminal Output
 3. **Config-driven byte parsing** - The JSON config file defines how to interpret each byte, making the viewer work with any HID tablet without code changes
 
 4. **Mock devices for testing** - Both platforms have mock implementations that generate realistic data, enabling development without physical hardware
+
+5. **Unified byte indices in configs** - Configuration files always use indices based on the full physical packet (report ID at byte 0), with runtime offset applied for WebHID

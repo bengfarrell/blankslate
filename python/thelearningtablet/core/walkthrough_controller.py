@@ -505,10 +505,12 @@ class WalkthroughController:
                 status_byte = data[1]  # Status at index 1
                 
                 # CRITICAL: Only process BUTTON mode packets, not pen packets!
-                # Button mode status bytes from stable config: 0 (keyboard), 1, 3, 6 (buttons)
+                # Button mode status bytes:
+                #   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
+                #   With driver: 240 (0xF0) - bit-flags at byte 1
                 # Pen mode status bytes: 160-165, 192 (hover, contact, etc.)
                 # If we don't filter, pen X/Y coordinates get misinterpreted as button scan codes
-                BUTTON_MODE_STATUS_BYTES = {0, 1, 3, 6}
+                BUTTON_MODE_STATUS_BYTES = {0, 1, 3, 6, 240}
                 
                 if status_byte not in BUTTON_MODE_STATUS_BYTES:
                     # This is a pen packet, not a button packet - ignore it

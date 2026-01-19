@@ -98,6 +98,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     super();
     
     // Create controller with this component as the view
+    // Set packetIncludesReportId: false for WebHID since browser API strips report ID
     this.controller = new WalkthroughController(
       this, // IWalkthroughView
       this._createReaderFactory(),
@@ -105,6 +106,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         autoPlayMockGestures: true,
         gesturePlayDuration: 2000,
         buttonConfirmations: 3,
+        packetIncludesReportId: false, // WebHID browser API strips report ID
       }
     );
     

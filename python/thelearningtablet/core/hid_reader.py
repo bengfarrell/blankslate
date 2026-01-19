@@ -51,12 +51,6 @@ class HIDReader:
         # Convert bytes to list of integers
         data_list = list(data)
 
-        # DEBUG - print to stderr to avoid buffering issues
-        import sys
-        if len(data_list) > 3 and data_list[1] in [0, 1, 3]:
-            sys.stderr.write(f"[DEBUG] process_device_data called with status byte {data_list[1]}\n")
-            sys.stderr.flush()
-
         result: Dict[str, Union[str, int, float]] = {}
         
         # Check Report ID - some interfaces (like button interface) don't use status codes
@@ -100,8 +94,22 @@ class HIDReader:
                     if first_byte_index < len(data_list):
                         byte_value = str(data_list[first_byte_index])
                         values_map = mapping.get('values', {})
+                        status_overrides = mapping.get('statusOverrides', [])
+                        
                         if byte_value in values_map:
                             button_num = values_map[byte_value].get('button')
+                            
+                            # Check for status byte overrides (buttons sharing same scan code)
+                            # This handles driver vs no-driver mode where same code = different button
+                            if status_overrides:
+                                scan_code = int(byte_value)
+                                # Status byte is at index 1 (after report ID)
+                                status_byte = data_list[1] if len(data_list) > 1 else 0
+                                for override in status_overrides:
+                                    if override.get('scanCode') == scan_code and override.get('statusByte') == status_byte:
+                                        button_num = override.get('buttonNumber')
+                                        break
+                            
                             if button_num:
                                 # Set only this button as pressed
                                 button_count = mapping.get('buttonCount', 8)

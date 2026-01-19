@@ -71,7 +71,7 @@ export class EventStreamer extends TabletReaderBase {
 
     // Start reading - set up callback BEFORE any data comes in
     console.log(chalk.gray('Setting up data callback...'));
-    this.reader.startReading((data, _reportId) => {
+    this.reader.startReading((data) => {
       this.handlePacket(data);
     });
 

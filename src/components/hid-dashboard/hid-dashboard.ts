@@ -331,8 +331,9 @@ export class HidDashboard extends LitElement {
     this._updateRawBytes(data);
 
     // If we have a config, process through the config mappings
+    // Use offset -1 for WebHID since browser API strips report ID from packets
     if (this.config) {
-      const processed = processDeviceData(data, this.config.byteCodeMappings);
+      const processed = processDeviceData(data, this.config.byteCodeMappings, -1);
       // Update tablet data using the same handler as real device
       this._handleTabletData(processed as TabletDataEvent);
     }
@@ -546,7 +547,8 @@ export class HidDashboard extends LitElement {
         this._updateRawBytes(bytes);
 
         // Process through config mappings using shared processDeviceData
-        const processed = processDeviceData(bytes, this.config!.byteCodeMappings);
+        // Use offset -1 for WebHID since browser API strips report ID from packets
+        const processed = processDeviceData(bytes, this.config!.byteCodeMappings, -1);
         console.log('[Dashboard] Processed data:', processed);
         this._handleTabletData(processed as TabletDataEvent);
       });
@@ -805,8 +807,9 @@ export class HidDashboard extends LitElement {
     this._updateRawBytes(bytes);
 
     // Process through config mappings to update visualizers
+    // Use offset -1 for WebHID since browser API strips report ID from packets
     if (this.config) {
-      const processed = processDeviceData(bytes, this.config.byteCodeMappings);
+      const processed = processDeviceData(bytes, this.config.byteCodeMappings, -1);
       this._handleTabletData(processed as TabletDataEvent);
     }
   }

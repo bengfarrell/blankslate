@@ -122,7 +122,7 @@ export class TabletWebSocketServer extends TabletReaderBase {
 
     // Start reading HID data
     console.log(chalk.gray('Setting up data callback...'));
-    this.reader.startReading((data, _reportId) => {
+    this.reader.startReading((data) => {
       this.handlePacket(data);
     });
 

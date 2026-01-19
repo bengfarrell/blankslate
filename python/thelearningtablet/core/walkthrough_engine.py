@@ -70,8 +70,8 @@ class WalkthroughEngine:
         for handler in self.event_handlers:
             try:
                 handler(event)
-            except Exception as e:
-                print(f"Error in walkthrough event handler: {e}")
+            except Exception:
+                pass  # Silently ignore handler errors
     
     def get_state(self) -> WalkthroughState:
         """Get current walkthrough state"""
@@ -401,14 +401,16 @@ class WalkthroughEngine:
         
         # Record button-mode status bytes from detected buttons
         # These status bytes indicate button/keyboard mode packets
-        # Status byte values based on stable config:
-        #   0: keyboard mode
-        #   1, 3, 6: button mode
+        # Status byte values:
+        #   0: keyboard mode (no driver)
+        #   1, 3, 6: button mode (no driver)
+        #   240 (0xF0): button mode (with driver)
         BUTTON_MODE_STATUS_MAP = {
             0: {'state': 'keyboard'},
             1: {'state': 'buttons'},
             3: {'state': 'buttons'},
             6: {'state': 'buttons'},
+            240: {'state': 'buttons'},  # Driver mode button status
         }
         
         # Collect unique status bytes from all detected buttons

@@ -145,34 +145,48 @@ export function parseBitFlags(
  * 
  * @param data - Raw HID device data as Uint8Array
  * @param mappings - Configuration mappings defining how to interpret the data
+ * @param byteIndexOffset - Offset to apply to all byte indices from config (default: 0)
+ *                          Use -1 for WebHID since browser strips report ID from packets
+ *                          Use 0 for Node.js/Python which keep full packet with report ID
  * @returns Processed data as key-value pairs
  * 
  * @example
- * const result = processDeviceData(rawData, config.byteCodeMappings);
- * console.log(result.x, result.y, result.pressure);
+ * // Node.js/Python - packet includes report ID, config indices are direct
+ * const result = processDeviceData(rawData, config.byteCodeMappings, 0);
+ * 
+ * // WebHID - browser strips report ID, subtract 1 from config indices
+ * const result = processDeviceData(rawData, config.byteCodeMappings, -1);
  */
 export function processDeviceData(
   data: Uint8Array,
-  mappings: Record<string, any>
+  mappings: Record<string, any>,
+  byteIndexOffset: number = 0
 ): Record<string, string | number | boolean> {
   // Convert Uint8Array to number array
   const dataList = Array.from(data);
   const result: Record<string, string | number | boolean> = {};
 
-  // Check Report ID - will also check keyboard state after parsing status
-  const reportId = dataList.length > 0 ? dataList[0] : 0;
-  let isButtonInterface = reportId === 6;  // Report ID 6 is button-only interface
+  // Check Report ID - only valid when packet includes report ID (byteIndexOffset === 0)
+  // WebHID strips the report ID, so this check only applies to Node.js/Python
+  let isButtonInterface = false;
+  if (byteIndexOffset === 0 && dataList.length > 0) {
+    const reportId = dataList[0];
+    isButtonInterface = reportId === 6;  // Report ID 6 is button-only interface
+  }
 
   // Parse the status to determine device state
   let deviceState: string | null = null;
+  let statusByteActualIndex: number | null = null;  // Track actual index for later use
   for (const [key, mapping] of Object.entries(mappings)) {
     if (mapping.type === MappingType.CODE) {
       // Handle byteIndex as either number or array
       const rawByteIndex = mapping.byteIndex ?? 0;
-      const byteIndex = Array.isArray(rawByteIndex) ? rawByteIndex[0] : rawByteIndex;
+      const configByteIndex = Array.isArray(rawByteIndex) ? rawByteIndex[0] : rawByteIndex;
+      // Apply offset for WebHID (browser strips report ID)
+      const byteIndex = configByteIndex + byteIndexOffset;
       
-      // Use 0-based indexing directly
       if (byteIndex >= 0 && byteIndex < dataList.length) {
+        statusByteActualIndex = byteIndex;  // Remember for later button mode checks
         const codeResult = parseCode(dataList, byteIndex, mapping.values ?? {});
         if (typeof codeResult === 'object' && codeResult !== null) {
           Object.assign(result, codeResult);
@@ -212,9 +226,14 @@ export function processDeviceData(
     // Handle byteIndex - keep as array for multi-byte types, extract first for single-byte
     const rawByteIndex = mapping.byteIndex ?? 0;
     // For multi-byte-range, keep the full array; for others, use first element
+    // Apply byteIndexOffset to account for WebHID stripping report ID
     const byteIndex = mappingType === MappingType.MULTI_BYTE_RANGE
-      ? rawByteIndex  // Keep full array for multi-byte
-      : (Array.isArray(rawByteIndex) ? rawByteIndex[0] : rawByteIndex);  // First element for single-byte
+      ? (Array.isArray(rawByteIndex) 
+          ? rawByteIndex.map((i: number) => i + byteIndexOffset)  // Apply offset to each index
+          : [rawByteIndex + byteIndexOffset])
+      : (Array.isArray(rawByteIndex) 
+          ? rawByteIndex[0] + byteIndexOffset 
+          : rawByteIndex + byteIndexOffset);
 
     // Skip if already processed (status/code), unless it's tabletButtons with code type
     if (mappingType === MappingType.CODE && key !== 'tabletButtons') {
@@ -223,9 +242,9 @@ export function processDeviceData(
 
     // Handle tabletButtons with code type (custom value mapping)
     if (key === 'tabletButtons' && mappingType === MappingType.CODE) {
-      // Process button codes when in button mode OR when byte 0 is 240 (buttons state)
-      // Some tablets send button data without a full state change
-      const statusByte = dataList[0];
+      // Process button codes when in button mode
+      // Use status byte at actual index (already computed with offset)
+      const statusByte = statusByteActualIndex !== null ? dataList[statusByteActualIndex] : 0;
       const inButtonMode = isButtonInterface || deviceState === 'buttons' || statusByte === 240;
       if (inButtonMode) {
         // Use 0-based indexing directly
@@ -240,11 +259,11 @@ export function processDeviceData(
             buttonNum = valuesMap[byteValue].button;
             
             // Check for status byte overrides (buttons sharing same scan code)
-            if (statusOverrides) {
+            if (statusOverrides && statusByteActualIndex !== null) {
               const scanCode = parseInt(byteValue, 10);
-              const statusByte = dataList[0];
+              const currentStatusByte = dataList[statusByteActualIndex];
               const override = statusOverrides.find(
-                o => o.scanCode === scanCode && o.statusByte === statusByte
+                o => o.scanCode === scanCode && o.statusByte === currentStatusByte
               );
               if (override) {
                 buttonNum = override.buttonNumber;

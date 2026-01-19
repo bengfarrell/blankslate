@@ -99,7 +99,8 @@ export class MockTabletDevice {
 
         if (this.config.byteCodeMappings) {
           // Use config mappings to translate
-          translated = processDeviceData(data, this.config.byteCodeMappings);
+          // Use offset -1 for WebHID since browser API strips report ID from packets
+          translated = processDeviceData(data, this.config.byteCodeMappings, -1);
         } else {
           // Generate synthetic translated events from generator state
           translated = this.generator.getLastState();

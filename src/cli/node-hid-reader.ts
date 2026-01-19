@@ -87,7 +87,7 @@ export class NodeHIDReader implements IHIDReader {
           // Convert Buffer to Uint8Array
           const packet = new Uint8Array(data);
           
-          // Report ID is typically the first byte for node-hid
+          // Report ID is the first byte (packet[0])
           const reportId = packet[0];
           
           // Filter by report ID if specified
@@ -95,10 +95,11 @@ export class NodeHIDReader implements IHIDReader {
             return;
           }
 
-          // Pass data without the report ID (to match WebHID behavior)
-          // WebHID strips the report ID from the data
-          const dataWithoutReportId = packet.slice(1);
-          this.dataCallback(dataWithoutReportId, reportId);
+          // Pass FULL packet including report ID at byte 0
+          // Config byte indices expect: [reportId][status][x_lo][x_hi]...
+          // This matches Python behavior and represents the physical packet structure
+          // WebHID (browser) handles the offset separately since the browser API strips report ID
+          this.dataCallback(packet, reportId);
         }
       });
 

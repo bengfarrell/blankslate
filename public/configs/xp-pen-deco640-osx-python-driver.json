@@ -1,8 +1,8 @@
 {
-  "name": "XP Pen Deco 640",
-  "manufacturer": "XP Pen",
-  "model": "Deco 640",
-  "description": "XP Pen Deco 640, OSX, Python, with driver",
+  "name": "My Tablet",
+  "manufacturer": "Unknown",
+  "model": "Unknown",
+  "description": "Unknown Unknown",
   "vendorId": "0x28bd",
   "productId": "0x2904",
   "deviceInfo": {
@@ -12,19 +12,16 @@
     "usage_page": 13,
     "usage": 2,
     "interfaces": [
-      65290,
-      13,
-      1
+      65290
     ]
   },
   "reportId": 2,
   "digitizerUsagePage": 13,
-  "stylusModeStatusByte": 160,
   "capabilities": {
     "hasButtons": true,
     "buttonCount": 8,
     "hasPressure": true,
-    "pressureLevels": 16384,
+    "pressureLevels": 16383,
     "hasTilt": true,
     "resolution": {
       "x": 31998,
@@ -33,62 +30,128 @@
   },
   "byteCodeMappings": {
     "status": {
-      "byteIndex": [1],
+      "byteIndex": [
+        1
+      ],
       "type": "code",
       "values": {
-        "160": { "state": "hover" },
-        "161": { "state": "contact" },
-        "162": { "state": "hover", "secondaryButtonPressed": true },
-        "163": { "state": "contact", "secondaryButtonPressed": true },
-        "164": { "state": "hover", "primaryButtonPressed": true },
-        "165": { "state": "contact", "primaryButtonPressed": true },
-        "192": { "state": "none" },
-        "240": { "state": "buttons" }
+        "160": {
+          "state": "hover"
+        },
+        "161": {
+          "state": "contact"
+        },
+        "192": {
+          "state": "none"
+        },
+        "240": {
+          "state": "buttons"
+        },
+        "164": {
+          "state": "hover",
+          "primaryButtonPressed": true
+        },
+        "165": {
+          "state": "contact",
+          "primaryButtonPressed": true
+        },
+        "162": {
+          "state": "hover",
+          "secondaryButtonPressed": true
+        },
+        "163": {
+          "state": "contact",
+          "secondaryButtonPressed": true
+        },
+        "0": {
+          "state": "keyboard"
+        },
+        "1": {
+          "state": "buttons"
+        },
+        "3": {
+          "state": "buttons"
+        },
+        "6": {
+          "state": "buttons"
+        }
       }
     },
     "x": {
-      "byteIndex": [2, 3],
+      "byteIndex": [
+        2,
+        3
+      ],
       "max": 31998,
       "type": "multi-byte-range"
     },
     "y": {
-      "byteIndex": [4, 5],
+      "byteIndex": [
+        4,
+        5
+      ],
       "max": 17998,
       "type": "multi-byte-range"
     },
     "pressure": {
-      "byteIndex": [6, 7],
+      "byteIndex": [
+        6,
+        7
+      ],
       "max": 16383,
       "type": "multi-byte-range"
     },
     "tiltX": {
-      "byteIndex": [8],
+      "byteIndex": [
+        8
+      ],
       "positiveMax": 60,
       "negativeMin": 196,
       "negativeMax": 255,
       "type": "bipolar-range"
     },
     "tiltY": {
-      "byteIndex": [9],
+      "byteIndex": [
+        9
+      ],
       "positiveMax": 60,
       "negativeMin": 196,
       "negativeMax": 255,
       "type": "bipolar-range"
     },
     "tabletButtons": {
-      "byteIndex": [2],
+      "byteIndex": [
+        2
+      ],
       "buttonCount": 8,
       "type": "code",
       "values": {
-        "1": { "button": 1 },
-        "2": { "button": 2 },
-        "4": { "button": 3 },
-        "8": { "button": 4 },
-        "16": { "button": 5 },
-        "32": { "button": 6 },
-        "64": { "button": 7 },
-        "128": { "button": 8 }
+        "1": {
+          "button": 1
+        },
+        "2": {
+          "button": 2
+        },
+        "4": {
+          "button": 3
+        },
+        "8": {
+          "button": 4
+        },
+        "16": {
+          "button": 5
+        },
+        "32": {
+          "button": 6
+        },
+        "64": {
+          "button": 7
+        },
+        "128": {
+          "button": 8
+        }
       }
     }
-  }
+  },
+  "stylusModeStatusByte": 160
 }

@@ -17,6 +17,33 @@ class GeneratorConfig:
     report_id: int = 7  # Match XP-Pen Deco 640 stable config (reportId: 7)
     sample_rate: int = 200
     pressure_variation: float = 0.2
+    driver_mode: bool = False  # Use driver-mode button encoding (status byte 240)
+
+
+# Preset for driver-enabled mode (XP-Pen Deco 640 with driver active)
+# Note: Resolution is determined by hardware, same as driverless mode
+# The only difference is the button status byte (240 vs 1/3/6)
+DRIVER_MODE_CONFIG = GeneratorConfig(
+    max_x=15999,        # Same resolution as driverless (hardware constant)
+    max_y=8999,         # Same resolution as driverless (hardware constant)
+    max_pressure=16383,
+    report_id=2,        # Driver mode may use different report ID
+    sample_rate=200,
+    pressure_variation=0.2,
+    driver_mode=True    # Uses status byte 240 for buttons
+)
+
+
+# Preset for driverless mode (default, XP-Pen Deco 640 without driver)
+DRIVERLESS_MODE_CONFIG = GeneratorConfig(
+    max_x=15999,
+    max_y=8999,
+    max_pressure=16383,
+    report_id=7,
+    sample_rate=200,
+    pressure_variation=0.2,
+    driver_mode=False   # Uses status bytes 1/3/6 for buttons
+)
 
 
 class TabletDataGenerator:
@@ -424,6 +451,9 @@ class TabletDataGenerator:
         Returns:
             HID packet (report ID will be prepended by mock reader)
         """
+        # Driver mode uses status byte 240 (0xf0), driverless uses status byte 1
+        status_byte = 0xf0 if self.config.driver_mode else 0x01
+        
         # Store state for translation
         self.last_packet_state = {
             'x': 0,
@@ -431,16 +461,16 @@ class TabletDataGenerator:
             'pressure': 0,
             'tilt_x': 0,
             'tilt_y': 0,
-            'status': 0x01,  # Button mode status (from stable config status.values)
+            'status': status_byte,
             'button': button_number
         }
         
         # After report ID is prepended, layout will be:
         # Byte 0: Report ID (prepended by mock reader)
-        # Byte 1: Status byte (1 = buttons mode)
+        # Byte 1: Status byte (1 = buttons mode for driverless, 240 = buttons mode for driver)
         # Byte 2: Button scan code (tabletButtons.byteIndex: [2])
         packet = bytearray(10)
-        packet[0] = 0x01  # Button mode status (will become byte 1)
+        packet[0] = status_byte  # Button mode status (will become byte 1)
         packet[1] = 1 << (button_number - 1)  # Button data (will become byte 2)
         return bytes(packet)
     
