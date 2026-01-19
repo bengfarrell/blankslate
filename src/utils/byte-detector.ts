@@ -610,7 +610,7 @@ export function generateDeviceConfig(
       }
 
       const tabletButtonsConfig: TabletButtonsConfig = {
-        byteIndex: [1 + indexOffset], // Button scan codes at byte 1 in packet, +offset for config
+        byteIndex: [2 + indexOffset], // Button scan codes at byte 2 in packet (after report ID and status), +offset for config
         buttonCount: buttonMappings.length,
         type: 'code',
         values,

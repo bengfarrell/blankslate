@@ -14,6 +14,7 @@ import { processDeviceData } from '../../src/utils/data-helpers.js';
 import {
   DEVICE_INFO,
   BYTE_LAYOUT,
+  RAW_PACKET_LAYOUT,
   VALUE_RANGES,
   STATUS_BYTES,
   EXPRESS_KEY_MAPPINGS,
@@ -27,7 +28,9 @@ describe('XP-Pen Deco 640 Walkthrough', () => {
   let generator: TabletDataGenerator;
 
   beforeEach(() => {
-    engine = new WalkthroughEngine();
+    // Create engine with packetIncludesReportId: false to match mock generator
+    // The mock generator creates packets without report ID (status at index 0)
+    engine = new WalkthroughEngine({ packetIncludesReportId: false });
     generator = new TabletDataGenerator({
       maxX: VALUE_RANGES.x.max,
       maxY: VALUE_RANGES.y.max,
@@ -83,7 +86,8 @@ describe('XP-Pen Deco 640 Walkthrough', () => {
 
       const stepData = engine.getState().stepData.get('step1-horizontal');
       expect(stepData).toBeDefined();
-      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(BYTE_LAYOUT.x.byteIndex);
+      // stepData.detectedBytes contains raw packet indices (before +1 offset for config)
+      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(RAW_PACKET_LAYOUT.x.byteIndex);
     });
   });
 
@@ -107,7 +111,8 @@ describe('XP-Pen Deco 640 Walkthrough', () => {
 
       const stepData = engine.getState().stepData.get('step2-vertical');
       expect(stepData).toBeDefined();
-      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(BYTE_LAYOUT.y.byteIndex);
+      // stepData.detectedBytes contains raw packet indices (before +1 offset for config)
+      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(RAW_PACKET_LAYOUT.y.byteIndex);
     });
   });
 
@@ -130,7 +135,8 @@ describe('XP-Pen Deco 640 Walkthrough', () => {
 
       const stepData = engine.getState().stepData.get('step3-pressure');
       expect(stepData).toBeDefined();
-      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(BYTE_LAYOUT.pressure.byteIndex);
+      // stepData.detectedBytes contains raw packet indices (before +1 offset for config)
+      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(RAW_PACKET_LAYOUT.pressure.byteIndex);
     });
   });
 
@@ -157,7 +163,8 @@ describe('XP-Pen Deco 640 Walkthrough', () => {
 
       const stepData = engine.getState().stepData.get('step5-tilt-x');
       expect(stepData).toBeDefined();
-      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(BYTE_LAYOUT.tiltX.byteIndex);
+      // stepData.detectedBytes contains raw packet indices (before +1 offset for config)
+      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(RAW_PACKET_LAYOUT.tiltX.byteIndex);
     });
   });
 
@@ -186,7 +193,8 @@ describe('XP-Pen Deco 640 Walkthrough', () => {
 
       const stepData = engine.getState().stepData.get('step6-tilt-y');
       expect(stepData).toBeDefined();
-      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(BYTE_LAYOUT.tiltY.byteIndex);
+      // stepData.detectedBytes contains raw packet indices (before +1 offset for config)
+      expect(stepData!.detectedBytes.map(b => b.byteIndex)).toEqual(RAW_PACKET_LAYOUT.tiltY.byteIndex);
     });
   });
 

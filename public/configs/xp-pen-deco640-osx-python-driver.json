@@ -1,8 +1,8 @@
 {
-  "name": "My Tablet",
-  "manufacturer": "Unknown",
-  "model": "Unknown",
-  "description": "Unknown Unknown",
+  "name": "XP Pen Deco 640",
+  "manufacturer": "XP Pen",
+  "model": "Deco 640",
+  "description": "XP Pen Deco 640, OSX, Python, with driver",
   "vendorId": "0x28bd",
   "productId": "0x2904",
   "deviceInfo": {

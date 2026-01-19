@@ -309,6 +309,7 @@ describe('Walkthrough Byte Detection', () => {
       });
 
       // Generate configuration
+      // Pass packetIncludesReportId: false because mock generator creates packets without report ID
       const generatedConfig = generateDeviceConfig(
         horizontalBytes,
         verticalBytes,
@@ -316,15 +317,21 @@ describe('Walkthrough Byte Detection', () => {
         tiltXBytes,
         tiltYBytes,
         statusByteValues,
-        allPackets
+        allPackets,
+        [],  // tabletButtonBytes
+        tiltXPackets,  // tiltXPackets
+        tiltYPackets,  // tiltYPackets
+        [],  // buttonMappings
+        false  // packetIncludesReportId - mock packets don't have report ID
       );
 
-      // Verify configuration matches expected structure (0-based indexing)
-      expect(generatedConfig.x.byteIndex).toEqual([1, 2]);
-      expect(generatedConfig.y.byteIndex).toEqual([3, 4]);
-      expect(generatedConfig.pressure.byteIndex).toEqual([5, 6]);
-      expect(generatedConfig.tiltX.byteIndex).toEqual([7]);
-      expect(generatedConfig.tiltY.byteIndex).toEqual([8]);
+      // Verify configuration matches expected structure (config format with report ID at byte 0)
+      // Mock generator creates packets without report ID, so generateDeviceConfig adds +1 offset
+      expect(generatedConfig.x.byteIndex).toEqual([2, 3]);
+      expect(generatedConfig.y.byteIndex).toEqual([4, 5]);
+      expect(generatedConfig.pressure.byteIndex).toEqual([6, 7]);
+      expect(generatedConfig.tiltX.byteIndex).toEqual([8]);
+      expect(generatedConfig.tiltY.byteIndex).toEqual([9]);
 
       // Verify types
       expect(generatedConfig.x.type).toBe('multi-byte-range');
@@ -335,7 +342,7 @@ describe('Walkthrough Byte Detection', () => {
 
       // Verify status block
       expect(generatedConfig.status).toBeDefined();
-      expect(generatedConfig.status!.byteIndex).toEqual([0]);
+      expect(generatedConfig.status!.byteIndex).toEqual([1]);
       expect(generatedConfig.status!.type).toBe('code');
       expect(generatedConfig.status!.values).toBeDefined();
 
@@ -453,6 +460,7 @@ describe('Walkthrough Byte Detection', () => {
       });
 
       // Generate configuration
+      // Pass packetIncludesReportId: false because mock generator creates packets without report ID
       const generatedConfig = generateDeviceConfig(
         horizontalBytes,
         verticalBytes,
@@ -460,7 +468,12 @@ describe('Walkthrough Byte Detection', () => {
         tiltXBytes,
         tiltYBytes,
         statusByteValues,
-        allPackets
+        allPackets,
+        [],  // tabletButtonBytes
+        tiltXPackets,  // tiltXPackets
+        tiltYPackets,  // tiltYPackets
+        [],  // buttonMappings
+        false  // packetIncludesReportId - mock packets don't have report ID
       );
 
       // Infer capabilities from the generated config

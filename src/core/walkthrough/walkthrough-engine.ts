@@ -369,42 +369,59 @@ export class WalkthroughEngine {
 
   /**
    * Track status byte values for button detection
+   * 
+   * Always track ALL pen-related status bytes whenever they're seen,
+   * regardless of the current step. This ensures the generated config
+   * includes all necessary status mappings even if the user presses
+   * stylus buttons during other walkthrough steps.
    */
   private trackStatusByte(byteValue: number): void {
-    const step = this.state.currentStep;
-    
-    // Map status byte values to states based on current step
-    if (step === 'step7-primary-button') {
-      // Primary button states
-      if (byteValue === 0xa4 || byteValue === 0xa5) { // 164 or 165
+    // Always track all known pen status bytes
+    switch (byteValue) {
+      case 0xc0: // 192 - none (pen out of range)
+        this.statusByteValues.set(byteValue, { state: 'none' });
+        break;
+      case 0xa0: // 160 - hover
+        this.statusByteValues.set(byteValue, { state: 'hover' });
+        break;
+      case 0xa1: // 161 - contact (pen touching)
+        this.statusByteValues.set(byteValue, { state: 'contact' });
+        break;
+      case 0xa2: // 162 - hover + secondary button
         this.statusByteValues.set(byteValue, {
-          state: byteValue === 0xa4 ? 'hover' : 'contact',
-          primaryButtonPressed: true,
-        });
-      }
-    } else if (step === 'step8-secondary-button') {
-      // Secondary button states
-      if (byteValue === 0xa2 || byteValue === 0xa3) { // 162 or 163
-        this.statusByteValues.set(byteValue, {
-          state: byteValue === 0xa2 ? 'hover' : 'contact',
+          state: 'hover',
           secondaryButtonPressed: true,
         });
-      }
-    } else {
-      // Track common states
-      switch (byteValue) {
-        case 0xc0: // 192 - none
-          this.statusByteValues.set(byteValue, { state: 'none' });
-          break;
-        case 0xa0: // 160 - hover
-          this.statusByteValues.set(byteValue, { state: 'hover' });
-          break;
-        case 0xa1: // 161 - contact
-          this.statusByteValues.set(byteValue, { state: 'contact' });
-          break;
-        case 0xf0: // 240 - buttons
-          this.statusByteValues.set(byteValue, { state: 'buttons' });
-          break;
+        break;
+      case 0xa3: // 163 - contact + secondary button
+        this.statusByteValues.set(byteValue, {
+          state: 'contact',
+          secondaryButtonPressed: true,
+        });
+        break;
+      case 0xa4: // 164 - hover + primary button
+        this.statusByteValues.set(byteValue, {
+          state: 'hover',
+          primaryButtonPressed: true,
+        });
+        break;
+      case 0xa5: // 165 - contact + primary button
+        this.statusByteValues.set(byteValue, {
+          state: 'contact',
+          primaryButtonPressed: true,
+        });
+        break;
+      case 0xf0: // 240 - tablet buttons (driver mode)
+        this.statusByteValues.set(byteValue, { state: 'buttons' });
+        break;
+    }
+    
+    // Also track button-related status bytes (0-6) for driverless mode
+    if (byteValue >= 0 && byteValue <= 6) {
+      if (byteValue === 0) {
+        this.statusByteValues.set(byteValue, { state: 'keyboard' });
+      } else {
+        this.statusByteValues.set(byteValue, { state: 'buttons' });
       }
     }
   }
@@ -439,8 +456,15 @@ export class WalkthroughEngine {
   private getKnownByteIndices(): Set<number> {
     const known = new Set<number>();
     
-    // Always exclude byte 0 (typically status/report ID)
-    known.add(0);
+    // Always exclude report ID and status bytes
+    // When packetIncludesReportId: byte 0 = report ID, byte 1 = status
+    // When !packetIncludesReportId (WebHID): byte 0 = status
+    if (this.options.packetIncludesReportId) {
+      known.add(0);  // report ID
+      known.add(1);  // status byte
+    } else {
+      known.add(0);  // status byte
+    }
 
     // Add bytes from each completed step
     const stepsToCheck: WalkthroughStep[] = [
@@ -470,12 +494,21 @@ export class WalkthroughEngine {
     const knownBytes = this.getKnownByteIndices();
 
     // Filter out already-identified bytes (except for step1 which has nothing identified yet)
+    // Also exclude report ID (byte 0) and status byte
+    // Status byte location depends on whether packet includes report ID:
+    // - With report ID: byte 0 = report ID, byte 1 = status
+    // - Without report ID (WebHID): byte 0 = status
+    const statusByteIndex = this.options.packetIncludesReportId ? 1 : 0;
+    const reportIdByteIndex = this.options.packetIncludesReportId ? 0 : -1; // -1 = no report ID byte
+    
     let filteredAnalysis = analysis;
     if (step !== 'step1-horizontal') {
       filteredAnalysis = analysis.filter(b => !knownBytes.has(b.byteIndex));
     } else {
-      // For step 1, still exclude byte 0 (status byte)
-      filteredAnalysis = analysis.filter(b => b.byteIndex !== 0);
+      // For step 1, exclude report ID (byte 0 if present) and status byte
+      filteredAnalysis = analysis.filter(b => 
+        b.byteIndex !== reportIdByteIndex && b.byteIndex !== statusByteIndex
+      );
     }
 
     switch (step) {
@@ -521,7 +554,7 @@ export class WalkthroughEngine {
         
         // Find packets with non-pen status bytes (likely button packets)
         const buttonPackets = this.captureBuffer.filter(p => {
-          const statusByte = p[0];
+          const statusByte = p[statusByteIndex];
           // Include if it's 0xF0 (common button status) or any unknown status byte
           return statusByte === 0xF0 || !knownPenStatusBytes.has(statusByte);
         });
@@ -529,7 +562,7 @@ export class WalkthroughEngine {
         // If we found button-specific packets, analyze those
         if (buttonPackets.length > 0) {
           // Record the button status byte
-          const buttonStatusByte = buttonPackets[0][0];
+          const buttonStatusByte = buttonPackets[0][statusByteIndex];
           if (!this.statusByteValues.has(buttonStatusByte)) {
             this.statusByteValues.set(buttonStatusByte, { state: 'buttons' });
           }
@@ -537,7 +570,8 @@ export class WalkthroughEngine {
           const buttonAnalysis = analyzeBytes(buttonPackets);
           // Look for bytes with variance (button data changes)
           const varyingBytes = buttonAnalysis.filter(b => {
-            if (b.byteIndex === 0) return false; // Skip status byte
+            if (b.byteIndex === statusByteIndex) return false; // Skip status byte
+            if (b.byteIndex === reportIdByteIndex) return false; // Skip report ID byte
             if (b.variance === 0) return false; // Skip constant bytes
             return true;
           });
@@ -551,7 +585,8 @@ export class WalkthroughEngine {
         // This handles cases where buttons are sent as different values on normal packets
         const allAnalysis = analyzeBytes(this.captureBuffer);
         const unknownVaryingBytes = allAnalysis.filter(b => {
-          if (b.byteIndex === 0) return false; // Skip status byte
+          if (b.byteIndex === statusByteIndex) return false; // Skip status byte
+          if (b.byteIndex === reportIdByteIndex) return false; // Skip report ID byte
           if (b.variance === 0) return false; // Skip constant bytes
           if (knownBytes.has(b.byteIndex)) return false; // Skip already known bytes
           return true;
@@ -672,7 +707,8 @@ export class WalkthroughEngine {
         productName: this.state.deviceInfo.productName,
         collections: this.state.deviceInfo.collections,
         allInterfaces: this.state.deviceInfo.allInterfaces,
-        detectedReportId: this.state.deviceInfo.detectedReportId,
+        // Use the engine's detected report ID, not deviceInfo which may not have it set
+        detectedReportId: this.detectedReportId,
         dataSourceUsagePage: this.state.deviceInfo.dataSourceUsagePage,
       };
 

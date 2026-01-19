@@ -12,12 +12,12 @@
     "usage_page": 13,
     "usage": 2,
     "interfaces": [
-      65290,
       13,
-      1
+      1,
+      65290
     ]
   },
-  "reportId": 7,
+  "reportId": 2,
   "digitizerUsagePage": 13,
   "stylusModeStatusByte": 160,
   "capabilities": {
@@ -27,8 +27,8 @@
     "pressureLevels": 16384,
     "hasTilt": true,
     "resolution": {
-      "x": 15999,
-      "y": 8999
+      "x": 31998,
+      "y": 17998
     }
   },
   "byteCodeMappings": {
@@ -37,7 +37,7 @@
         2,
         3
       ],
-      "max": 15999,
+      "max": 31998,
       "type": "multi-byte-range"
     },
     "y": {
@@ -45,7 +45,7 @@
         4,
         5
       ],
-      "max": 8999,
+      "max": 17998,
       "type": "multi-byte-range"
     },
     "pressure": {
@@ -62,18 +62,6 @@
       ],
       "type": "code",
       "values": {
-        "0": {
-          "state": "keyboard"
-        },
-        "1": {
-          "state": "buttons"
-        },
-        "3": {
-          "state": "buttons"
-        },
-        "6": {
-          "state": "buttons"
-        },
         "160": {
           "state": "hover"
         },
@@ -98,6 +86,9 @@
         },
         "192": {
           "state": "none"
+        },
+        "240": {
+          "state": "buttons"
         }
       }
     },
@@ -126,35 +117,31 @@
       "buttonCount": 8,
       "type": "code",
       "values": {
-        "5": {
+        "1": {
           "button": 1
         },
-        "8": {
+        "2": {
           "button": 2
         },
-        "29": {
-          "button": 7
-        },
-        "47": {
+        "4": {
           "button": 3
         },
-        "48": {
+        "8": {
           "button": 4
         },
-        "86": {
+        "16": {
           "button": 5
         },
-        "87": {
+        "32": {
           "button": 6
+        },
+        "64": {
+          "button": 7
+        },
+        "128": {
+          "button": 8
         }
-      },
-      "statusOverrides": [
-        {
-          "scanCode": 29,
-          "statusByte": 3,
-          "buttonNumber": 8
-        }
-      ]
+      }
     }
   }
 }
