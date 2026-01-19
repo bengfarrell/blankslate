@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "thelearningtablet"
+version = "1.0.0"
+description = "Graphics tablet controller with HID data reading and processing"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Ben Farrell", email = "ben@example.com"}
+]
+keywords = ["hid", "tablet", "graphics-tablet", "wacom", "xp-pen", "huion"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Hardware",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "hidapi>=0.14.0",
+    "websockets>=11.0.0",
+    "typing-extensions>=4.0.0; python_version<'3.10'",
+    "inquirer>=3.1.0",
+    "colorama>=0.4.6",
+]
+
+[project.optional-dependencies]
+midi = [
+    "python-rtmidi>=1.5.0",
+    "JACK-Client>=0.5.0",
+]
+keyboard = [
+    "pynput>=1.7.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+build = [
+    "pyinstaller>=6.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/bengfarrell/thelearningtablet"
+Repository = "https://github.com/bengfarrell/thelearningtablet"
+Documentation = "https://github.com/bengfarrell/thelearningtablet#readme"
+Issues = "https://github.com/bengfarrell/thelearningtablet/issues"
+
+[project.scripts]
+tablet-config-generator = "thelearningtablet.cli.config_generator:main"
+tablet-events = "thelearningtablet.cli.event_viewer:main"
+tablet-websocket = "thelearningtablet.cli.websocket_server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["thelearningtablet*"]
+exclude = ["tests*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"

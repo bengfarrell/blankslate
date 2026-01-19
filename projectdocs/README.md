@@ -11,6 +11,15 @@ Get up and running with the project in 3 easy steps:
 - Testing setup
 - Common commands reference
 
+### [Python Setup Guide](./PYTHON_SETUP.md)
+Complete Python development setup:
+- Virtual environment (venv) setup
+- Installing dependencies
+- Running tests with pytest
+- Using CLI tools
+- Daily workflow and best practices
+- IDE configuration
+
 ### [Test Coverage](./TEST_COVERAGE.md)
 Complete overview of the test suite:
 - Unit tests across multiple modules
