@@ -17,7 +17,7 @@
       1
     ]
   },
-  "reportId": 0,
+  "reportId": 7,
   "digitizerUsagePage": 13,
   "stylusModeStatusByte": 160,
   "capabilities": {
@@ -34,31 +34,31 @@
   "byteCodeMappings": {
     "x": {
       "byteIndex": [
-        1,
-        2
+        2,
+        3
       ],
       "max": 15999,
       "type": "multi-byte-range"
     },
     "y": {
       "byteIndex": [
-        3,
-        4
+        4,
+        5
       ],
       "max": 8999,
       "type": "multi-byte-range"
     },
     "pressure": {
       "byteIndex": [
-        5,
-        6
+        6,
+        7
       ],
       "max": 16383,
       "type": "multi-byte-range"
     },
     "status": {
       "byteIndex": [
-        0
+        1
       ],
       "type": "code",
       "values": {
@@ -69,6 +69,9 @@
           "state": "buttons"
         },
         "3": {
+          "state": "buttons"
+        },
+        "6": {
           "state": "buttons"
         },
         "160": {
@@ -100,7 +103,7 @@
     },
     "tiltX": {
       "byteIndex": [
-        7
+        8
       ],
       "positiveMax": 60,
       "negativeMin": 196,
@@ -109,7 +112,7 @@
     },
     "tiltY": {
       "byteIndex": [
-        8
+        9
       ],
       "positiveMax": 60,
       "negativeMin": 196,
@@ -118,7 +121,7 @@
     },
     "tabletButtons": {
       "byteIndex": [
-        1
+        2
       ],
       "buttonCount": 8,
       "type": "code",
