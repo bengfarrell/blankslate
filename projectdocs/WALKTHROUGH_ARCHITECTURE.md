@@ -171,6 +171,46 @@ This unified format allows configs generated on any platform to work with any vi
 
 ---
 
+## Config Interchangeability
+
+**Configs are fully interchangeable** across all platforms (Python, Node.js, WebHID) and driver states (driver enabled or disabled). Testing with the XP-Pen Deco 640 confirmed that all 6 generated configs (Python driver/nodriver, Node.js driver/nodriver, WebHID driver/nodriver) have **identical `byteCodeMappings`**:
+
+| Mapping | Value | All Configs |
+|---------|-------|-------------|
+| `x.byteIndex` | `[2, 3]` | ✅ Same |
+| `y.byteIndex` | `[4, 5]` | ✅ Same |
+| `pressure.byteIndex` | `[6, 7]` | ✅ Same |
+| `status.byteIndex` | `[1]` | ✅ Same |
+| `tiltX/Y.byteIndex` | `[8]` / `[9]` | ✅ Same |
+| `tabletButtons.byteIndex` | `[2]` | ✅ Same |
+
+### The `reportId` Field
+
+The only notable difference between configs is the `reportId` field:
+
+| Platform | `reportId` Value | Reason |
+|----------|------------------|--------|
+| Python / Node.js | `2` (actual value) | Raw HID packets include Report ID |
+| WebHID | `0` | Browser strips Report ID from packets |
+
+**Important:** The `reportId` field is purely **informational metadata**. The viewer does **not** use this field to determine byte offsets. Instead, the viewer applies offsets based on the **runtime environment**:
+
+```typescript
+// WebHID viewer always applies -1 offset (browser strips report ID)
+processDeviceData(bytes, config.byteCodeMappings, -1);
+
+// Node.js/Python viewer uses 0 offset (packet includes report ID)
+processDeviceData(bytes, config.byteCodeMappings, 0);
+```
+
+### Practical Implications
+
+1. **Generate once, use anywhere** - A config created on Python works in the Node.js viewer and WebHID viewer
+2. **Driver state doesn't matter** - Configs created with the driver enabled work identically when the driver is disabled (and vice versa)
+3. **No need for platform-specific configs** - A single config file serves all use cases for a given tablet model
+
+---
+
 ## Key Design Decisions
 
 1. **`WalkthroughEngine` is platform-agnostic** - All step logic, state transitions, and byte analysis happen in shared code
