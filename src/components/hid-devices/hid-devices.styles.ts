@@ -18,28 +18,29 @@ export const styles = css`
   }
 
   .status-badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 600;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
   }
 
   .status-badge.connected {
-    background: var(--spectrum-positive-background-color-default);
-    color: var(--spectrum-positive-color-1000);
-    border: 2px solid var(--spectrum-positive-color-900);
+    background: var(--spectrum-gray-200);
+    color: var(--spectrum-gray-800);
+    border: 1px solid var(--spectrum-gray-300);
   }
 
   .status-icon {
-    font-size: 16px;
+    font-size: 12px;
+    color: var(--spectrum-positive-color-900);
   }
 
   .status-detail {
-    font-size: 12px;
-    opacity: 0.8;
+    font-size: 11px;
+    color: var(--spectrum-gray-600);
   }
 
   .status-detail.warning {

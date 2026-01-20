@@ -454,7 +454,7 @@ export class TabletVisualizer extends LitElement {
                         <!-- Circular button -->
                         <circle cx="${buttonCx}" cy="${buttonY}"
                               r="${buttonRadius}"
-                              fill="${isPressed ? 'var(--svg-positive-900)' : 'var(--svg-gray-800)'}"
+                              fill="${isPressed ? 'var(--svg-positive-900)' : 'var(--svg-gray-200)'}"
                               stroke="var(--svg-gray-500)"
                               stroke-width="1.5"
                               pointer-events="${this.socketMode ? 'none' : 'auto'}"
@@ -466,7 +466,7 @@ export class TabletVisualizer extends LitElement {
                         <text x="${buttonCx}" y="${buttonY + 4}"
                               text-anchor="middle"
                               font-size="11"
-                              fill="${isPressed ? 'var(--svg-gray-900)' : 'var(--svg-gray-50)'}"
+                              fill="${isPressed ? 'var(--svg-gray-50)' : 'var(--svg-gray-800)'}"
                               font-weight="600"
                               pointer-events="none">
                             ${i + 1}
@@ -584,42 +584,46 @@ export class TabletVisualizer extends LitElement {
                          L 15 ${penWidth/2 - 4}
                          L 15 ${penWidth/2 + 4}
                          Z"
-                      fill="var(--svg-gray-700)"
-                      stroke="var(--svg-gray-800)"
-                      stroke-width="1"
+                      fill="none"
+                      stroke="var(--svg-gray-600)"
+                      stroke-width="1.5"
                       stroke-linejoin="round"
                       pointer-events="none" />
                 <!-- Rounded tip cap -->
                 <circle cx="6" cy="${penWidth/2}" r="2"
-                        fill="var(--svg-gray-700)"
+                        fill="var(--svg-gray-600)"
                         pointer-events="none" />
                 
                 <!-- Pen body -->
                 <rect x="15" y="0"
                       width="${penLength - 30}" height="${penWidth}"
                       rx="2"
-                      fill="var(--svg-gray-900)"
-                      stroke="var(--svg-gray-800)"
-                      stroke-width="1"
+                      fill="none"
+                      stroke="var(--svg-gray-600)"
+                      stroke-width="1.5"
                       pointer-events="none" />
 
                 <!-- Pen eraser end (right side) -->
                 <ellipse cx="${penLength - 12}" cy="${penWidth/2}"
                          rx="3" ry="${penWidth / 2}"
-                         fill="var(--svg-gray-800)"
+                         fill="none"
+                         stroke="var(--svg-gray-600)"
+                         stroke-width="1.5"
                          pointer-events="none" />
                 <rect x="${penLength - 15}" y="0"
                       width="8" height="${penWidth}"
-                      fill="var(--svg-gray-800)"
+                      fill="var(--svg-gray-300)"
+                      stroke="var(--svg-gray-600)"
+                      stroke-width="1.5"
                       pointer-events="none" />
                 
                 <!-- Primary Button (closer to tip, on top of pen) -->
                 <rect x="${button1X}" y="${penWidth/2 - buttonWidth/2}"
                       width="${buttonHeight}" height="${buttonWidth}"
                       rx="2"
-                      fill="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? 'var(--svg-positive-900)' : 'var(--svg-gray-800)'}"
-                      stroke="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? 'var(--svg-positive-1000)' : 'var(--svg-gray-700)'}"
-                      stroke-width="1"
+                      fill="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? 'var(--svg-positive-900)' : 'var(--svg-gray-300)'}"
+                      stroke="${(this.socketMode ? this.externalTabletData.secondaryButtonPressed : this.secondaryButtonPressed) ? 'var(--svg-positive-1000)' : 'var(--svg-gray-600)'}"
+                      stroke-width="1.5"
                       pointer-events="${this.socketMode ? 'none' : 'auto'}"
                       @mousedown=${(e: MouseEvent) => this.handleStylusButtonMouseDown(true, e)}
                       @mouseup=${(e: MouseEvent) => this.handleStylusButtonMouseUp(true, e)}
@@ -629,9 +633,9 @@ export class TabletVisualizer extends LitElement {
                 <rect x="${button2X}" y="${penWidth/2 - buttonWidth/2}"
                       width="${buttonHeight}" height="${buttonWidth}"
                       rx="2"
-                      fill="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? 'var(--svg-positive-900)' : 'var(--svg-gray-800)'}"
-                      stroke="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? 'var(--svg-positive-1000)' : 'var(--svg-gray-700)'}"
-                      stroke-width="1"
+                      fill="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? 'var(--svg-positive-900)' : 'var(--svg-gray-300)'}"
+                      stroke="${(this.socketMode ? this.externalTabletData.primaryButtonPressed : this.primaryButtonPressed) ? 'var(--svg-positive-1000)' : 'var(--svg-gray-600)'}"
+                      stroke-width="1.5"
                       pointer-events="${this.socketMode ? 'none' : 'auto'}"
                       @mousedown=${(e: MouseEvent) => this.handleStylusButtonMouseDown(false, e)}
                       @mouseup=${(e: MouseEvent) => this.handleStylusButtonMouseUp(false, e)}
@@ -642,11 +646,11 @@ export class TabletVisualizer extends LitElement {
 
     private renderTilt() {
         const viewBoxWidth = 300;
-        const viewBoxHeight = 320; // Increased from 300 to make room for labels
+        const viewBoxHeight = 230; // Reduced since labels are removed
         const centerX = viewBoxWidth / 2;
-        const centerY = viewBoxHeight / 2 + 5; // Moved down for better spacing
-        const maxRadius = 80; // Reduced from 100 for more breathing room
-        const buttonsY = 30;
+        const centerY = viewBoxHeight / 2 + 15; // Adjusted for new height
+        const maxRadius = 80;
+        const buttonsY = 10;
         
         // Use external data when in socket mode, otherwise use internal state
         const tiltX = this.socketMode ? this.externalTabletData.tiltX : this.tiltX;
@@ -730,17 +734,6 @@ export class TabletVisualizer extends LitElement {
                         fill="var(--svg-informative-900)"
                         pointer-events="none" />
                 ` : ''}
-                
-                <!-- Axis labels with more vertical separation -->
-                <text x="${centerX}" y="${viewBoxHeight - 45}" class="axis-label" text-anchor="middle">
-                    Tilt X: ${tiltX.toFixed(2)} | Tilt Y: ${tiltY.toFixed(2)}
-                </text>
-                <text x="${centerX}" y="${viewBoxHeight - 30}" class="axis-label" text-anchor="middle">
-                    Tilt X + Y: ${tiltMagnitude.toFixed(2)}
-                </text>
-                <text x="${centerX}" y="${viewBoxHeight - 15}" class="axis-label" text-anchor="middle">
-                    Pressure: ${tiltPressure.toFixed(2)}
-                </text>
                 `}
             </div>
         `;

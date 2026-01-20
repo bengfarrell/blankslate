@@ -1,8 +1,8 @@
 {
-  "name": "sdfsd",
-  "manufacturer": "sdfsd",
-  "model": "sdfsd",
-  "description": "sdfds",
+  "name": "XP Pen Deco 640",
+  "manufacturer": "XP Pen",
+  "model": "Deco 640",
+  "description": "XP Pen Deco 640, OSX, WebHID, no driver (works both driver and driver-less)",
   "vendorId": "0x28bd",
   "productId": "0x2904",
   "deviceInfo": {

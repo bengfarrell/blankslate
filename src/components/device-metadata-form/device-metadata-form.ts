@@ -209,10 +209,11 @@ export class DeviceMetadataForm extends LitElement {
 
         <form @submit=${this._handleSubmit}>
           <div class="form-field">
-            <sp-field-label for="name" required>Device Name</sp-field-label>
+            <sp-field-label for="name" required data-spectrum-pattern="field-label">Device Name</sp-field-label>
             <sp-textfield
               id="name"
               required
+              data-spectrum-pattern="textfield"
               .value=${this.formData.name}
               @input=${(e: Event) => {
                 this.formData.name = (e.target as HTMLInputElement).value;
@@ -222,10 +223,11 @@ export class DeviceMetadataForm extends LitElement {
           </div>
 
           <div class="form-field">
-            <sp-field-label for="manufacturer" required>Manufacturer</sp-field-label>
+            <sp-field-label for="manufacturer" required data-spectrum-pattern="field-label">Manufacturer</sp-field-label>
             <sp-textfield
               id="manufacturer"
               required
+              data-spectrum-pattern="textfield"
               .value=${this.formData.manufacturer}
               @input=${(e: Event) => {
                 this.formData.manufacturer = (e.target as HTMLInputElement).value;
@@ -235,10 +237,11 @@ export class DeviceMetadataForm extends LitElement {
           </div>
 
           <div class="form-field">
-            <sp-field-label for="model" required>Model</sp-field-label>
+            <sp-field-label for="model" required data-spectrum-pattern="field-label">Model</sp-field-label>
             <sp-textfield
               id="model"
               required
+              data-spectrum-pattern="textfield"
               .value=${this.formData.model}
               @input=${(e: Event) => {
                 this.formData.model = (e.target as HTMLInputElement).value;
@@ -248,11 +251,12 @@ export class DeviceMetadataForm extends LitElement {
           </div>
 
           <div class="form-field">
-            <sp-field-label for="description" required>Description</sp-field-label>
+            <sp-field-label for="description" required data-spectrum-pattern="field-label">Description</sp-field-label>
             <sp-textfield
               id="description"
               multiline
               required
+              data-spectrum-pattern="textfield"
               .value=${this.formData.description}
               @input=${(e: Event) => {
                 this.formData.description = (e.target as HTMLInputElement).value;
@@ -264,15 +268,16 @@ export class DeviceMetadataForm extends LitElement {
           ${this.suggestedButtonCount > 0 ? html`
             <!-- Button count already collected in step 9, show as read-only info -->
             <div class="form-field">
-              <sp-field-label>Express Keys/Buttons</sp-field-label>
+              <sp-field-label data-spectrum-pattern="field-label">Express Keys/Buttons</sp-field-label>
               <div class="readonly-value">${this.suggestedButtonCount} buttons detected in previous step</div>
             </div>
           ` : html`
             <div class="form-field">
-              <sp-field-label for="buttonCount">Number of Express Keys/Buttons</sp-field-label>
+              <sp-field-label for="buttonCount" data-spectrum-pattern="field-label">Number of Express Keys/Buttons</sp-field-label>
               <sp-textfield
                 type="number"
                 id="buttonCount"
+                data-spectrum-pattern="textfield"
                 min="0"
                 max="32"
                 .value=${this.formData.buttonCount.toString()}
@@ -280,7 +285,7 @@ export class DeviceMetadataForm extends LitElement {
                   this.formData.buttonCount = parseInt((e.target as HTMLInputElement).value) || 0;
                 }}>
               </sp-textfield>
-              <sp-help-text>Enter 0 if your device has no express keys</sp-help-text>
+              <sp-help-text data-spectrum-pattern="help-text">Enter 0 if your device has no express keys</sp-help-text>
             </div>
           `}
 
@@ -288,12 +293,14 @@ export class DeviceMetadataForm extends LitElement {
             <sp-button
               type="button"
               variant="secondary"
+              data-spectrum-pattern="button-secondary"
               @click=${this._handleCancel}>
               Cancel
             </sp-button>
             <sp-button
               type="submit"
-              variant="accent">
+              variant="accent"
+              data-spectrum-pattern="button-accent">
               Generate Configuration
             </sp-button>
           </div>

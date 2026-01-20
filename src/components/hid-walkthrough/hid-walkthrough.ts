@@ -131,7 +131,7 @@ export class HidWalkthrough extends LitElement {
     return html`
       <div class="step-header">
         <h3>${title}</h3>
-        <sp-action-button quiet @click="${this._handleReset}" title="Reset">
+        <sp-action-button quiet data-spectrum-pattern="action-button" @click="${this._handleReset}" label="Reset" aria-label="Reset">
           <sp-icon-refresh slot="icon"></sp-icon-refresh>
         </sp-action-button>
         <hid-walkthrough-progress currentStep="${stepNumber}" totalSteps="10"></hid-walkthrough-progress>

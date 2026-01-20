@@ -6,30 +6,27 @@ export const styles = css`
     color: var(--spectrum-gray-900);
   }
 
-  .header {
-    text-align: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid var(--spectrum-gray-300);
-  }
-
-  .header h2 {
-    margin: 0 0 10px 0;
-    color: var(--spectrum-accent-color-900);
-  }
-
-  .header p {
-    margin: 0 0 15px 0;
-    color: var(--spectrum-gray-700);
-    font-size: 14px;
-  }
-
-  .device-status {
+  .page-header {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    gap: 15px;
-    margin-top: 15px;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--spectrum-gray-200);
+  }
+
+  .header-info h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--spectrum-gray-900);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   .status-badge {
@@ -258,21 +255,25 @@ export const styles = css`
 
   /* Walkthrough styles */
   .walkthrough {
-    border-left: 4px solid var(--spectrum-accent-color-900);
+    border-left: 4px solid var(--spectrum-gray-400);
+    background: var(--spectrum-gray-75);
   }
 
   .walkthrough.active {
-    border-left-color: var(--spectrum-positive-color-900);
-    background: var(--spectrum-positive-background-color-default);
+    border-left-color: var(--spectrum-informative-color-900);
+    background: var(--spectrum-gray-75);
+    border: 1px solid var(--spectrum-gray-200);
+    border-left: 4px solid var(--spectrum-informative-color-900);
   }
 
   .walkthrough.complete {
-    border-left-color: var(--spectrum-informative-color-900);
-    background: var(--spectrum-informative-background-color-default);
+    border-left-color: var(--spectrum-gray-600);
+    background: var(--spectrum-gray-100);
   }
 
   .walkthrough h3 {
     margin-top: 0;
+    color: var(--spectrum-gray-900);
   }
 
   .walkthrough p {
@@ -802,6 +803,42 @@ export const styles = css`
     margin-top: 15px;
   }
 
+  .capture-status {
+    min-height: 44px;
+    margin-bottom: 8px;
+  }
+
+  .packet-count {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--spectrum-gray-800);
+  }
+
+  .filter-stats {
+    font-size: 12px;
+    color: var(--spectrum-gray-600);
+  }
+
+  .navigation-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+    align-items: center;
+  }
+
+  .bytes-detected-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: var(--spectrum-positive-color-900);
+    color: var(--spectrum-white);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-left: auto;
+  }
+
   .button-group {
     display: flex;
     gap: 10px;
@@ -1264,5 +1301,41 @@ export const styles = css`
   .collapse-icon {
     font-size: 12px;
     transition: transform 0.2s ease;
+  }
+
+  /* Message badges/tags */
+  .message {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    width: fit-content;
+    margin-bottom: 8px;
+  }
+
+  .message.info {
+    background: var(--spectrum-gray-200);
+    color: var(--spectrum-gray-700);
+    border: 1px solid var(--spectrum-gray-300);
+  }
+
+  .message.success {
+    background: var(--spectrum-positive-background-color-default);
+    color: var(--spectrum-positive-color-1000);
+    border: 1px solid var(--spectrum-positive-color-400);
+  }
+
+  .message.error {
+    background: var(--spectrum-negative-background-color-default);
+    color: var(--spectrum-negative-color-1000);
+    border: 1px solid var(--spectrum-negative-color-400);
+  }
+
+  .message.warning {
+    background: var(--spectrum-notice-background-color-default);
+    color: var(--spectrum-notice-color-1000);
+    border: 1px solid var(--spectrum-notice-color-400);
   }
 `;

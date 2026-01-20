@@ -75,12 +75,14 @@ export class HidJsonConfig extends LitElement {
         <div class="config-actions">
           <sp-button
             variant="secondary"
+            data-spectrum-pattern="button-secondary"
             @click="${this._copyConfig}">
             <sp-icon-copy slot="icon"></sp-icon-copy>
             Copy JSON
           </sp-button>
           <sp-button
             variant="secondary"
+            data-spectrum-pattern="button-secondary"
             @click="${this._downloadConfig}">
             <sp-icon-download slot="icon"></sp-icon-download>
             Download Config

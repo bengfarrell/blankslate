@@ -6,16 +6,15 @@ export const styles = css`
   }
 
   .bytes-container {
-    margin-top: 20px;
-    padding: 20px;
-    background: linear-gradient(135deg, var(--spectrum-accent-color-900) 0%, var(--spectrum-accent-color-1000) 100%);
-    border-radius: 8px;
-    color: var(--spectrum-gray-50);
+    padding: 16px;
+    background: transparent;
+    color: var(--spectrum-gray-800);
   }
 
   .device-info-header {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 16px;
     align-items: center;
     margin-bottom: 12px;
@@ -37,7 +36,8 @@ export const styles = css`
 
   .info-value {
     font-weight: 600;
-    background: var(--spectrum-gray-100);
+    background: var(--spectrum-gray-200);
+    color: var(--spectrum-gray-900);
     padding: 2px 8px;
     border-radius: 4px;
   }
@@ -66,6 +66,7 @@ export const styles = css`
   .bytes-grid {
     display: flex;
     flex-wrap: nowrap;
+    justify-content: center;
     gap: 8px;
     overflow-x: auto;
     overflow-y: visible;

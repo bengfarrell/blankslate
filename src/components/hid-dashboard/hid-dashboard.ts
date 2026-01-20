@@ -22,8 +22,7 @@ import '@spectrum-web-components/icons-workflow/icons/sp-icon-magic-wand.js';
 import '@spectrum-web-components/icons-workflow/icons/sp-icon-stop.js';
 import '@spectrum-web-components/icons-workflow/icons/sp-icon-play.js';
 import '@spectrum-web-components/icons-workflow/icons/sp-icon-link.js';
-
-export type ViewerMode = 'webhid' | 'mock-raw' | 'mock-translated' | 'websocket';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-data.js';
 
 /**
  * Tablet event structure received from WebSocket server
@@ -79,8 +78,76 @@ interface MockDataOption {
 }
 
 /**
+ * Default byte mappings matching the mock device's raw output format
+ * Used when no config is loaded to enable raw->event translation
+ * 
+ * Mock device packet format (9 bytes for stylus, 11 bytes for buttons):
+ * - Byte 0: Status (0xa0=hover, 0xa1=contact, 0xf0=buttons, etc.)
+ * - Bytes 1-2: X coordinate (little-endian)
+ * - Bytes 3-4: Y coordinate (little-endian)
+ * - Bytes 5-6: Pressure (little-endian)
+ * - Byte 7: Tilt X (0-255, 128=center)
+ * - Byte 8: Tilt Y (0-255, 128=center)
+ */
+const DEFAULT_MOCK_BYTE_MAPPINGS = {
+  status: {
+    byteIndex: [0],
+    type: 'code',
+    values: {
+      '192': { state: 'none' },           // 0xC0 - pen out of range
+      '160': { state: 'hover' },          // 0xA0 - hovering
+      '161': { state: 'contact' },        // 0xA1 - drawing
+      '162': { state: 'secondary-hover', secondaryButtonPressed: true },   // 0xA2
+      '163': { state: 'secondary-contact', secondaryButtonPressed: true }, // 0xA3
+      '164': { state: 'primary-hover', primaryButtonPressed: true },       // 0xA4
+      '165': { state: 'primary-contact', primaryButtonPressed: true },     // 0xA5
+      '240': { state: 'buttons' },        // 0xF0 - tablet buttons
+    },
+  },
+  x: {
+    byteIndex: [1, 2],
+    type: 'multi-byte-range',
+    min: 0,
+    max: 65535,
+  },
+  y: {
+    byteIndex: [3, 4],
+    type: 'multi-byte-range',
+    min: 0,
+    max: 65535,
+  },
+  pressure: {
+    byteIndex: [5, 6],
+    type: 'multi-byte-range',
+    min: 0,
+    max: 8191,
+  },
+  tiltX: {
+    byteIndex: [7],
+    type: 'bipolar-range',
+    positiveMin: 128,
+    positiveMax: 255,
+    negativeMin: 0,
+    negativeMax: 127,
+  },
+  tiltY: {
+    byteIndex: [8],
+    type: 'bipolar-range',
+    positiveMin: 128,
+    positiveMax: 255,
+    negativeMin: 0,
+    negativeMax: 127,
+  },
+  tabletButtons: {
+    byteIndex: [1],
+    type: 'bit-flags',
+    buttonCount: 8,
+  },
+};
+
+/**
  * Dashboard component for visualizing tablet data
- * Displays various visualizers including tablet position, pressure, and tilt
+ * Unified dashboard that supports WebHID, WebSocket, and Mock data simultaneously
  */
 @customElement('hid-dashboard')
 export class HidDashboard extends LitElement {
@@ -89,15 +156,37 @@ export class HidDashboard extends LitElement {
   @property({ type: Object })
   config: Config | null = null;
 
-  @property({ type: String })
-  viewerMode: ViewerMode | null = null;
+  // WebHID state
+  @state()
+  private hidConnected = false;
 
   @state()
-  private deviceConnected = false;
+  private hidDeviceName = '';
+
+  // WebSocket state
+  @state()
+  private websocketConnected = false;
 
   @state()
-  private deviceName = '';
+  private websocketUrl = 'ws://localhost:8765';
 
+  @state()
+  private websocketServerInfo = '';
+
+  @state()
+  private websocketDataMode: 'raw' | 'translated' = 'translated';
+
+  // Mock data state
+  @state()
+  private isSimulating = false;
+
+  @state()
+  private currentSimulation = '';
+
+  @state()
+  private simulationDataMode: 'raw' | 'translated' = 'translated';
+
+  // Shared visualization state
   @state()
   private tabletData = {
     x: 0,
@@ -122,31 +211,16 @@ export class HidDashboard extends LitElement {
   @state()
   private packetCount = 0;
 
+  // Active data source tracking
   @state()
-  private isSimulating = false;
+  private activeSource: 'none' | 'webhid' | 'websocket' | 'mock' = 'none';
 
-
-
+  // Track which display is showing translated (non-native) data
   @state()
-  private currentSimulation = '';
-
-  @state()
-  private websocketConnected = false;
+  private isRawBytesTranslated = false;
 
   @state()
-  private websocketUrl = 'ws://localhost:8765';
-
-  @state()
-  private showWebSocketInput = false;
-
-  @state()
-  private websocketServerInfo = '';
-
-  @state()
-  private simulationDataMode: 'raw' | 'translated' = 'raw';
-
-  @state()
-  private websocketDataMode: 'raw' | 'translated' = 'translated';
+  private isEventsTranslated = false;
 
   private hidDevice: HIDDevice | null = null;
   private mockDevice: MockTabletDevice | null = null;
@@ -169,34 +243,13 @@ export class HidDashboard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    // Auto-initialize based on viewer mode
-    this._initializeViewerMode();
-  }
-
-  private _initializeViewerMode() {
-    if (!this.viewerMode) return;
-
-    switch (this.viewerMode) {
-      case 'mock-raw':
-        this.simulationDataMode = 'raw';
-        this._initMockDevice();
-        break;
-      case 'mock-translated':
-        this.simulationDataMode = 'translated';
-        this._initMockDevice();
-        break;
-      case 'websocket':
-        // WebSocket will be connected manually by user
-        break;
-      case 'webhid':
-        // WebHID will be connected manually by user
-        break;
-    }
+    // Initialize mock device so it's ready for simulations
+    this._initMockDevice();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this._disconnect();
+    this._disconnectHid();
     this._disconnectWebSocket();
     this._stopSimulation();
   }
@@ -220,15 +273,9 @@ export class HidDashboard extends LitElement {
         composed: true
       }));
 
-      // If in mock-translated mode, switch to raw mode
-      if (this.viewerMode === 'mock-translated') {
-        this.viewerMode = 'mock-raw';
-        this.simulationDataMode = 'raw';
-
-        // Reinitialize mock device with config
-        this.mockDevice = null;
-        this._initMockDevice();
-      }
+      // Reinitialize mock device with config
+      this.mockDevice = null;
+      this._initMockDevice();
     } catch (err) {
       console.error('Failed to load sample config:', err);
     }
@@ -295,44 +342,57 @@ export class HidDashboard extends LitElement {
     });
 
     // Listen for translated events (if in translated mode)
-    if (this.simulationDataMode === 'translated') {
-      this.mockDevice.addEventListener('tablet-event', (data: Uint8Array) => {
-        this._processTranslatedData(data);
-      });
-    }
+    this.mockDevice.addEventListener('tablet-event', (data: Uint8Array) => {
+      this._processTranslatedData(data, 'mock');
+    });
   }
 
   private _processMockData(data: Uint8Array) {
-    // In translated mode, skip processing raw bytes for visualization
-    // (they're still shown in the bytes display)
+    // Track that mock is the active source
+    this.activeSource = 'mock';
+
+    // Raw bytes are always native from mock device
+    this.isRawBytesTranslated = false;
+    this._updateRawBytes(data, 'mock');
+
+    // In translated mode, the mock device will emit tablet-event separately
+    // Events will be native, we still show raw bytes (also native since mock generates both)
     if (this.simulationDataMode === 'translated') {
-      this._updateRawBytes(data);
+      // Events will come from _processTranslatedData, raw bytes are still native
       return;
     }
 
-    // Update raw bytes display
-    this._updateRawBytes(data);
-
-    // If we have a config, process through the config mappings
-    // Use offset -1 for WebHID since browser API strips report ID from packets
-    if (this.config) {
-      const processed = processDeviceData(data, this.config.byteCodeMappings, -1);
-      // Update tablet data using the same handler as real device
-      this._handleTabletData(processed as TabletDataEvent);
-    }
+    // In raw mode, we translate raw bytes to events
+    this.isEventsTranslated = true;
+    
+    // Process through config mappings (or default mock mappings) to get events
+    const mappings = this.config?.byteCodeMappings ?? DEFAULT_MOCK_BYTE_MAPPINGS;
+    const processed = processDeviceData(data, mappings, -1);
+    this._handleTabletData(processed as TabletDataEvent, 'mock', true);
   }
 
-  private _processTranslatedData(data: Uint8Array) {
+  private _processTranslatedData(data: Uint8Array, source: 'mock' | 'websocket') {
     // Decode JSON from Uint8Array
     const jsonStr = new TextDecoder().decode(data);
     const translated = JSON.parse(jsonStr);
 
+    // Events are native when receiving translated data
+    this.isEventsTranslated = false;
+    
+    // For mock in translated mode, raw bytes are also available (mock generates both)
+    // For websocket in translated mode, we need to synthesize raw bytes
+    if (source === 'websocket') {
+      this.isRawBytesTranslated = true;
+      this._synthesizeRawBytes(translated as TabletDataEvent);
+    }
+
     // Update tablet data directly from translated events
-    this._handleTabletData(translated as TabletDataEvent);
+    this._handleTabletData(translated as TabletDataEvent, source, false);
   }
 
-  private _updateRawBytes(data: Uint8Array) {
+  private _updateRawBytes(data: Uint8Array, source: 'webhid' | 'websocket' | 'mock') {
     this.packetCount++;
+    this.activeSource = source;
     
     // Convert raw bytes to ByteData format with labels from config
     this.rawBytes = Array.from(data).map((value, index) => {
@@ -360,6 +420,44 @@ export class HidDashboard extends LitElement {
     });
   }
 
+  /**
+   * Synthesize raw bytes from translated event data
+   * Used when receiving translated events without raw bytes (e.g., WebSocket translated mode)
+   */
+  private _synthesizeRawBytes(data: TabletDataEvent) {
+    // Create synthetic bytes based on normalized values
+    // This is an approximation - we create a simple 12-byte packet
+    const x = Math.round((data.x ?? 0) * 65535);
+    const y = Math.round((data.y ?? 0) * 65535);
+    const pressure = Math.round((data.pressure ?? 0) * 8191);
+    const tiltX = Math.round(((data.tiltX ?? 0) + 1) * 127.5); // -1 to 1 -> 0 to 255
+    const tiltY = Math.round(((data.tiltY ?? 0) + 1) * 127.5);
+    
+    // Build a synthetic byte array
+    const bytes = new Uint8Array([
+      0x02, // Report ID placeholder
+      (data.primaryButtonPressed ? 0x01 : 0x00) | (data.secondaryButtonPressed ? 0x02 : 0x00), // Button state
+      x & 0xFF, (x >> 8) & 0xFF, // X low, X high
+      y & 0xFF, (y >> 8) & 0xFF, // Y low, Y high
+      pressure & 0xFF, (pressure >> 8) & 0xFF, // Pressure low, Pressure high
+      tiltX & 0xFF, // Tilt X
+      tiltY & 0xFF, // Tilt Y
+      data.button ?? 0, // Tablet buttons
+      0x00 // Padding
+    ]);
+
+    // Convert to ByteData format with synthetic labels
+    this.rawBytes = Array.from(bytes).map((value, index) => {
+      const labels = ['reportId', 'buttons', 'xLow', 'xHigh', 'yLow', 'yHigh', 'pressLow', 'pressHigh', 'tiltX', 'tiltY', 'tabletBtn', 'pad'];
+      return {
+        byteIndex: index,
+        value: value,
+        label: labels[index] || undefined,
+        isIdentified: index < labels.length
+      } as ByteData;
+    });
+  }
+
   private _runSimulation(option: MockDataOption) {
     this._initMockDevice();
     if (!this.mockDevice) return;
@@ -369,6 +467,7 @@ export class HidDashboard extends LitElement {
 
     this.isSimulating = true;
     this.currentSimulation = option.label;
+    this.activeSource = 'mock';
 
     // Run the simulation
     option.action(this.mockDevice);
@@ -389,49 +488,33 @@ export class HidDashboard extends LitElement {
     }
     this.isSimulating = false;
     this.currentSimulation = '';
-    // Reset raw bytes when stopping simulation
-    this.rawBytes = [];
-    this.packetCount = 0;
-  }
-
-  private _toggleDataMode() {
-    // Stop any current simulation
-    this._stopSimulation();
-
-    // Toggle mode
-    this.simulationDataMode = this.simulationDataMode === 'raw' ? 'translated' : 'raw';
-
-    // Recreate mock device with new mode
-    this.mockDevice = null;
-    this._initMockDevice();
-  }
-
-  private _setDataMode(mode: 'raw' | 'translated') {
-    if (this.simulationDataMode === mode || this.isSimulating) {
-      return;
+    // Only reset if mock was the active source
+    if (this.activeSource === 'mock') {
+      this.rawBytes = [];
+      this.packetCount = 0;
     }
-
-    // Stop any current simulation
-    this._stopSimulation();
-
-    // Set mode
-    this.simulationDataMode = mode;
-
-    // Recreate mock device with new mode
-    this.mockDevice = null;
-    this._initMockDevice();
-
-    // Keep the menu open
-    this.requestUpdate();
   }
 
-  private async _handleConnect() {
+  private _setSimulationDataMode(mode: 'raw' | 'translated') {
+    if (this.simulationDataMode === mode) return;
+    
+    this.simulationDataMode = mode;
+    
+    // Reinitialize mock device with new mode
+    if (this.mockDevice) {
+      this._stopSimulation();
+      this.mockDevice = null;
+      this._initMockDevice();
+    }
+  }
+
+  private async _handleConnectHid() {
     if (!this.config) {
       console.error('No config loaded');
       return;
     }
 
-    console.log('[Dashboard] Connecting with config:', {
+    console.log('[Dashboard] Connecting WebHID with config:', {
       vendorId: this.config.deviceInfo.vendor_id,
       productId: this.config.deviceInfo.product_id,
       usagePage: this.config.deviceInfo.usage_page
@@ -510,8 +593,8 @@ export class HidDashboard extends LitElement {
       });
 
       this.hidDevice = primaryDevice;
-      this.deviceName = primaryDevice.productName || this.config.name;
-      this.deviceConnected = true;
+      this.hidDeviceName = primaryDevice.productName || this.config.name;
+      this.hidConnected = true;
 
       // Only open and listen to the interface specified in the config
       if (!primaryDevice.opened) {
@@ -525,23 +608,28 @@ export class HidDashboard extends LitElement {
 
         console.log('[Dashboard] Raw bytes received:', Array.from(bytes));
 
-        // Update raw bytes display
-        this._updateRawBytes(bytes);
+        // Raw bytes are native from WebHID
+        this.isRawBytesTranslated = false;
+        this._updateRawBytes(bytes, 'webhid');
 
         // Process through config mappings using shared processDeviceData
+        // Events are translated from raw bytes
         // Use offset -1 for WebHID since browser API strips report ID from packets
         const processed = processDeviceData(bytes, this.config!.byteCodeMappings, -1);
         console.log('[Dashboard] Processed data:', processed);
-        this._handleTabletData(processed as TabletDataEvent);
+        this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
       });
 
     } catch (error) {
       console.error('Failed to connect:', error);
-      this.deviceConnected = false;
+      this.hidConnected = false;
     }
   }
 
-  private _handleTabletData(data: TabletDataEvent) {
+  private _handleTabletData(data: TabletDataEvent, source: 'webhid' | 'websocket' | 'mock', isEventTranslated = false) {
+    // Track active source
+    this.activeSource = source;
+
     // Data from processDeviceData is already normalized to 0-1 range
     // x, y, pressure are already 0-1
     // tiltX, tiltY are already -1 to 1 (from bipolar range)
@@ -576,56 +664,52 @@ export class HidDashboard extends LitElement {
       }
     }
 
-    // Store event for events display (in translated modes)
-    if (this.viewerMode === 'mock-translated' || this.viewerMode === 'websocket') {
-      const event: TabletEvent = {
-        timestamp: Date.now(),
-        x: normalizedX,
-        y: normalizedY,
-        pressure: normalizedPressure,
-        tiltX: tiltX,
-        tiltY: tiltY,
-        tiltXY: this.tabletData.tiltXY,
-        primaryButtonPressed: data.primaryButtonPressed,
-        secondaryButtonPressed: data.secondaryButtonPressed,
-        state: data.state
-      };
-      this.tabletEvents = [...this.tabletEvents, event];
-      // Keep only last 50 events
-      if (this.tabletEvents.length > 50) {
-        this.tabletEvents = this.tabletEvents.slice(-50);
-      }
+    // Always store events for display (track if they're translated)
+    this.isEventsTranslated = isEventTranslated;
+    
+    // Handle tablet buttons - can come as individual booleans or as a single number
+    const buttonNum = data.button;
+    const event: TabletEvent = {
+      timestamp: Date.now(),
+      x: normalizedX,
+      y: normalizedY,
+      pressure: normalizedPressure,
+      tiltX: tiltX,
+      tiltY: tiltY,
+      tiltXY: this.tabletData.tiltXY,
+      primaryButtonPressed: data.primaryButtonPressed,
+      secondaryButtonPressed: data.secondaryButtonPressed,
+      button1: data.button1 ?? (buttonNum === 1),
+      button2: data.button2 ?? (buttonNum === 2),
+      button3: data.button3 ?? (buttonNum === 3),
+      button4: data.button4 ?? (buttonNum === 4),
+      button5: data.button5 ?? (buttonNum === 5),
+      button6: data.button6 ?? (buttonNum === 6),
+      button7: data.button7 ?? (buttonNum === 7),
+      button8: data.button8 ?? (buttonNum === 8),
+      state: data.state
+    };
+    this.tabletEvents = [...this.tabletEvents, event];
+    // Keep only last 50 events
+    if (this.tabletEvents.length > 50) {
+      this.tabletEvents = this.tabletEvents.slice(-50);
     }
   }
 
-  private _disconnect() {
+  private _disconnectHid() {
     if (this.hidDevice) {
       this.hidDevice.close();
       this.hidDevice = null;
     }
-    this.deviceConnected = false;
-    this.deviceName = '';
-    this.tabletData = {
-      x: 0,
-      y: 0,
-      pressure: 0,
-      tiltX: 0,
-      tiltY: 0,
-      tiltXY: 0,
-      primaryButtonPressed: false,
-      secondaryButtonPressed: false
-    };
-    this.pressedButtons = new Set();
-    this.rawBytes = [];
-    this.packetCount = 0;
+    this.hidConnected = false;
+    this.hidDeviceName = '';
+    // Only reset data if WebHID was the active source
+    if (this.activeSource === 'webhid') {
+      this._resetTabletData();
+    }
   }
 
   // ================== WebSocket Connection Methods ==================
-
-  private _toggleWebSocketInput(e: Event) {
-    e.stopPropagation();
-    this.showWebSocketInput = !this.showWebSocketInput;
-  }
 
   private _handleWebSocketUrlChange(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -643,7 +727,6 @@ export class HidDashboard extends LitElement {
       this.websocket.onopen = () => {
         console.log('[Dashboard] WebSocket connected');
         this.websocketConnected = true;
-        this.showWebSocketInput = false;
       };
 
       this.websocket.onmessage = (event) => {
@@ -693,14 +776,16 @@ export class HidDashboard extends LitElement {
     }
     this.websocketConnected = false;
     this.websocketServerInfo = '';
-    this._resetTabletData();
+    // Only reset data if websocket was the active source
+    if (this.activeSource === 'websocket') {
+      this._resetTabletData();
+    }
   }
 
   private _handleWebSocketMessage(data: WebSocketTabletEvent) {
     if (data.type === 'connected') {
       // Initial connection message from server
       this.websocketServerInfo = data.config?.name || 'WebSocket Server';
-      this.deviceName = `WS: ${this.websocketServerInfo}`;
 
       // Detect data format from server
       if (data.dataFormat) {
@@ -720,6 +805,15 @@ export class HidDashboard extends LitElement {
 
     if (data.type === 'tablet-data') {
       this.packetCount++;
+      this.activeSource = 'websocket';
+
+      // Events are native in translated WebSocket mode
+      this.isEventsTranslated = false;
+      // Raw bytes are synthesized (translated) in this mode
+      this.isRawBytesTranslated = true;
+
+      // Synthesize raw bytes from the translated event
+      this._synthesizeRawBytes(data as unknown as TabletDataEvent);
 
       // Update tablet data from WebSocket event
       this.tabletData = {
@@ -748,33 +842,31 @@ export class HidDashboard extends LitElement {
         this.pressedButtons = pressed;
       }
 
-      // Add to event stream for translated mode
-      if (this.websocketDataMode === 'translated') {
-        const event: TabletEvent = {
-          timestamp: data.timestamp ?? Date.now(),
-          x: data.x,
-          y: data.y,
-          pressure: data.pressure,
-          tiltX: data.tiltX,
-          tiltY: data.tiltY,
-          tiltXY: data.tiltXY,
-          primaryButtonPressed: data.primaryButtonPressed,
-          secondaryButtonPressed: data.secondaryButtonPressed,
-          button1: data.button1,
-          button2: data.button2,
-          button3: data.button3,
-          button4: data.button4,
-          button5: data.button5,
-          button6: data.button6,
-          button7: data.button7,
-          button8: data.button8,
-          state: data.state
-        };
-        this.tabletEvents = [...this.tabletEvents, event];
-        // Keep only last 50 events
-        if (this.tabletEvents.length > 50) {
-          this.tabletEvents = this.tabletEvents.slice(-50);
-        }
+      // Add to event stream
+      const event: TabletEvent = {
+        timestamp: data.timestamp ?? Date.now(),
+        x: data.x,
+        y: data.y,
+        pressure: data.pressure,
+        tiltX: data.tiltX,
+        tiltY: data.tiltY,
+        tiltXY: data.tiltXY,
+        primaryButtonPressed: data.primaryButtonPressed,
+        secondaryButtonPressed: data.secondaryButtonPressed,
+        button1: data.button1,
+        button2: data.button2,
+        button3: data.button3,
+        button4: data.button4,
+        button5: data.button5,
+        button6: data.button6,
+        button7: data.button7,
+        button8: data.button8,
+        state: data.state
+      };
+      this.tabletEvents = [...this.tabletEvents, event];
+      // Keep only last 50 events
+      if (this.tabletEvents.length > 50) {
+        this.tabletEvents = this.tabletEvents.slice(-50);
       }
     }
   }
@@ -785,14 +877,19 @@ export class HidDashboard extends LitElement {
       this.websocketDataMode = 'raw';
     }
 
+    // Raw bytes are native in raw WebSocket mode
+    this.isRawBytesTranslated = false;
+    // Events will be translated from raw bytes
+    this.isEventsTranslated = true;
+
     // Update raw bytes display (this also increments packetCount)
-    this._updateRawBytes(bytes);
+    this._updateRawBytes(bytes, 'websocket');
 
     // Process through config mappings to update visualizers
     // Use offset -1 for WebHID since browser API strips report ID from packets
     if (this.config) {
       const processed = processDeviceData(bytes, this.config.byteCodeMappings, -1);
-      this._handleTabletData(processed as TabletDataEvent);
+      this._handleTabletData(processed as TabletDataEvent, 'websocket', true);
     }
   }
 
@@ -817,197 +914,201 @@ export class HidDashboard extends LitElement {
   }
 
   render() {
-    // For mock modes without config, use a default config name
-    const configName = this.config?.name || (this.viewerMode === 'webhid' ? 'No Config Loaded' : 'Mock Tablet');
+    const configName = this.config?.name || 'No Config Loaded';
+    const hasActiveConnection = this.hidConnected || this.websocketConnected || this.isSimulating;
 
     return html`
       <div class="dashboard">
         <div class="dashboard-header">
           <div class="header-info">
-            <h1>Tablet Dashboard</h1>
+            <h1>BlankSlate Event Viewer</h1>
             <span class="config-name">${configName}</span>
           </div>
 
           <div class="header-controls">
-            <!-- Config loading options for WebHID mode -->
-            ${this.viewerMode === 'webhid' ? html`
-              <sp-action-menu
-                data-spectrum-pattern="action-menu"
-                placement="bottom-start"
-                @change=${(e: Event) => {
-                  const menu = e.target as any;
-                  const selectedItem = menu.selectedItem;
-                  if (selectedItem) {
-                    const action = selectedItem.value;
-                    if (action === 'load-file') {
-                      this._handleLoadLocalConfig();
-                    } else if (action === 'load-sample') {
-                      this._loadSampleConfig();
-                    } else if (action === 'generate') {
-                      this._handleGoToGenerator();
-                    }
+            <!-- Config Menu -->
+            <sp-action-menu
+              label="Config menu"
+              data-spectrum-pattern="action-menu"
+              placement="bottom-start"
+              @change=${(e: Event) => {
+                const menu = e.target as any;
+                const selectedItem = menu.selectedItem;
+                if (selectedItem) {
+                  const action = selectedItem.value;
+                  if (action === 'load-file') {
+                    this._handleLoadLocalConfig();
+                  } else if (action === 'load-sample') {
+                    this._loadSampleConfig();
+                  } else if (action === 'generate') {
+                    this._handleGoToGenerator();
                   }
-                }}>
-                <sp-icon-settings slot="icon"></sp-icon-settings>
-                <span slot="label">Config</span>
-                <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
-                  <sp-menu-item value="load-file" data-spectrum-pattern="menu-item">
-                    <sp-icon-folder-open slot="icon"></sp-icon-folder-open>
-                    Load from File
-                  </sp-menu-item>
-                  <sp-menu-item value="load-sample" data-spectrum-pattern="menu-item">
-                    <sp-icon-document slot="icon"></sp-icon-document>
-                    Load Sample Config
-                  </sp-menu-item>
-                  <sp-menu-item value="generate" data-spectrum-pattern="menu-item">
-                    <sp-icon-magic-wand slot="icon"></sp-icon-magic-wand>
-                    Generate New Config
-                  </sp-menu-item>
-                </sp-menu>
-              </sp-action-menu>
-            ` : ''}
+                }
+              }}>
+              <sp-icon-settings slot="icon"></sp-icon-settings>
+              <span slot="label">Config</span>
+              <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
+                <sp-menu-item value="load-file" data-spectrum-pattern="menu-item">
+                  <sp-icon-folder-open slot="icon"></sp-icon-folder-open>
+                  Load from File
+                </sp-menu-item>
+                <sp-menu-item value="load-sample" data-spectrum-pattern="menu-item">
+                  <sp-icon-document slot="icon"></sp-icon-document>
+                  Load Sample Config
+                </sp-menu-item>
+                <sp-menu-item value="generate" data-spectrum-pattern="menu-item">
+                  <sp-icon-magic-wand slot="icon"></sp-icon-magic-wand>
+                  Generate New Config
+                </sp-menu-item>
+              </sp-menu>
+            </sp-action-menu>
+          </div>
+        </div>
 
-            <!-- Load Sample Config button (only in mock-translated mode without config) -->
-            ${this.viewerMode === 'mock-translated' && !this.config ? html`
+        <!-- Connection Controls Bar -->
+        <div class="connection-bar">
+          <!-- WebHID Connection -->
+          <div class="connection-section">
+            <div class="connection-label">WebHID</div>
+            ${this.hidConnected ? html`
+              <div class="connection-group">
+                <div class="status-badge connected">
+                  <span class="status-dot"></span>
+                  ${this.hidDeviceName}
+                </div>
+                <sp-button
+                  variant="negative"
+                  size="s"
+                  data-spectrum-pattern="button-negative"
+                  @click=${this._disconnectHid}>
+                  Disconnect
+                </sp-button>
+              </div>
+            ` : html`
               <sp-button
-                variant="secondary"
-                data-spectrum-pattern="button-secondary"
-                @click=${this._loadSampleConfig}>
-                <sp-icon-document slot="icon"></sp-icon-document>
-                Load Sample Config
+                variant="accent"
+                size="s"
+                data-spectrum-pattern=${!this.config ? 'button-disabled' : 'button-accent'}
+                @click=${this._handleConnectHid}
+                ?disabled=${!this.config}
+                title=${!this.config ? 'Load a config first' : 'Connect to tablet via WebHID'}>
+                <sp-icon-link slot="icon"></sp-icon-link>
+                Connect WebHID
               </sp-button>
-            ` : ''}
+            `}
+          </div>
 
-            <!-- Simulation Dropdown (only show in mock modes) -->
-            ${this.viewerMode === 'mock-raw' || this.viewerMode === 'mock-translated' ? html`
-              <div class="simulation-dropdown">
-                ${this.isSimulating ? html`
-                  <sp-button
-                    variant="negative"
-                    data-spectrum-pattern="button-negative"
-                    @click=${this._stopSimulation}>
-                    <sp-icon-stop slot="icon"></sp-icon-stop>
-                    Stop ${this.currentSimulation}
-                  </sp-button>
-                ` : html`
-                  <sp-action-menu
-                    data-spectrum-pattern="action-menu"
-                    placement="bottom-start"
-                    @change=${(e: Event) => {
-                      const menu = e.target as any;
-                      const selectedItem = menu.selectedItem;
-                      if (selectedItem) {
-                        const optionLabel = selectedItem.value;
-                        const option = this.mockDataOptions.find(o => o.label === optionLabel);
-                        if (option) {
-                          this._runSimulation(option);
-                        }
+          <!-- WebSocket Connection -->
+          <div class="connection-section">
+            <div class="connection-label">WebSocket</div>
+            ${this.websocketConnected ? html`
+              <div class="connection-group">
+                <div class="status-badge connected">
+                  <span class="status-dot"></span>
+                  ${this.websocketServerInfo || this.websocketUrl}
+                </div>
+                <sp-button
+                  variant="negative"
+                  size="s"
+                  data-spectrum-pattern="button-negative"
+                  @click=${this._disconnectWebSocket}>
+                  Disconnect
+                </sp-button>
+              </div>
+            ` : html`
+              <div class="websocket-controls-inline">
+                <sp-textfield
+                  class="websocket-url-input"
+                  data-spectrum-pattern="textfield"
+                  size="s"
+                  .value=${this.websocketUrl}
+                  @input=${this._handleWebSocketUrlChange}
+                  @keydown=${(e: KeyboardEvent) => {
+                    if (e.key === 'Enter') this._connectWebSocket();
+                  }}
+                  placeholder="ws://localhost:8765">
+                </sp-textfield>
+                <sp-button
+                  variant="secondary"
+                  size="s"
+                  data-spectrum-pattern="button-secondary"
+                  @click=${this._connectWebSocket}>
+                  <sp-icon-data slot="icon"></sp-icon-data>
+                  Connect
+                </sp-button>
+              </div>
+            `}
+          </div>
+
+          <!-- Mock Data -->
+          <div class="connection-section">
+            <div class="connection-label">Mock Data</div>
+            <div class="mock-controls">
+              <div class="data-mode-toggle" data-spectrum-pattern="button-group">
+                <button 
+                  class="mode-btn ${this.simulationDataMode === 'raw' ? 'active' : ''}"
+                  data-spectrum-pattern="toggle-button"
+                  @click=${() => this._setSimulationDataMode('raw')}
+                  title="Simulate raw byte input">
+                  Raw
+                </button>
+                <button 
+                  class="mode-btn ${this.simulationDataMode === 'translated' ? 'active' : ''}"
+                  data-spectrum-pattern="toggle-button"
+                  @click=${() => this._setSimulationDataMode('translated')}
+                  title="Simulate translated event input">
+                  Events
+                </button>
+              </div>
+              ${this.isSimulating ? html`
+                <sp-button
+                  variant="negative"
+                  size="s"
+                  data-spectrum-pattern="button-negative"
+                  @click=${this._stopSimulation}>
+                  <sp-icon-stop slot="icon"></sp-icon-stop>
+                  Stop ${this.currentSimulation}
+                </sp-button>
+              ` : html`
+                <sp-action-menu
+                  label="Simulate menu"
+                  data-spectrum-pattern="action-menu"
+                  placement="bottom-start"
+                  size="s"
+                  @change=${(e: Event) => {
+                    const menu = e.target as any;
+                    const selectedItem = menu.selectedItem;
+                    if (selectedItem) {
+                      const optionLabel = selectedItem.value;
+                      const option = this.mockDataOptions.find(o => o.label === optionLabel);
+                      if (option) {
+                        this._runSimulation(option);
                       }
-                    }}>
-                    <sp-icon-play slot="icon"></sp-icon-play>
-                    <span slot="label">Simulate</span>
-                    <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
-                      ${this.mockDataOptions.map(option => html`
-                        <sp-menu-item value="${option.label}" data-spectrum-pattern="menu-item">
-                          ${option.label}
-                        </sp-menu-item>
-                      `)}
-                    </sp-menu>
-                  </sp-action-menu>
-                `}
-              </div>
-            ` : ''}
-
-            <!-- Connection Status (only show in webhid and websocket modes) -->
-            ${this.viewerMode === 'webhid' || this.viewerMode === 'websocket' ? html`
-              <div class="connection-status">
-                ${this.viewerMode === 'webhid' && !this.config ? html`
-                  <div class="status-badge warning">
-                    <span class="status-dot"></span>
-                    Load a config to connect
-                  </div>
-                ` : html`
-                  <div class="status-badge ${this.deviceConnected || this.websocketConnected ? 'connected' : 'disconnected'}">
-                    <span class="status-dot"></span>
-                    ${this.deviceConnected ? `Connected: ${this.deviceName}` :
-                      this.websocketConnected ? `WebSocket: ${this.websocketServerInfo || this.websocketUrl}` :
-                      'Disconnected'}
-                  </div>
-                `}
-
-                ${this.deviceConnected ? html`
-                  <sp-button
-                    variant="negative"
-                    data-spectrum-pattern="button-negative"
-                    @click=${this._disconnect}>
-                    Disconnect
-                  </sp-button>
-                ` : this.websocketConnected ? html`
-                  <sp-button
-                    variant="negative"
-                    data-spectrum-pattern="button-negative"
-                    @click=${this._disconnectWebSocket}>
-                    Disconnect WS
-                  </sp-button>
-                ` : html`
-                  <div class="connect-options">
-                    ${this.viewerMode === 'webhid' ? html`
-                      <sp-button
-                        variant="accent"
-                        data-spectrum-pattern="button-accent"
-                        @click=${this._handleConnect}
-                        ?disabled=${!this.config}
-                        title=${!this.config ? 'Load a config first' : 'Connect to tablet'}>
-                        <sp-icon-link slot="icon"></sp-icon-link>
-                        Connect Tablet
-                      </sp-button>
-                    ` : ''}
-                    ${this.viewerMode === 'websocket' ? html`
-                      <div class="websocket-dropdown">
-                        <sp-action-button
-                          quiet
-                          data-spectrum-pattern="action-button"
-                          @click=${this._toggleWebSocketInput}>
-                          WebSocket ${this.showWebSocketInput ? '▲' : '▼'}
-                        </sp-action-button>
-                        ${this.showWebSocketInput ? html`
-                          <div class="websocket-input-panel">
-                            <sp-textfield
-                              class="websocket-url-input"
-                              data-spectrum-pattern="textfield"
-                              .value=${this.websocketUrl}
-                              @input=${this._handleWebSocketUrlChange}
-                              @keydown=${(e: KeyboardEvent) => {
-                                if (e.key === 'Enter') this._connectWebSocket();
-                              }}
-                              placeholder="ws://localhost:8765">
-                            </sp-textfield>
-                            <sp-button
-                              variant="accent"
-                              data-spectrum-pattern="button-accent"
-                              @click=${this._connectWebSocket}>
-                              Connect
-                            </sp-button>
-                          </div>
-                        ` : ''}
-                      </div>
-                    ` : ''}
-                  </div>
-                `}
-              </div>
-            ` : ''}
+                    }
+                  }}>
+                  <sp-icon-play slot="icon"></sp-icon-play>
+                  <span slot="label">Simulate</span>
+                  <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
+                    ${this.mockDataOptions.map(option => html`
+                      <sp-menu-item value="${option.label}" data-spectrum-pattern="menu-item">
+                        ${option.label}
+                      </sp-menu-item>
+                    `)}
+                  </sp-menu>
+                </sp-action-menu>
+              `}
+            </div>
           </div>
         </div>
 
         <div class="visualizers-grid">
           <!-- Coordinates Panel -->
           <div class="visualizer-card compact">
-            <h2>Position</h2>
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tablet"
-                .socketMode=${this.deviceConnected || this.isSimulating || this.websocketConnected}
-                .tabletConnected=${this.deviceConnected || this.isSimulating || this.websocketConnected}
+                .socketMode=${hasActiveConnection}
+                .tabletConnected=${hasActiveConnection}
                 .externalTabletData=${this.tabletData}
                 .externalPressedButtons=${this.pressedButtons}
                 .stringCount=${0}>
@@ -1032,12 +1133,11 @@ export class HidDashboard extends LitElement {
 
           <!-- Pressure & Tilt Panel -->
           <div class="visualizer-card compact">
-            <h2>Pressure & Tilt</h2>
             <div class="visualizer-wrapper">
               <tablet-visualizer
                 mode="tilt"
-                .socketMode=${this.deviceConnected || this.isSimulating || this.websocketConnected}
-                .tabletConnected=${this.deviceConnected || this.isSimulating || this.websocketConnected}
+                .socketMode=${hasActiveConnection}
+                .tabletConnected=${hasActiveConnection}
                 .externalTabletData=${this.tabletData}
                 .externalPressedButtons=${this.pressedButtons}
                 .stringCount=${0}>
@@ -1066,35 +1166,33 @@ export class HidDashboard extends LitElement {
             </div>
           </div>
 
-          <!-- Raw Bytes or Events Panel (50% width) -->
-          ${this.viewerMode === 'webhid' || this.viewerMode === 'mock-raw' || (this.viewerMode === 'websocket' && this.websocketDataMode === 'raw') ? html`
-            <div class="visualizer-card half-width">
-              <h2>Raw Bytes</h2>
-              <bytes-display
-                .bytes=${this.rawBytes}
-                .isEmpty=${this.rawBytes.length === 0}
-                .placeholderCount=${10}
-                .deviceInfo=${{
-                  isMock: this.isSimulating && !this.deviceConnected,
-                  packetCount: this.packetCount,
-                  usagePage: this.config?.deviceInfo?.usage_page,
-                  usage: this.config?.deviceInfo?.usage
-                } as DeviceInfo}>
-              </bytes-display>
-            </div>
-          ` : html`
-            <div class="visualizer-card half-width">
-              <h2>Event Stream</h2>
-              <events-display
-                .events=${this.tabletEvents}
-                .isEmpty=${this.tabletEvents.length === 0}
-                .deviceInfo=${{
-                  packetCount: this.packetCount,
-                  isMock: this.viewerMode === 'mock-translated'
-                } as EventsDeviceInfo}>
-              </events-display>
-            </div>
-          `}
+          <!-- Event Stream Panel (completes top row) -->
+          <div class="visualizer-card events-panel">
+            <events-display
+              .events=${this.tabletEvents}
+              .isEmpty=${this.tabletEvents.length === 0}
+              .deviceInfo=${{
+                packetCount: this.packetCount,
+                isMock: this.activeSource === 'mock',
+                isTranslated: this.isEventsTranslated
+              } as EventsDeviceInfo}>
+            </events-display>
+          </div>
+
+          <!-- Raw Bytes Panel (full width row) -->
+          <div class="visualizer-card bytes-panel">
+            <bytes-display
+              .bytes=${this.rawBytes}
+              .isEmpty=${this.rawBytes.length === 0}
+              .placeholderCount=${10}
+              .deviceInfo=${{
+                isMock: this.activeSource === 'mock',
+                packetCount: this.packetCount,
+                usagePage: this.config?.deviceInfo?.usage_page,
+                usage: this.config?.deviceInfo?.usage
+              } as DeviceInfo}>
+            </bytes-display>
+          </div>
         </div>
       </div>
     `;

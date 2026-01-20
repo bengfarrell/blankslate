@@ -6,13 +6,17 @@ export const styles = css`
         width: 100%;
 
         /* SVG color variables for inline use */
-        --svg-gray-700: var(--spectrum-gray-700);
-        --svg-gray-500: var(--spectrum-gray-500);
-        --svg-gray-800: var(--spectrum-gray-800);
         --svg-gray-50: var(--spectrum-gray-50);
+        --svg-gray-200: var(--spectrum-gray-200);
+        --svg-gray-300: var(--spectrum-gray-300);
+        --svg-gray-400: var(--spectrum-gray-400);
+        --svg-gray-500: var(--spectrum-gray-500);
+        --svg-gray-600: var(--spectrum-gray-600);
+        --svg-gray-700: var(--spectrum-gray-700);
+        --svg-gray-800: var(--spectrum-gray-800);
+        --svg-gray-900: var(--spectrum-gray-900);
         --svg-positive-900: var(--spectrum-positive-color-900);
         --svg-positive-1000: var(--spectrum-positive-color-1000);
-        --svg-gray-900: var(--spectrum-gray-900);
         --svg-negative-900: var(--spectrum-negative-color-900);
         --svg-informative-900: var(--spectrum-informative-color-900);
     }

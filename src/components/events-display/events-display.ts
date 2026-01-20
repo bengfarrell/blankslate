@@ -1,5 +1,5 @@
 import { LitElement, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { styles } from './events-display.styles.js';
 
 export interface TabletEvent {
@@ -26,10 +26,11 @@ export interface TabletEvent {
 export interface EventsDeviceInfo {
   packetCount?: number;
   isMock?: boolean;
+  isTranslated?: boolean;
 }
 
 /**
- * Component that displays a stream of tablet events
+ * Component that displays the latest tablet event
  */
 @customElement('events-display')
 export class EventsDisplay extends LitElement {
@@ -44,92 +45,82 @@ export class EventsDisplay extends LitElement {
   @property({ type: Object })
   deviceInfo?: EventsDeviceInfo;
 
-  @state()
-  private maxEvents = 10;
-
   private _formatValue(value: number | undefined, decimals: number = 3): string {
-    if (value === undefined) return '-';
+    if (value === undefined) return '—';
     return value.toFixed(decimals);
   }
 
-  private _formatBoolean(value: boolean | undefined): string {
-    if (value === undefined) return '-';
-    return value ? 'Yes' : 'No';
+  private _getPressedTabletButton(event: TabletEvent): number | null {
+    if (event.button1) return 1;
+    if (event.button2) return 2;
+    if (event.button3) return 3;
+    if (event.button4) return 4;
+    if (event.button5) return 5;
+    if (event.button6) return 6;
+    if (event.button7) return 7;
+    if (event.button8) return 8;
+    return null;
   }
 
   render() {
-    const deviceInfoHtml = this.deviceInfo ? html`
-      <div class="device-info-header">
-        ${this.deviceInfo.packetCount !== undefined ? html`
-          <span class="info-item">
-            <span class="info-label">Events:</span>
-            <span class="info-value">${this.deviceInfo.packetCount}</span>
-          </span>
-        ` : ''}
-        ${this.deviceInfo.isMock ? html`
-          <span class="info-badge mock">Simulated Events</span>
-        ` : ''}
-      </div>
-    ` : '';
-
     if (this.isEmpty || this.events.length === 0) {
       return html`
-        <div class="events-container">
-          ${deviceInfoHtml}
+        <div class="events-container empty">
           <div class="empty-state">
             <div class="empty-icon">—</div>
-            <p>No events received yet</p>
+            <p>No events yet</p>
           </div>
         </div>
       `;
     }
 
-    // Show only the most recent events
-    const recentEvents = this.events.slice(-this.maxEvents).reverse();
+    // Get the latest event
+    const event = this.events[this.events.length - 1];
 
     return html`
       <div class="events-container">
-        ${deviceInfoHtml}
-        <div class="events-list">
-          ${recentEvents.map((event, index) => html`
-            <div class="event-item ${index === 0 ? 'latest' : ''}">
-              <div class="event-row">
-                <span class="event-label">Position:</span>
-                <span class="event-value">
-                  x: ${this._formatValue(event.x)} 
-                  y: ${this._formatValue(event.y)}
-                </span>
-              </div>
-              <div class="event-row">
-                <span class="event-label">Pressure:</span>
-                <span class="event-value">${this._formatValue(event.pressure)}</span>
-              </div>
-              ${event.tiltX !== undefined || event.tiltY !== undefined ? html`
-                <div class="event-row">
-                  <span class="event-label">Tilt:</span>
-                  <span class="event-value">
-                    X: ${this._formatValue(event.tiltX)} 
-                    Y: ${this._formatValue(event.tiltY)}
-                  </span>
-                </div>
-              ` : ''}
-              ${event.primaryButtonPressed !== undefined || event.secondaryButtonPressed !== undefined ? html`
-                <div class="event-row">
-                  <span class="event-label">Stylus:</span>
-                  <span class="event-value">
-                    Btn1: ${this._formatBoolean(event.primaryButtonPressed)} 
-                    Btn2: ${this._formatBoolean(event.secondaryButtonPressed)}
-                  </span>
-                </div>
-              ` : ''}
-              ${event.state ? html`
-                <div class="event-row">
-                  <span class="event-label">State:</span>
-                  <span class="event-value state-${event.state}">${event.state}</span>
-                </div>
-              ` : ''}
-            </div>
-          `)}
+        <div class="event-header">
+          <span class="event-count">${this.deviceInfo?.packetCount ?? this.events.length}</span>
+          <span class="event-label">events</span>
+          <div class="header-badges">
+            ${this.deviceInfo?.isMock ? html`<span class="source-badge mock">mock</span>` : ''}
+            ${this.deviceInfo?.isTranslated ? html`<span class="source-badge translated">translated</span>` : ''}
+          </div>
+        </div>
+        
+        <div class="event-grid">
+          <div class="event-field">
+            <span class="field-label">X</span>
+            <span class="field-value">${this._formatValue(event.x)}</span>
+          </div>
+          <div class="event-field">
+            <span class="field-label">Y</span>
+            <span class="field-value">${this._formatValue(event.y)}</span>
+          </div>
+          <div class="event-field">
+            <span class="field-label">Pressure</span>
+            <span class="field-value">${this._formatValue(event.pressure)}</span>
+          </div>
+          <div class="event-field">
+            <span class="field-label">Tilt X</span>
+            <span class="field-value">${this._formatValue(event.tiltX)}</span>
+          </div>
+          <div class="event-field">
+            <span class="field-label">Tilt Y</span>
+            <span class="field-value">${this._formatValue(event.tiltY)}</span>
+          </div>
+        </div>
+
+        <div class="button-status">
+          <div class="button-indicator ${event.primaryButtonPressed ? 'active' : ''}">
+            <span class="button-label">Primary</span>
+          </div>
+          <div class="button-indicator ${event.secondaryButtonPressed ? 'active' : ''}">
+            <span class="button-label">Secondary</span>
+          </div>
+          <div class="button-indicator tablet-btn ${this._getPressedTabletButton(event) ? 'active' : ''}">
+            <span class="button-label">Tablet ${this._getPressedTabletButton(event) ?? '—'}</span>
+          </div>
         </div>
       </div>
     `;

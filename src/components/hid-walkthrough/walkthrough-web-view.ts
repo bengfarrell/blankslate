@@ -558,15 +558,15 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
       <div class="data-source-selection">
         <h3>Select Data Source</h3>
         <div class="navigation-buttons">
-          <sp-button @click=${() => this.handleDataSourceSelect('mock')}>
+          <sp-button data-spectrum-pattern="button-secondary" @click=${() => this.handleDataSourceSelect('mock')}>
             <sp-icon-play slot="icon"></sp-icon-play>
             Use mock data (for testing)
           </sp-button>
-          <sp-button variant="accent" @click=${() => this.handleDataSourceSelect('device')}>
+          <sp-button variant="accent" data-spectrum-pattern="button-accent" @click=${() => this.handleDataSourceSelect('device')}>
             <sp-icon-link slot="icon"></sp-icon-link>
             Connect to real HID device
           </sp-button>
-          <sp-button variant="negative" @click=${() => this.handleDataSourceSelect('exit')}>
+          <sp-button variant="negative" data-spectrum-pattern="button-negative" @click=${() => this.handleDataSourceSelect('exit')}>
             <sp-icon-close slot="icon"></sp-icon-close>
             Exit
           </sp-button>
@@ -598,6 +598,7 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
         ${this.isMockMode ? html`
           <button 
             class="simulate-button" 
+            data-spectrum-pattern="button-accent"
             ?disabled=${this.isCapturing}
             @click=${this.handleSimulate}>
             ${this.isCapturing ? '⏳ Simulating...' : `🤖 ${strings.ui.buttons.simulate}`}
@@ -605,6 +606,7 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
         ` : html`
           <sp-button
             variant="accent"
+            data-spectrum-pattern="button-accent"
             ?disabled=${this.isCapturing}
             @click=${this.handleGestureComplete}>
             <sp-icon-checkmark-circle slot="icon"></sp-icon-checkmark-circle>
@@ -640,7 +642,7 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
           <p class="button-prompt">
             Press Button ${this.currentButtonPrompt} three times (or click Skip)
           </p>
-          <sp-button @click=${this.handleSkipButton}>Skip this button</sp-button>
+          <sp-button data-spectrum-pattern="button-secondary" @click=${this.handleSkipButton}>Skip this button</sp-button>
         ` : ''}
 
         ${this.detectedButtons.length > 0 ? html`
@@ -726,11 +728,11 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
 
           ${this.pendingSaveConfig ? html`
             <div class="navigation-buttons" style="justify-content: center; margin-top: 1rem;">
-              <sp-button variant="accent" @click=${() => this.handleSaveConfig(true, 'config.json')}>
+              <sp-button variant="accent" data-spectrum-pattern="button-accent" @click=${() => this.handleSaveConfig(true, 'config.json')}>
                 <sp-icon-save-floppy slot="icon"></sp-icon-save-floppy>
                 Save Configuration
               </sp-button>
-              <sp-button @click=${() => this.handleSaveConfig(false)}>
+              <sp-button data-spectrum-pattern="button-secondary" @click=${() => this.handleSaveConfig(false)}>
                 Skip
               </sp-button>
             </div>

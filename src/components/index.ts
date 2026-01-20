@@ -6,7 +6,6 @@
 // Main application components
 export { HidApp } from './hid-app/hid-app.js';
 export { HidDashboard } from './hid-dashboard/hid-dashboard.js';
-export { HidHomepage } from './hid-homepage/hid-homepage.js';
 
 // Device interaction components
 export { HidDevices } from './hid-devices/hid-devices.js';
@@ -27,6 +26,3 @@ export { CurveVisualizer } from './curve-visualizer/curve-visualizer.js';
 export { BytesDisplay } from './bytes-display/bytes-display.js';
 export { ByteDisplayBlock } from './byte-display-block/byte-display-block.js';
 export { EventsDisplay } from './events-display/events-display.js';
-
-// Utility components
-export { ViewerModeSelector } from './viewer-mode-selector/viewer-mode-selector.js';

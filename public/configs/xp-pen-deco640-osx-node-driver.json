@@ -1,8 +1,8 @@
 {
-  "name": "My Graphics Tablet",
-  "manufacturer": "Unknown",
-  "model": "Unknown",
-  "description": "Graphics tablet configured via CLI walkthrough",
+  "name": "XP Pen Deco 640",
+  "manufacturer": "XP Pen",
+  "model": "Deco 640",
+  "description": "XP Pen Deco 640, OSX, Node.js, with driver (works both driver and driver-less)",
   "vendorId": "0x28bd",
   "productId": "0x2904",
   "deviceInfo": {

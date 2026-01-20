@@ -4,12 +4,19 @@ export const styles = css`
   :host {
     display: block;
     width: 100%;
+    box-sizing: border-box;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
   }
 
   .dashboard {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .dashboard-header {
@@ -25,6 +32,85 @@ export const styles = css`
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
+  }
+
+  /* Connection Bar */
+  .connection-bar {
+    display: flex;
+    gap: 24px;
+    padding: 16px 20px;
+    background: var(--spectrum-gray-75);
+    border-radius: 12px;
+    border: 1px solid var(--spectrum-gray-200);
+    flex-wrap: wrap;
+  }
+
+  .connection-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .connection-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--spectrum-gray-700);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .connection-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .websocket-controls-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mock-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .data-mode-toggle {
+    display: flex;
+    border: 1px solid var(--spectrum-gray-300);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .mode-btn {
+    padding: 6px 10px;
+    border: none;
+    background: var(--spectrum-gray-75);
+    color: var(--spectrum-gray-700);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .mode-btn:first-child {
+    border-right: 1px solid var(--spectrum-gray-300);
+  }
+
+  .mode-btn:hover:not(.active) {
+    background: var(--spectrum-gray-100);
+  }
+
+  .mode-btn.active {
+    background: var(--spectrum-informative-color-900);
+    color: var(--spectrum-white);
   }
 
   .header-info {
@@ -151,15 +237,20 @@ export const styles = css`
 
   .visualizers-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 2fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 16px;
+    max-width: 100%;
+    overflow: hidden;
   }
 
-  @media (max-width: 1000px) {
+  @media (max-width: 900px) {
     .visualizers-grid {
       grid-template-columns: 1fr 1fr;
     }
-    .visualizer-card.half-width {
+    .visualizer-card.events-panel {
+      grid-column: span 2;
+    }
+    .visualizer-card.bytes-panel {
       grid-column: span 2;
     }
   }
@@ -168,17 +259,30 @@ export const styles = css`
     .visualizers-grid {
       grid-template-columns: 1fr;
     }
-    .visualizer-card.half-width {
+    .visualizer-card.events-panel,
+    .visualizer-card.bytes-panel {
       grid-column: span 1;
     }
+  }
+
+  /* Events panel - same height as visualizers */
+  .visualizer-card.events-panel {
+    min-height: auto;
+    padding: 12px;
+  }
+
+  /* Bytes panel - full width row */
+  .visualizer-card.bytes-panel {
+    grid-column: 1 / -1;
   }
 
   .visualizer-card {
     background: var(--spectrum-gray-100);
     border-radius: 16px;
-    padding: 16px;
-    
+    padding: 12px;
     border: 1px solid var(--spectrum-gray-200);
+    min-width: 0;
+    overflow: hidden;
   }
 
   /* Compact panels (25% width) with constrained visualizer */
@@ -191,7 +295,7 @@ export const styles = css`
   /* Visualizer wrapper for constraining size */
   .visualizer-wrapper {
     flex: 1;
-    max-height: 320px;
+    max-height: 280px;
     overflow: hidden;
     display: flex;
     justify-content: center;
@@ -203,34 +307,21 @@ export const styles = css`
     transform-origin: top center;
   }
 
-  /* Half-width panel (50% - takes 2fr in the grid) */
-  .visualizer-card.half-width {
-    /* Already 2fr from grid definition */
+  /* Translated badge for data panels */
+  .translated-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    margin-left: 8px;
+    background: var(--spectrum-notice-background-color-default);
+    color: var(--spectrum-notice-content-color-default);
+    border-radius: 4px;
+    vertical-align: middle;
   }
 
-  .visualizer-card h2 {
-    margin: 0 0 16px 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--spectrum-gray-100);
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .visualizer-card.compact h2 {
-    margin: 0 0 8px 0;
-    font-size: 0.85rem;
-  }
-
-  .card-icon {
-    font-size: 1.2rem;
-  }
-
-  .visualizer-card.compact .card-icon {
-    font-size: 1rem;
-  }
 
   .data-values {
     display: flex;
@@ -665,61 +756,7 @@ export const styles = css`
     position: relative;
   }
 
-  .websocket-btn {
-    background: linear-gradient(135deg, var(--spectrum-accent-color-1000) 0%, var(--spectrum-accent-color-1100) 100%);
-  }
-
-  .websocket-btn:hover {
-    
-  }
-
-  .websocket-input-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    display: flex;
-    gap: 8px;
-    padding: 12px;
-    background: var(--spectrum-gray-50);
-    border: 1px solid var(--spectrum-gray-300);
-    border-radius: 12px;
-    
-    z-index: 100;
-    animation: slideDown 0.15s ease-out;
-  }
-
   .websocket-url-input {
-    width: 200px;
-    padding: 8px 12px;
-    border: 1px solid var(--spectrum-gray-300);
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    color: var(--spectrum-gray-800);
-  }
-
-  .websocket-url-input:focus {
-    outline: none;
-    border-color: var(--spectrum-accent-color-1000);
-    
-  }
-
-  .connect-ws-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    background: linear-gradient(135deg, var(--spectrum-accent-color-1000) 0%, var(--spectrum-accent-color-1100) 100%);
-    color: var(--spectrum-white);
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    white-space: nowrap;
-  }
-
-  .connect-ws-btn:hover {
-    transform: translateY(-1px);
-    
+    width: 180px;
   }
 `;

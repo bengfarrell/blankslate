@@ -50,7 +50,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     stdout: 'ignore',
     stderr: 'pipe',
     timeout: 120000, // 2 minutes to start

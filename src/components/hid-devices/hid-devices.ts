@@ -63,6 +63,7 @@ export class HidDevices extends LitElement {
             <sp-button
               size="s"
               variant="negative"
+              data-spectrum-pattern="button-negative"
               @click="${this._handleDisconnect}">
               Disconnect
             </sp-button>

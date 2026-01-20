@@ -106,9 +106,10 @@ export const styles = css`
   }
 
   .detail-value {
-    color: var(--spectrum-gray-700);
+    color: var(--spectrum-gray-800);
     padding: 2px 8px;
-    background: var(--spectrum-accent-background-color-default);
+    background: var(--spectrum-gray-200);
+    border: 1px solid var(--spectrum-gray-300);
     border-radius: 4px;
     font-size: 12px;
   }

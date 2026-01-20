@@ -96,6 +96,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
   // Packet display
   private capturedPackets: Uint8Array[] = [];
   private lastCapturedPackets: Uint8Array[] = [];
+  private latestDisplayPacket: Uint8Array | null = null;
 
   // Device metadata
   private deviceMetadata: DeviceConnectionInfo = {
@@ -228,11 +229,24 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     this._setupDeviceFinder();
     this._checkForRealDevice();
     
-    // DEBUG: Press '9' to jump to step 9 for testing
-    this._debugKeyHandler = (e: KeyboardEvent) => {
-      if (e.key === '9' && !e.ctrlKey && !e.metaKey && 
-          !(e.target instanceof HTMLInputElement) && 
-          !(e.target instanceof HTMLTextAreaElement)) {
+    // Keyboard handler for navigation
+    this._keyHandler = (e: KeyboardEvent) => {
+      // Skip if typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      // Enter key: advance to next step if data captured
+      if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+        const hasData = this.captureStatus.packetCount > 0;
+        if (hasData && !this.isPlaying && this.stepInfo) {
+          e.preventDefault();
+          this._handleStepNext();
+        }
+      }
+      
+      // DEBUG: Press '9' to jump to step 9 for testing
+      if (e.key === '9' && !e.ctrlKey && !e.metaKey) {
         console.log('[DEBUG] Jumping to step 9');
         const engine = this.controller.getEngine();
         engine.goToStep('step9-tablet-buttons');
@@ -241,19 +255,19 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         this.requestUpdate();
       }
     };
-    window.addEventListener('keydown', this._debugKeyHandler);
+    window.addEventListener('keydown', this._keyHandler);
   }
   
-  private _debugKeyHandler: ((e: KeyboardEvent) => void) | null = null;
+  private _keyHandler: ((e: KeyboardEvent) => void) | null = null;
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.controller.cleanup();
     this._disconnectRealDevice();
     
-    // Clean up debug handler
-    if (this._debugKeyHandler) {
-      window.removeEventListener('keydown', this._debugKeyHandler);
+    // Clean up keyboard handler
+    if (this._keyHandler) {
+      window.removeEventListener('keydown', this._keyHandler);
     }
   }
 
@@ -752,12 +766,17 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
   render() {
     return html`
-      <div class="header">
-        ${this._renderDeviceStatus()}
+      <div class="page-header">
+        <div class="header-info">
+          <h1>BlankSlate Config Generator</h1>
+        </div>
+        <div class="header-controls">
+          ${this._renderDeviceStatus()}
+          ${this._renderMessages()}
+        </div>
       </div>
 
       <div class="content">
-        ${this._renderMessages()}
         ${this._renderCurrentStep()}
         ${this.deviceDataStreams.size > 0 ? this._renderDeviceStreams() : ''}
       </div>
@@ -767,28 +786,26 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
   private _renderMessages() {
     return html`
       ${this.messages.map(msg => html`
-        <div class="message ${msg.type}">${msg.text}</div>
+        <span class="message ${msg.type}">${msg.text}</span>
       `)}
     `;
   }
 
   private _renderDeviceStatus() {
+    // Only show connect button when not connected - device info is shown in Device Interfaces section
+    if (this.isRealDevice) {
+      return '';
+    }
     return html`
-      <div class="device-status">
-        ${this.isRealDevice
-          ? html`<span class="connected">● ${this.realDeviceName}</span>`
-          : html`
-              <sp-button
-                size="s"
-                variant="accent"
-                ?disabled="${this.isConnecting}"
-                @click="${this._connectRealDevice}">
-                <sp-icon-link slot="icon"></sp-icon-link>
-                ${this.isConnecting ? 'Connecting...' : 'Connect Real Tablet'}
-              </sp-button>
-            `
-        }
-      </div>
+      <sp-button
+        size="s"
+        variant="accent"
+        data-spectrum-pattern="button-accent"
+        ?disabled="${this.isConnecting}"
+        @click="${this._connectRealDevice}">
+        <sp-icon-link slot="icon"></sp-icon-link>
+        ${this.isConnecting ? 'Connecting...' : 'Connect Real Tablet'}
+      </sp-button>
     `;
   }
 
@@ -876,7 +893,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
             quiet
             data-spectrum-pattern="action-button"
             @click="${this.handleReset}"
-            title="Reset">
+            label="Reset"
+            aria-label="Reset">
             <sp-icon-refresh slot="icon"></sp-icon-refresh>
           </sp-action-button>
           <hid-walkthrough-progress currentStep="${info.number - 1}" totalSteps="10"></hid-walkthrough-progress>
@@ -888,19 +906,6 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         </div>
 
         ${this._renderCaptureStatus()}
-        ${this._renderDetectedBytes()}
-
-        <div class="button-row">
-          ${this.isMockMode ? html`
-            <sp-button
-              variant="secondary"
-              data-spectrum-pattern="button-secondary"
-              ?disabled=${this.isPlaying}
-              @click=${this.handleSimulate}>
-              ${this.isPlaying ? '⏳ Simulating...' : `🤖 ${strings.ui.buttons.simulate}`}
-            </sp-button>
-          ` : ''}
-        </div>
 
         ${this._renderStepNavigation(hasData)}
       </div>
@@ -910,18 +915,27 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
   private _renderStepNavigation(hasData: boolean) {
     return html`
       <div class="navigation-buttons">
+        ${this.isMockMode ? html`
+          <sp-button
+            variant="secondary"
+            data-spectrum-pattern="button-secondary"
+            ?disabled=${this.isPlaying}
+            @click=${this.handleSimulate}>
+            ${this.isPlaying ? 'Simulating...' : strings.ui.buttons.simulate}
+          </sp-button>
+        ` : ''}
         <sp-button
           variant="accent"
           data-spectrum-pattern="button-accent"
           ?disabled=${!hasData || this.isPlaying}
           @click=${() => this._handleStepNext()}>
-          → ${strings.ui.buttons.next}
+          ${strings.ui.buttons.next} →
         </sp-button>
         <sp-button
           variant="secondary"
           data-spectrum-pattern="button-secondary"
           @click=${() => this._handleStepRetry()}>
-          ↻ Retry
+          Retry
         </sp-button>
         <sp-button
           variant="secondary"
@@ -934,8 +948,9 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
           variant="negative"
           data-spectrum-pattern="button-negative"
           @click=${() => this._resetWalkthrough()}>
-          ✕ Cancel
+          Cancel
         </sp-button>
+        ${this._renderDetectedBytes()}
       </div>
     `;
   }
@@ -990,7 +1005,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       <div class="section walkthrough active">
         <div class="step-header">
           <h3>Step ${info.number}/10: ${info.title}</h3>
-          <sp-action-button quiet @click="${this.handleReset}" title="Reset">
+          <sp-action-button quiet data-spectrum-pattern="action-button" @click="${this.handleReset}" label="Reset" aria-label="Reset">
             <sp-icon-refresh slot="icon"></sp-icon-refresh>
           </sp-action-button>
           <hid-walkthrough-progress currentStep="${info.number - 1}" totalSteps="10"></hid-walkthrough-progress>
@@ -1002,7 +1017,6 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         </div>
 
         ${this._renderCaptureStatus()}
-        ${this._renderDetectedBytes()}
 
         ${this.pendingButtonCount ? html`
           <div class="button-count-prompt" data-spectrum-pattern="form">
@@ -1060,18 +1074,6 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
           </div>
         ` : ''}
 
-        <div class="button-row">
-          ${this.isMockMode ? html`
-            <sp-button
-              variant="secondary"
-              data-spectrum-pattern="button-secondary"
-              ?disabled=${this.isPlaying}
-              @click=${this.handleSimulate}>
-              ${this.isPlaying ? '⏳ Simulating...' : `🤖 ${strings.ui.buttons.simulate}`}
-            </sp-button>
-          ` : ''}
-        </div>
-
         ${!this.pendingButtonCount && this.currentButtonPrompt === null ? this._renderStepNavigation(hasData) : ''}
       </div>
     `;
@@ -1108,7 +1110,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
             quiet
             data-spectrum-pattern="action-button"
             @click="${this._resetWalkthrough}"
-            title="Start Over">
+            label="Start Over"
+            aria-label="Start Over">
             <sp-icon-refresh slot="icon"></sp-icon-refresh>
           </sp-action-button>
         </div>
@@ -1154,12 +1157,10 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         <div class="packet-count">
           ${this.captureStatus.packetCount} packets captured
         </div>
-        ${this.captureStatus.duplicatesFiltered > 0 || this.captureStatus.idleFiltered > 0 ? html`
-          <div class="filter-stats">
-            Filtered: ${this.captureStatus.duplicatesFiltered} duplicates, 
-            ${this.captureStatus.idleFiltered} idle
-          </div>
-        ` : ''}
+        <div class="filter-stats">
+          Filtered: ${this.captureStatus.duplicatesFiltered} duplicates, 
+          ${this.captureStatus.idleFiltered} idle
+        </div>
       </div>
     `;
   }
@@ -1168,14 +1169,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     if (this.detectedBytes.length === 0) return '';
 
     return html`
-      <div class="bytes-detected">
-        <h4>✓ Bytes Detected:</h4>
-        ${this.detectedBytes.map(b => html`
-          <div class="byte-item">
-            Byte ${b.byteIndex}: min=${b.min}, max=${b.max}, variance=${b.variance.toFixed(0)}
-          </div>
-        `)}
-      </div>
+      <span class="bytes-detected-badge">✓ ${this.detectedBytes.length} byte${this.detectedBytes.length !== 1 ? 's' : ''} detected</span>
     `;
   }
 
@@ -1227,9 +1221,16 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
   }
 
   private _getBytesDisplayData(): { bytesData: ByteData[], deviceInfo: DeviceInfo | undefined, isEmpty: boolean } {
-    const packetsToShow = this.capturedPackets.length > 0
-      ? this.capturedPackets
-      : this.lastCapturedPackets;
+    // Priority: captured packets > last captured > latest display packet
+    let latestPacket: Uint8Array | null = null;
+    
+    if (this.capturedPackets.length > 0) {
+      latestPacket = this.capturedPackets[this.capturedPackets.length - 1];
+    } else if (this.lastCapturedPackets.length > 0) {
+      latestPacket = this.lastCapturedPackets[this.lastCapturedPackets.length - 1];
+    } else if (this.latestDisplayPacket) {
+      latestPacket = this.latestDisplayPacket;
+    }
 
     const activeDeviceIndex = this.currentActiveDeviceIndex;
     const deviceStream = activeDeviceIndex !== undefined ? this.deviceDataStreams.get(activeDeviceIndex) : undefined;
@@ -1243,11 +1244,9 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       isMock: isMockDevice
     } : undefined;
 
-    if (packetsToShow.length === 0) {
+    if (!latestPacket) {
       return { bytesData: [], deviceInfo, isEmpty: true };
     }
-
-    const latestPacket = packetsToShow[packetsToShow.length - 1];
 
     const bytesData: ByteData[] = Array.from(latestPacket).map((value, byteIndex) => ({
       byteIndex,
@@ -1389,6 +1388,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     this.webReaders.forEach(reader => reader.stopReading());
     this.webReaders = [];
     this.isMockMode = true;
+    this.latestDisplayPacket = null;
   }
 
   private async _disconnectRealDevice() {
@@ -1431,7 +1431,10 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     // Feed packet to controller (which feeds to engine)
     this.controller.processPacket(data);
 
-    // Also store for display
+    // Always store latest packet for display
+    this.latestDisplayPacket = new Uint8Array(data);
+
+    // Also store for capture when capturing
     if (this.captureStatus.isCapturing) {
       this.capturedPackets.push(new Uint8Array(data));
     }
@@ -1452,6 +1455,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     this.completeConfig = null;
     this.capturedPackets = [];
     this.lastCapturedPackets = [];
+    this.latestDisplayPacket = null;
     this.pendingDataSource = null;
     this.pendingNavigation = null;
     this.pendingButtonCount = null;

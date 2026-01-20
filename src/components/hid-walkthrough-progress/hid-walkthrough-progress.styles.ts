@@ -2,29 +2,34 @@ import { css } from 'lit';
 
 export const styles = css`
   :host {
-    display: block;
+    display: inline-flex;
+    align-items: center;
   }
 
   .progress-container {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
+    padding: 6px 10px;
+    background: var(--spectrum-gray-100);
+    border-radius: 20px;
+    border: 1px solid var(--spectrum-gray-200);
   }
 
   .progress-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--spectrum-gray-300);
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
   }
 
   .progress-dot.complete {
-    background: var(--spectrum-positive-color-900);
+    background: var(--spectrum-gray-600);
   }
 
   .progress-dot.current {
-    background: var(--spectrum-accent-color-900);
-    transform: scale(1.3);
+    background: var(--spectrum-informative-color-900);
+    box-shadow: 0 0 0 2px var(--spectrum-gray-100), 0 0 0 3px var(--spectrum-informative-color-900);
   }
 `;
