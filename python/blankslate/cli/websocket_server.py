@@ -71,13 +71,17 @@ class TabletWebSocketServer(TabletReaderBase):
         # WebSocket state
         self.wss: Optional[websockets.WebSocketServer] = None
         self.clients: Set[WebSocketServerProtocol] = set()
-    
+        self._loop = None  # Event loop for thread-safe task scheduling
+
     async def start(self):
         """Start the WebSocket server and HID reader"""
         self.print_header('Tablet WebSocket Server')
         print(colored('Port: ', Colors.CYAN) + colored(str(self.port), Colors.WHITE))
         print()
-        
+
+        # Store the event loop for thread-safe task scheduling
+        self._loop = asyncio.get_running_loop()
+
         # Start WebSocket server
         self.wss = await websockets.serve(
             self._handle_client,
@@ -96,7 +100,7 @@ class TabletWebSocketServer(TabletReaderBase):
         # Start reading HID data
         print(colored('Setting up data callback...', Colors.GRAY))
         if hasattr(self.reader, 'start_reading'):
-            self.reader.start_reading(lambda data: self.handle_packet(data))
+            self.reader.start_reading(lambda data, report_id=None: self.handle_packet(data, report_id))
         
         print(colored('✓ Started reading tablet data', Colors.GREEN))
         print(colored('Press Ctrl+C to stop\n', Colors.GRAY))
@@ -117,7 +121,7 @@ class TabletWebSocketServer(TabletReaderBase):
             except KeyboardInterrupt:
                 await self.stop()
     
-    async def _handle_client(self, websocket: WebSocketServerProtocol, path: str):
+    async def _handle_client(self, websocket: WebSocketServerProtocol):
         """Handle a new WebSocket client connection"""
         print(colored('✓ Client connected', Colors.GREEN))
         self.clients.add(websocket)
@@ -167,7 +171,7 @@ class TabletWebSocketServer(TabletReaderBase):
             print(colored('Client disconnected', Colors.YELLOW))
             self.clients.discard(websocket)
     
-    def handle_packet(self, data: bytes):
+    def handle_packet(self, data: bytes, report_id: Optional[int] = None):
         """Handle incoming HID packet"""
         try:
             self.packet_count += 1
@@ -204,10 +208,12 @@ class TabletWebSocketServer(TabletReaderBase):
                     button7=normalized.button7,
                     button8=normalized.button8,
                 )
-                
+
                 # Broadcast to all connected clients
-                asyncio.create_task(self._broadcast(tablet_event))
-                
+                # Schedule on the event loop (handle_packet is called from a background thread)
+                if self._loop:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(tablet_event), self._loop)
+
         except:
             # Silently ignore unexpected packet formats
             pass
