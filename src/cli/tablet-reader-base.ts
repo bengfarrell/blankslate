@@ -271,6 +271,10 @@ export abstract class TabletReaderBase {
   protected reconnectMaxInterval = 5000; // Cap at 5 seconds
   protected deviceCheckInterval = 200; // Check for device every 200ms when disconnected
 
+  // Multi-mode support
+  protected currentMode: any = null;
+  protected detectedReportId: number | null = null;
+
   constructor(configPath: string, options: TabletReaderOptions) {
     this.isMockMode = options.mock ?? false;
     this.exitOnStop = options.exitOnStop ?? true;
@@ -357,10 +361,59 @@ export abstract class TabletReaderBase {
 
   /**
    * Process a raw packet through the config mappings
+   * @param data The raw packet data
+   * @param reportId Optional Report ID (if not included in data)
    */
-  protected processPacket(data: Uint8Array): Record<string, string | number | boolean> {
-    return processDeviceData(data, this.configData.byteCodeMappings, 0, {
-      buttonInterfaceReportId: this.configData.buttonInterfaceReportId,
+  protected processPacket(data: Uint8Array, reportId?: number): Record<string, string | number | boolean> {
+    // For multi-mode configs, get Report ID and appropriate mappings
+    let mappings;
+    let buttonInterfaceReportId;
+
+    if (this.configData.isMultiMode()) {
+      // Use provided reportId, or extract from first byte if not provided
+      const rid = reportId !== undefined ? reportId : (data.length > 0 ? data[0] : undefined);
+
+      // First try to find mode by main report ID
+      let mode = rid !== undefined ? this.configData.getModeByReportId(rid) : null;
+
+      // If found by main report ID, this becomes the current mode
+      if (mode && this.currentMode === null) {
+        this.currentMode = mode;
+        this.detectedReportId = rid;
+        console.log(chalk.green(`\n✓ Detected device mode: `) + chalk.cyan.bold(`Report ID ${rid}`));
+        if (mode.capabilities?.resolution) {
+          console.log(chalk.cyan(`  Resolution: `) + chalk.white(`${mode.capabilities.resolution.x}x${mode.capabilities.resolution.y}\n`));
+        }
+      }
+
+      // If not found by main report ID, check if this is a button interface report ID
+      // IMPORTANT: Check current mode first to avoid ambiguity when multiple modes share the same buttonInterfaceReportId
+      if (!mode && rid !== undefined) {
+        // First check if it matches the current mode's button interface
+        if (this.currentMode && this.currentMode.buttonInterfaceReportId === rid) {
+          mode = this.currentMode;
+        }
+        // If not, search all modes (fallback for first button packet before stylus packet)
+        else if (this.configData.modes) {
+          mode = this.configData.modes.find(m => m.buttonInterfaceReportId === rid) || null;
+        }
+      }
+
+      if (mode) {
+        mappings = mode.byteCodeMappings;
+        buttonInterfaceReportId = mode.buttonInterfaceReportId;
+      } else {
+        // Unknown Report ID, return empty result
+        return {};
+      }
+    } else {
+      // Single-mode config
+      mappings = this.configData.byteCodeMappings;
+      buttonInterfaceReportId = this.configData.buttonInterfaceReportId;
+    }
+
+    return processDeviceData(data, mappings, 0, {
+      buttonInterfaceReportId,
     });
   }
 

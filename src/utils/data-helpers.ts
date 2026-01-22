@@ -162,13 +162,18 @@ export function parseBitFlags(
  */
 export function processDeviceData(
   data: Uint8Array,
-  mappings: Record<string, any>,
+  mappings: Record<string, any> | undefined,
   byteIndexOffset: number = 0,
   options?: { buttonInterfaceReportId?: number }
 ): Record<string, string | number | boolean> {
   // Convert Uint8Array to number array
   const dataList = Array.from(data);
   const result: Record<string, string | number | boolean> = {};
+
+  // Return empty result if no mappings provided
+  if (!mappings) {
+    return result;
+  }
 
   // Check Report ID - only valid when packet includes report ID (byteIndexOffset === 0)
   // WebHID strips the report ID, so this check only applies to Node.js/Python
@@ -368,4 +373,3 @@ export function processDeviceData(
 
   return result;
 }
-

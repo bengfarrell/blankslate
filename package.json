@@ -31,6 +31,22 @@
     "./components/*": {
       "types": "./dist/components/*.d.ts",
       "import": "./dist/components/*.js"
+    },
+    "./cli/tablet-reader-base": {
+      "types": "./dist/cli/tablet-reader-base.d.ts",
+      "import": "./dist/cli/tablet-reader-base.js"
+    },
+    "./cli/tablet-reader-base.js": {
+      "types": "./dist/cli/tablet-reader-base.d.ts",
+      "import": "./dist/cli/tablet-reader-base.js"
+    },
+    "./cli/node-hid-reader": {
+      "types": "./dist/cli/node-hid-reader.d.ts",
+      "import": "./dist/cli/node-hid-reader.js"
+    },
+    "./cli/node-hid-reader.js": {
+      "types": "./dist/cli/node-hid-reader.d.ts",
+      "import": "./dist/cli/node-hid-reader.js"
     }
   },
   "bin": {
@@ -57,8 +73,12 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc --project tsconfig.build.json && vite build",
+    "build": "npm run clean && tsc --project tsconfig.build.json && tsc --project tsconfig.cli.json && npm run copy:assets",
     "build:cli": "tsc --project tsconfig.cli.json",
+    "clean": "rm -rf dist && mkdir -p dist/configs",
+    "copy:assets": "npm run copy:configs && npm run copy:dist-readme",
+    "copy:configs": "cp -r public/configs/* dist/configs/",
+    "copy:dist-readme": "cp DIST_README.md dist/README.md 2>/dev/null || echo 'Note: DIST_README.md not found, skipping'",
     "preview": "vite preview",
     "test": "vitest run",
     "test:unit": "vitest run test/unit/",
@@ -74,6 +94,7 @@
     "config": "npx tsx src/cli/config-generator.ts",
     "events": "npx tsx src/cli/event-viewer.ts",
     "websocket": "npx tsx src/cli/tablet-websocket-server.ts",
+    "diagnose": "npx tsx src/cli/interface-diagnostic.ts",
     "test:spectrumizer": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts",
     "test:spectrumizer:ci": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts --reporter=line",
     "test:spectrumizer:ui": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts --ui",

@@ -32,7 +32,7 @@ export interface UserProvidedMetadata {
  */
 export function inferCapabilities(
   byteCodeMappings: DeviceByteCodeMappings
-): ConfigData['capabilities'] {
+): NonNullable<ConfigData['capabilities']> {
   const hasPressure = !!byteCodeMappings.pressure;
   const hasTilt = !!(byteCodeMappings.tiltX || byteCodeMappings.tiltY);
   

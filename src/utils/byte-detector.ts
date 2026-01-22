@@ -414,7 +414,9 @@ export function generateDeviceConfig(
 
   // Calculate max values using ORIGINAL indices (raw packet structure)
   // Enable debug logging to help diagnose any calibration issues
-  const debug = typeof process !== 'undefined' && process.env?.DEBUG_WALKTHROUGH === '1';
+  const debug = typeof globalThis !== 'undefined' &&
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.DEBUG_WALKTHROUGH === '1';
   if (debug) {
     console.log('\n[DEBUG] Calculating max values from', allPackets.length, 'packets:');
     console.log(`  packetIncludesReportId: ${packetIncludesReportId}, indexOffset: ${indexOffset}`);

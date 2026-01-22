@@ -32,6 +32,10 @@ export class EventStreamer extends TabletReaderBase {
   private lastLiveUpdate = 0;
   private lastDisplayedState: string | null = null;
 
+  // Multi-mode support
+  private currentMode: any = null;
+  private detectedReportId: number | null = null;
+
   // Calibration tracking - track actual max values seen vs config
   private observedMaxX = 0;
   private observedMaxY = 0;
@@ -97,7 +101,7 @@ export class EventStreamer extends TabletReaderBase {
       this.lastReportId = reportId;
 
       // Process the data using the config
-      const events = this.processPacket(data);
+      const events = this.processPacket(data, reportId);
 
       // Track raw values for calibration warnings
       this.trackRawValues(data);
@@ -124,7 +128,42 @@ export class EventStreamer extends TabletReaderBase {
    */
   private trackRawValues(data: Uint8Array): void {
     const dataList = Array.from(data);
-    const mappings = this.configData.byteCodeMappings;
+
+    // Get mappings from current mode (for multi-mode configs) or from config directly
+    let mappings;
+    if (this.configData.isMultiMode()) {
+      if (!this.currentMode) {
+        // Mode not detected yet, try to detect it
+        // Use the lastReportId that was passed to handlePacket
+        if (this.lastReportId !== undefined) {
+          const reportId = this.lastReportId;
+          this.detectedReportId = reportId;
+          this.currentMode = this.configData.getModeByReportId(reportId);
+
+          if (this.currentMode) {
+            console.log(chalk.green(`\n✓ Detected device mode: `) + chalk.cyan.bold(`Report ID ${reportId}`));
+            console.log(chalk.cyan(`  Resolution: `) + chalk.white(`${this.currentMode.capabilities.resolution.x}x${this.currentMode.capabilities.resolution.y}\n`));
+          } else {
+            console.log(chalk.yellow(`\n⚠ Warning: Unknown Report ID ${reportId}`));
+            console.log(chalk.yellow(`  Available modes:`));
+            for (const mode of this.configData.modes || []) {
+              console.log(chalk.yellow(`    - Report ID ${mode.reportId}`));
+            }
+            console.log();
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+      mappings = this.currentMode.byteCodeMappings;
+    } else {
+      mappings = this.configData.byteCodeMappings;
+    }
+
+    if (!mappings) {
+      return;
+    }
 
     // Extract raw X value
     const xMapping = mappings.x;
@@ -183,7 +222,15 @@ export class EventStreamer extends TabletReaderBase {
    */
   private updateCalibrationWarnings(): void {
     this.calibrationWarnings = [];
-    const mappings = this.configData.byteCodeMappings;
+
+    // Get mappings from current mode (for multi-mode configs) or from config directly
+    const mappings = this.configData.isMultiMode()
+      ? this.currentMode?.byteCodeMappings
+      : this.configData.byteCodeMappings;
+
+    if (!mappings) {
+      return;
+    }
 
     const configMaxX = mappings.x?.max ?? 65535;
     const configMaxY = mappings.y?.max ?? 65535;
@@ -252,23 +299,28 @@ export class EventStreamer extends TabletReaderBase {
     const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
     const lines: string[] = [];
 
-    lines.push(chalk.gray(`─────────────────────────────────────────────────────`));
+    lines.push(chalk.gray(`────────────────────────────────────────────────────────────`));
     const reportIdStr = this.lastReportId !== undefined ? chalk.yellow(` [ReportID: ${this.lastReportId}]`) : '';
     lines.push(chalk.cyan(`Packet #${this.packetCount}`) + reportIdStr + chalk.gray(` @ ${timestamp}`));
 
-    if (this.showRaw) {
-      const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-      lines.push(chalk.gray(`Raw: ${hex}`));
+    // Always show raw hex
+    const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+    lines.push(chalk.gray(`Raw: ${hex}`));
+
+    // Show all parsed events for debugging
+    if (Object.keys(events).length > 0) {
+      const eventsStr = Object.entries(events).map(([k, v]) => `${k}=${v}`).join(', ');
+      lines.push(chalk.gray(`Events: ${eventsStr}`));
     }
 
-    // State
-    if (events.state) {
-      const stateColor = events.state === 'contact' ? chalk.green :
-        events.state === 'hover' ? chalk.yellow :
-          events.state === 'buttons' ? chalk.magenta :
+    // State - always show, even if missing
+    const state = events.state ?? 'unknown';
+    const stateColor = state === 'contact' ? chalk.green :
+      state === 'hover' ? chalk.yellow :
+        state === 'buttons' ? chalk.magenta :
+          state === 'keyboard' ? chalk.magenta :
             chalk.gray;
-      lines.push(`  State: ${stateColor(String(events.state))}`);
-    }
+    lines.push(`  State: ${stateColor(String(state))}`);
 
     // Position
     if (events.x !== undefined && events.y !== undefined) {
@@ -292,15 +344,24 @@ export class EventStreamer extends TabletReaderBase {
       lines.push(`  Tilt: X: ${chalk.white(tiltX)} | Y: ${chalk.white(tiltY)}`);
     }
 
-    // Buttons (status config uses 'primaryButtonPressed' / 'secondaryButtonPressed')
+    // Buttons - always show button state
     const buttons: string[] = [];
     if (events.primaryButton || events.primaryButtonPressed) buttons.push(chalk.magenta('Primary'));
     if (events.secondaryButton || events.secondaryButtonPressed) buttons.push(chalk.magenta('Secondary'));
-    if (events.tabletButtons !== undefined && events.tabletButtons !== 0) {
-      buttons.push(chalk.blue(`Express Key: ${events.tabletButtons}`));
+
+    const tabletButton = typeof events.tabletButtons === 'number' ? events.tabletButtons : 0;
+    if (tabletButton !== 0) {
+      buttons.push(chalk.blue(`Express Key: ${tabletButton}`));
     }
+
+    // Always show button line, even if no buttons pressed
     if (buttons.length > 0) {
       lines.push(`  Buttons: ${buttons.join(' | ')}`);
+    } else {
+      // Check if this looks like it should have button data
+      if (events.state === 'buttons' || events.state === 'keyboard' || this.lastReportId === 6) {
+        lines.push(`  Buttons: ${chalk.gray('(none detected)')}`);
+      }
     }
 
     // Output all lines at once using process.stdout.write for proper flushing
@@ -336,7 +397,15 @@ export class EventStreamer extends TabletReaderBase {
     const CLEAR_LINE = '\x1b[2K';
 
     // Get config max values for calibration warnings
-    const mappings = this.configData.byteCodeMappings;
+    // Get mappings from current mode (for multi-mode configs) or from config directly
+    const mappings = this.configData.isMultiMode()
+      ? this.currentMode?.byteCodeMappings
+      : this.configData.byteCodeMappings;
+
+    if (!mappings) {
+      return;
+    }
+
     const configMaxX = mappings.x?.max ?? 65535;
     const configMaxY = mappings.y?.max ?? 65535;
     const configMaxPressure = mappings.pressure?.max ?? 8191;

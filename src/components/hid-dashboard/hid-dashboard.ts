@@ -325,15 +325,20 @@ export class HidDashboard extends LitElement {
     if (this.mockDevice) return;
 
     // Create mock device with config matching the loaded config
-    const maxX = this.config?.byteCodeMappings.x?.max ?? 65535;
-    const maxY = this.config?.byteCodeMappings.y?.max ?? 65535;
+    // For multi-mode configs, use the first mode's mappings
+    const mappings = this.config?.isMultiMode()
+      ? this.config.modes?.[0]?.byteCodeMappings
+      : this.config?.byteCodeMappings;
+
+    const maxX = mappings?.x?.max ?? 65535;
+    const maxY = mappings?.y?.max ?? 65535;
 
     this.mockDevice = new MockTabletDevice({
       maxX,
       maxY,
       deviceName: 'Mock ' + (this.config?.name || 'Tablet'),
       translateEvents: this.simulationDataMode === 'translated',
-      byteCodeMappings: this.config?.byteCodeMappings,
+      byteCodeMappings: mappings,
     });
 
     // Listen for raw bytes
@@ -679,14 +684,14 @@ export class HidDashboard extends LitElement {
       tiltXY: this.tabletData.tiltXY,
       primaryButtonPressed: data.primaryButtonPressed,
       secondaryButtonPressed: data.secondaryButtonPressed,
-      button1: data.button1 ?? (buttonNum === 1),
-      button2: data.button2 ?? (buttonNum === 2),
-      button3: data.button3 ?? (buttonNum === 3),
-      button4: data.button4 ?? (buttonNum === 4),
-      button5: data.button5 ?? (buttonNum === 5),
-      button6: data.button6 ?? (buttonNum === 6),
-      button7: data.button7 ?? (buttonNum === 7),
-      button8: data.button8 ?? (buttonNum === 8),
+      button1: typeof data.button1 === 'boolean' ? data.button1 : (buttonNum === 1),
+      button2: typeof data.button2 === 'boolean' ? data.button2 : (buttonNum === 2),
+      button3: typeof data.button3 === 'boolean' ? data.button3 : (buttonNum === 3),
+      button4: typeof data.button4 === 'boolean' ? data.button4 : (buttonNum === 4),
+      button5: typeof data.button5 === 'boolean' ? data.button5 : (buttonNum === 5),
+      button6: typeof data.button6 === 'boolean' ? data.button6 : (buttonNum === 6),
+      button7: typeof data.button7 === 'boolean' ? data.button7 : (buttonNum === 7),
+      button8: typeof data.button8 === 'boolean' ? data.button8 : (buttonNum === 8),
       state: data.state
     };
     this.tabletEvents = [...this.tabletEvents, event];

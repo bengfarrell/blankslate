@@ -41,35 +41,15 @@ export class MappingType {
 export type MappingTypeValue = typeof MappingType[keyof typeof MappingType];
 
 /**
- * Type definitions for Config properties
+ * Mode-specific configuration
  */
-export interface ConfigData {
-  // Device identification
-  name: string;
-  manufacturer: string;
-  model: string;
-  description: string;
-  vendorId: string;
-  productId: string;
-
-  // Device information
-  deviceInfo: {
-    vendor_id: number;
-    product_id: number;
-    product_string: string;
-    usage_page: number;
-    usage: number;
-    interfaces: number[];
-  };
-
-  // HID report configuration
+export interface ConfigMode {
+  name?: string;
   reportId: number;
   digitizerUsagePage: number;
   buttonInterfaceReportId?: number;
   stylusModeStatusByte?: number;
   excludedUsagePages?: number[];
-
-  // Device capabilities
   capabilities: {
     hasButtons: boolean;
     buttonCount: number;
@@ -81,8 +61,6 @@ export interface ConfigData {
       y: number;
     };
   };
-
-  // Byte code mappings for parsing HID data
   byteCodeMappings: {
     status?: {
       byteIndex: number[];
@@ -140,14 +118,66 @@ export interface ConfigData {
         button?: number;
         [key: string]: string | number | boolean | undefined;
       }>;
+      statusOverrides?: Array<{
+        scanCode: number;
+        statusByte: number;
+        buttonNumber: number;
+      }>;
     };
     [key: string]: any;
   };
 }
 
 /**
+ * Type definitions for Config properties
+ * Supports both single-mode (legacy) and multi-mode configs
+ */
+export interface ConfigData {
+  // Device identification
+  name: string;
+  manufacturer: string;
+  model: string;
+  description: string;
+  vendorId: string;
+  productId: string;
+
+  // Device information
+  deviceInfo: {
+    vendor_id: number;
+    product_id: number;
+    product_string: string;
+    usage_page: number;
+    usage: number;
+    interfaces: number[];
+  };
+
+  // Multi-mode support (new)
+  modes?: ConfigMode[];
+
+  // Single-mode fields (legacy - for backward compatibility)
+  reportId?: number;
+  digitizerUsagePage?: number;
+  buttonInterfaceReportId?: number;
+  stylusModeStatusByte?: number;
+  excludedUsagePages?: number[];
+  capabilities?: {
+    hasButtons: boolean;
+    buttonCount: number;
+    hasPressure: boolean;
+    pressureLevels: number;
+    hasTilt: boolean;
+    resolution: {
+      x: number;
+      y: number;
+    };
+  };
+  byteCodeMappings?: ConfigMode['byteCodeMappings'];
+}
+
+/**
  * Main tablet configuration class
  * Handles tablet configuration with serialization/deserialization methods
+ * Supports both single-mode (legacy) and multi-mode configs
  */
 export class Config implements ConfigData {
   // Device identification
@@ -168,28 +198,17 @@ export class Config implements ConfigData {
     interfaces: number[];
   };
 
-  // HID report configuration
-  reportId: number;
-  digitizerUsagePage: number;
+  // Multi-mode support
+  modes?: ConfigMode[];
+
+  // Single-mode fields (for backward compatibility)
+  reportId?: number;
+  digitizerUsagePage?: number;
   buttonInterfaceReportId?: number;
   stylusModeStatusByte?: number;
   excludedUsagePages?: number[];
-
-  // Device capabilities
-  capabilities: {
-    hasButtons: boolean;
-    buttonCount: number;
-    hasPressure: boolean;
-    pressureLevels: number;
-    hasTilt: boolean;
-    resolution: {
-      x: number;
-      y: number;
-    };
-  };
-
-  // Byte code mappings for parsing HID data
-  byteCodeMappings: ConfigData['byteCodeMappings'];
+  capabilities?: ConfigData['capabilities'];
+  byteCodeMappings?: ConfigData['byteCodeMappings'];
 
   constructor(data: ConfigData) {
     this.name = data.name;
@@ -199,6 +218,7 @@ export class Config implements ConfigData {
     this.vendorId = data.vendorId;
     this.productId = data.productId;
     this.deviceInfo = data.deviceInfo;
+    this.modes = data.modes;
     this.reportId = data.reportId;
     this.digitizerUsagePage = data.digitizerUsagePage;
     this.buttonInterfaceReportId = data.buttonInterfaceReportId;
@@ -209,10 +229,61 @@ export class Config implements ConfigData {
   }
 
   /**
+   * Get mode configuration for a specific Report ID
+   * @param reportId The Report ID to find
+   * @returns The matching mode configuration, or undefined if not found
+   */
+  getModeByReportId(reportId: number): ConfigMode | undefined {
+    return this.modes?.find(mode => mode.reportId === reportId);
+  }
+
+  /**
+   * Check if this is a multi-mode config
+   * @returns true if config has multiple modes
+   */
+  isMultiMode(): boolean {
+    return !!this.modes && this.modes.length > 0;
+  }
+
+  /**
+   * Get byteCodeMappings for a specific mode or from single-mode config
+   * @param reportId Optional Report ID to get mappings for specific mode
+   * @returns The byteCodeMappings, or undefined if not found
+   */
+  getByteCodeMappings(reportId?: number): ConfigData['byteCodeMappings'] | undefined {
+    if (this.isMultiMode()) {
+      if (reportId !== undefined) {
+        const mode = this.getModeByReportId(reportId);
+        return mode?.byteCodeMappings;
+      }
+      // If no reportId specified, return undefined (caller needs to specify which mode)
+      return undefined;
+    }
+    return this.byteCodeMappings;
+  }
+
+  /**
+   * Get capabilities for a specific mode or from single-mode config
+   * @param reportId Optional Report ID to get capabilities for specific mode
+   * @returns The capabilities, or undefined if not found
+   */
+  getCapabilities(reportId?: number): ConfigData['capabilities'] | undefined {
+    if (this.isMultiMode()) {
+      if (reportId !== undefined) {
+        const mode = this.getModeByReportId(reportId);
+        return mode?.capabilities;
+      }
+      // If no reportId specified, return undefined (caller needs to specify which mode)
+      return undefined;
+    }
+    return this.capabilities;
+  }
+
+  /**
    * Converts this Config instance to a JSON string
    * @param pretty Whether to pretty-print the JSON (default: false)
    * @returns JSON string representation of the config
-   * 
+   *
    * @example
    * const config = new Config(data);
    * const jsonString = config.toJSON(true);
@@ -228,6 +299,7 @@ export class Config implements ConfigData {
       vendorId: this.vendorId,
       productId: this.productId,
       deviceInfo: this.deviceInfo,
+      modes: this.modes,
       reportId: this.reportId,
       digitizerUsagePage: this.digitizerUsagePage,
       buttonInterfaceReportId: this.buttonInterfaceReportId,
@@ -257,19 +329,42 @@ export class Config implements ConfigData {
         throw new Error('Invalid config: must be an object');
       }
       
-      // Validate required fields
+      // Validate required fields (common to both single and multi-mode)
       const requiredFields = [
         'name', 'manufacturer', 'model', 'description',
-        'vendorId', 'productId', 'deviceInfo', 'reportId',
-        'digitizerUsagePage', 'capabilities', 'byteCodeMappings'
+        'vendorId', 'productId', 'deviceInfo'
       ];
-      
+
       for (const field of requiredFields) {
         if (!(field in parsed)) {
           throw new Error(`Invalid config: missing required field '${field}'`);
         }
       }
-      
+
+      // Check if it's multi-mode or single-mode
+      const isMultiMode = 'modes' in parsed && Array.isArray(parsed.modes);
+
+      if (isMultiMode) {
+        // Multi-mode config: validate modes array
+        if (parsed.modes.length === 0) {
+          throw new Error('Invalid config: modes array cannot be empty');
+        }
+        // Validate each mode has required fields
+        for (const mode of parsed.modes) {
+          if (!('reportId' in mode)) {
+            throw new Error('Invalid config: each mode must have a reportId');
+          }
+        }
+      } else {
+        // Single-mode config: validate legacy fields
+        const legacyRequiredFields = ['reportId', 'digitizerUsagePage', 'capabilities', 'byteCodeMappings'];
+        for (const field of legacyRequiredFields) {
+          if (!(field in parsed)) {
+            throw new Error(`Invalid config: missing required field '${field}'`);
+          }
+        }
+      }
+
       return new Config(parsed as ConfigData);
     } catch (error) {
       if (error instanceof SyntaxError) {

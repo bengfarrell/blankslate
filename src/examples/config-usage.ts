@@ -146,9 +146,14 @@ export function createCustomConfig(): Config {
 export async function validateAndModifyConfig(url: string) {
   // Load the config using static method
   const config = await Config.load(url);
-  
+
   // Validate it has the features we need
-  if (!config.capabilities.hasPressure) {
+  // For multi-mode configs, check the first mode
+  const capabilities = config.isMultiMode()
+    ? config.modes?.[0]?.capabilities
+    : config.capabilities;
+
+  if (!capabilities?.hasPressure) {
     throw new Error('Config must support pressure sensitivity');
   }
   
@@ -177,9 +182,14 @@ export async function compareConfigs(url1: string, url2: string) {
   
   console.log('Comparing configs:');
   console.log(`  ${config1.name} vs ${config2.name}`);
-  console.log(`  Pressure levels: ${config1.capabilities.pressureLevels} vs ${config2.capabilities.pressureLevels}`);
-  console.log(`  Button count: ${config1.capabilities.buttonCount} vs ${config2.capabilities.buttonCount}`);
-  console.log(`  Resolution: ${config1.capabilities.resolution.x}x${config1.capabilities.resolution.y} vs ${config2.capabilities.resolution.x}x${config2.capabilities.resolution.y}`);
+
+  // For multi-mode configs, compare the first mode
+  const caps1 = config1.isMultiMode() ? config1.modes?.[0]?.capabilities : config1.capabilities;
+  const caps2 = config2.isMultiMode() ? config2.modes?.[0]?.capabilities : config2.capabilities;
+
+  console.log(`  Pressure levels: ${caps1?.pressureLevels} vs ${caps2?.pressureLevels}`);
+  console.log(`  Button count: ${caps1?.buttonCount} vs ${caps2?.buttonCount}`);
+  console.log(`  Resolution: ${caps1?.resolution.x}x${caps1?.resolution.y} vs ${caps2?.resolution.x}x${caps2?.resolution.y}`);
   
   return { config1, config2 };
 }
@@ -209,4 +219,3 @@ export async function errorHandlingExample() {
     console.error('Expected error:', error);
   }
 }
-

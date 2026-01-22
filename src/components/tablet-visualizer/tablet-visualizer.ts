@@ -1,9 +1,9 @@
 import { html, LitElement, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { styles } from './tablet-visualizer.css';
-import '../curve-visualizer/curve-visualizer';
+import { styles } from './tablet-visualizer.css.js';
+import '../curve-visualizer/curve-visualizer.js';
 import { TabletExpressionConfig } from '../../types/config-types.js';
-import { sharedTabletInteraction } from '../../controllers';
+import { sharedTabletInteraction } from '../../controllers/index.js';
 
 @customElement('tablet-visualizer')
 export class TabletVisualizer extends LitElement {

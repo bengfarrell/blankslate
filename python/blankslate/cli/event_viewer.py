@@ -35,20 +35,21 @@ class CalibrationTracking:
 
 class EventViewer(TabletReaderBase):
     """Enhanced event viewer with multiple display modes"""
-    
-    def __init__(self, config_path: str, mock: bool = False, 
+
+    def __init__(self, config_path: str, mock: bool = False,
                  raw: bool = False, compact: bool = False, live: bool = False):
         super().__init__(config_path, mock=mock, exit_on_stop=True)
         self.show_raw = raw
         self.compact_output = compact
         self.live_mode = live
-        
+
         # Live mode state
         self.last_events: Dict[str, Any] = {}
         self.last_raw_data: bytes = b''
         self.last_live_update = 0
         self.last_displayed_state: Optional[str] = None
-        
+        self.last_report_id: Optional[int] = None
+
         # Calibration tracking
         self.calibration = CalibrationTracking()
         self.calibration_warnings: list[str] = []
@@ -71,7 +72,8 @@ class EventViewer(TabletReaderBase):
         # Start reading
         print(colored('Setting up data callback...', Colors.GRAY))
         if hasattr(self.reader, 'start_reading'):
-            self.reader.start_reading(lambda data: self.handle_packet(data))
+            # Accept both old (data only) and new (data, report_id) signatures
+            self.reader.start_reading(lambda data, report_id=None: self.handle_packet(data))
 
         print(colored('✓ Started reading data', Colors.GREEN))
         print(colored('Press Ctrl+C to stop\n', Colors.GRAY))
@@ -96,13 +98,17 @@ class EventViewer(TabletReaderBase):
         """Handle incoming packet"""
         try:
             self.packet_count += 1
-            
+
+            # Extract Report ID from first byte
+            report_id = data[0] if len(data) > 0 else None
+            self.last_report_id = report_id
+
             # Process the data using the config
             events = self.process_packet(data)
-            
+
             # Track raw values for calibration warnings
             self._track_raw_values(data)
-            
+
             # Store for live mode
             self.last_events = events
             self.last_raw_data = data
@@ -125,8 +131,18 @@ class EventViewer(TabletReaderBase):
     def _track_raw_values(self, data: bytes):
         """Extract raw multi-byte values and track max values seen"""
         data_list = list(data)
-        mappings = self.config_data.byteCodeMappings
-        
+
+        # Get mappings from current mode (for multi-mode configs) or from config directly
+        if self.config_data.is_multi_mode():
+            if not self.current_mode:
+                return  # Mode not detected yet
+            mappings = self.current_mode.byteCodeMappings
+        else:
+            mappings = self.config_data.byteCodeMappings
+
+        if not mappings:
+            return
+
         # Extract raw X value
         x_mapping = mappings.get('x')
         if x_mapping and x_mapping.get('type') == 'multi-byte-range':
@@ -178,8 +194,18 @@ class EventViewer(TabletReaderBase):
     def _update_calibration_warnings(self):
         """Check if observed values exceed config max and generate warnings"""
         self.calibration_warnings = []
-        mappings = self.config_data.byteCodeMappings
-        
+
+        # Get mappings from current mode (for multi-mode configs) or from config directly
+        if self.config_data.is_multi_mode():
+            if not self.current_mode:
+                return  # Mode not detected yet
+            mappings = self.current_mode.byteCodeMappings
+        else:
+            mappings = self.config_data.byteCodeMappings
+
+        if not mappings:
+            return
+
         config_max_x = mappings.get('x', {}).get('max', 65535)
         config_max_y = mappings.get('y', {}).get('max', 65535)
         config_max_pressure = mappings.get('pressure', {}).get('max', 8191)
@@ -229,7 +255,10 @@ class EventViewer(TabletReaderBase):
             hex_str = ' '.join(f'{b:02x}' for b in data)
             parts.append(colored(f'[{hex_str}]', Colors.GRAY))
         
-        output = f"\r{colored(f'#{self.packet_count}', Colors.GRAY)} {' '.join(parts)}"
+        packet_info = colored(f'#{self.packet_count}', Colors.GRAY)
+        if self.last_report_id is not None:
+            packet_info += colored(f' [R:{self.last_report_id}]', Colors.YELLOW)
+        output = f"\r{packet_info} {' '.join(parts)}"
         sys.stdout.write(output.ljust(120))
         sys.stdout.flush()
     
@@ -240,25 +269,34 @@ class EventViewer(TabletReaderBase):
         lines = []
         
         lines.append(colored('─' * 60, Colors.GRAY))
-        lines.append(colored(f'Packet #{self.packet_count}', Colors.CYAN) + 
-                    colored(f' @ {timestamp}', Colors.GRAY))
+        packet_line = colored(f'Packet #{self.packet_count}', Colors.CYAN)
+        if self.last_report_id is not None:
+            packet_line += colored(f' [ReportID: {self.last_report_id}]', Colors.YELLOW)
+        packet_line += colored(f' @ {timestamp}', Colors.GRAY)
+        lines.append(packet_line)
+
+        # Always show raw hex for debugging
+        hex_str = ' '.join(f'{b:02X}' for b in data)
+        lines.append(colored(f'Raw: {hex_str}', Colors.GRAY))
+
+        # Show all parsed events for debugging
+        if events:
+            events_str = ', '.join(f'{k}={v}' for k, v in events.items())
+            lines.append(colored(f'Events: {events_str}', Colors.GRAY))
         
-        if self.show_raw:
-            hex_str = ' '.join(f'{b:02X}' for b in data)
-            lines.append(colored(f'Raw: {hex_str}', Colors.GRAY))
-        
-        # State
-        if 'state' in events:
-            state = events['state']
-            if state == 'contact':
-                state_colored = colored(state, Colors.GREEN)
-            elif state == 'hover':
-                state_colored = colored(state, Colors.YELLOW)
-            elif state == 'buttons':
-                state_colored = colored(state, Colors.MAGENTA)
-            else:
-                state_colored = colored(state, Colors.GRAY)
-            lines.append(f"  State: {state_colored}")
+        # State - always show, even if missing
+        state = events.get('state', 'unknown')
+        if state == 'contact':
+            state_colored = colored(state, Colors.GREEN)
+        elif state == 'hover':
+            state_colored = colored(state, Colors.YELLOW)
+        elif state == 'buttons':
+            state_colored = colored(state, Colors.MAGENTA)
+        elif state == 'unknown':
+            state_colored = colored(state, Colors.GRAY)
+        else:
+            state_colored = colored(state, Colors.GRAY)
+        lines.append(f"  State: {state_colored}")
         
         # Position
         if 'x' in events and 'y' in events:
@@ -285,16 +323,24 @@ class EventViewer(TabletReaderBase):
             lines.append(f"  Tilt: X: {colored(f'{tilt_x:.2f}', Colors.WHITE)} | " +
                         f"Y: {colored(f'{tilt_y:.2f}', Colors.WHITE)}")
         
-        # Buttons
+        # Buttons - always show button state
         buttons = []
         if events.get('primaryButton') or events.get('primaryButtonPressed'):
             buttons.append(colored('Primary', Colors.MAGENTA))
         if events.get('secondaryButton') or events.get('secondaryButtonPressed'):
             buttons.append(colored('Secondary', Colors.MAGENTA))
-        if events.get('tabletButtons', 0) != 0:
-            buttons.append(colored(f"Express Key: {events['tabletButtons']}", Colors.BLUE))
+
+        tablet_button = events.get('tabletButtons', 0)
+        if tablet_button != 0:
+            buttons.append(colored(f"Express Key: {tablet_button}", Colors.BLUE))
+
+        # Always show button line, even if no buttons pressed
         if buttons:
             lines.append(f"  Buttons: {' | '.join(buttons)}")
+        else:
+            # Check if this looks like it should have button data
+            if events.get('state') == 'buttons' or self.last_report_id == 6:
+                lines.append(f"  Buttons: {colored('(none detected)', Colors.GRAY)}")
         
         print('\n'.join(lines))
         sys.stdout.flush()
@@ -326,7 +372,17 @@ class EventViewer(TabletReaderBase):
         MOVE_HOME = '\x1b[H'
         
         # Get config max values
-        mappings = self.config_data.byteCodeMappings
+        # Get mappings from current mode (for multi-mode configs) or from config directly
+        if self.config_data.is_multi_mode():
+            if not self.current_mode:
+                return  # Mode not detected yet
+            mappings = self.current_mode.byteCodeMappings
+        else:
+            mappings = self.config_data.byteCodeMappings
+
+        if not mappings:
+            return
+
         config_max_x = mappings.get('x', {}).get('max', 65535)
         config_max_y = mappings.get('y', {}).get('max', 65535)
         config_max_pressure = mappings.get('pressure', {}).get('max', 8191)
