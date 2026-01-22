@@ -226,6 +226,15 @@ export class HidDashboard extends LitElement {
   private mockDevice: MockTabletDevice | null = null;
   private websocket: WebSocket | null = null;
 
+  // Track current report ID for mode-specific features
+  @state()
+  private currentReportId: number | null = null;
+
+  // Keyboard tracking for button mappings
+  private pressedKeys: Set<string> = new Set();
+  private keyboardListenerBound = this._handleKeyDown.bind(this);
+  private keyupListenerBound = this._handleKeyUp.bind(this);
+
   private readonly mockDataOptions: MockDataOption[] = [
     { id: 'circle', label: 'Draw Circle', action: (d) => d.playCircle() },
     { id: 'line', label: 'Draw Line', action: (d) => d.playLine() },
@@ -245,6 +254,9 @@ export class HidDashboard extends LitElement {
     super.connectedCallback();
     // Initialize mock device so it's ready for simulations
     this._initMockDevice();
+    // Add keyboard listeners for button mappings
+    window.addEventListener('keydown', this.keyboardListenerBound);
+    window.addEventListener('keyup', this.keyupListenerBound);
   }
 
   disconnectedCallback() {
@@ -252,6 +264,9 @@ export class HidDashboard extends LitElement {
     this._disconnectHid();
     this._disconnectWebSocket();
     this._stopSimulation();
+    // Remove keyboard listeners
+    window.removeEventListener('keydown', this.keyboardListenerBound);
+    window.removeEventListener('keyup', this.keyupListenerBound);
   }
 
 
@@ -325,10 +340,8 @@ export class HidDashboard extends LitElement {
     if (this.mockDevice) return;
 
     // Create mock device with config matching the loaded config
-    // For multi-mode configs, use the first mode's mappings
-    const mappings = this.config?.isMultiMode()
-      ? this.config.modes?.[0]?.byteCodeMappings
-      : this.config?.byteCodeMappings;
+    // Use getByteCodeMappings() to support both single-mode and multi-mode configs
+    const mappings = this.config?.getByteCodeMappings();
 
     const maxX = mappings?.x?.max ?? 65535;
     const maxY = mappings?.y?.max ?? 65535;
@@ -369,9 +382,10 @@ export class HidDashboard extends LitElement {
 
     // In raw mode, we translate raw bytes to events
     this.isEventsTranslated = true;
-    
+
     // Process through config mappings (or default mock mappings) to get events
-    const mappings = this.config?.byteCodeMappings ?? DEFAULT_MOCK_BYTE_MAPPINGS;
+    // Use getByteCodeMappings() to support both single-mode and multi-mode configs
+    const mappings = this.config?.getByteCodeMappings() ?? DEFAULT_MOCK_BYTE_MAPPINGS;
     const processed = processDeviceData(data, mappings, -1);
     this._handleTabletData(processed as TabletDataEvent, 'mock', true);
   }
@@ -405,22 +419,25 @@ export class HidDashboard extends LitElement {
         byteIndex: index,
         value: value,
       };
-      
+
       // Try to find a label for this byte from config mappings
-      if (this.config && this.config.byteCodeMappings) {
-        const mappings = this.config.byteCodeMappings;
-        for (const [key, mapping] of Object.entries(mappings)) {
-          if (mapping && 'byteIndex' in mapping) {
-            const byteIndices = mapping.byteIndex as number[];
-            if (byteIndices.includes(index)) {
-              byteData.label = key;
-              byteData.isIdentified = true;
-              break;
+      // Use getByteCodeMappings() to support both single-mode and multi-mode configs
+      if (this.config) {
+        const mappings = this.config.getByteCodeMappings();
+        if (mappings) {
+          for (const [key, mapping] of Object.entries(mappings)) {
+            if (mapping && 'byteIndex' in mapping) {
+              const byteIndices = mapping.byteIndex as number[];
+              if (byteIndices.includes(index)) {
+                byteData.label = key;
+                byteData.isIdentified = true;
+                break;
+              }
             }
           }
         }
       }
-      
+
       return byteData;
     });
   }
@@ -560,58 +577,135 @@ export class HidDashboard extends LitElement {
           usagePageHex: c.usagePage ? '0x' + c.usagePage.toString(16) : 'undefined',
           usageHex: c.usage ? '0x' + c.usage.toString(16) : 'undefined'
         }));
-        console.log(`[Dashboard] Device ${i}:`, {
-          productName: d.productName,
-          collections
-        });
+        console.log(`[Dashboard] Device ${i}:`, d.productName, 'opened:', d.opened);
+        console.log(`[Dashboard] Device ${i} collections:`, collections);
+
+        // Also check if this device has vendor-specific interface (0xFF0A = 65290)
+        const hasVendorInterface = d.collections.some(c => c.usagePage === 65290 || (c.usagePage && c.usagePage >= 0xFF00));
+        if (hasVendorInterface) {
+          console.log(`[Dashboard] Device ${i} has VENDOR-SPECIFIC interface!`, collections);
+        }
+
+        // Check if device is already opened by another tab/app
+        if (d.opened) {
+          console.warn(`[Dashboard] Device ${i} is already opened!`);
+        }
       });
 
-      // Find the interface matching the config's usage_page
-      // This is where the actual pen data comes from (may be vendor-specific like 65290/0xFF0A)
+      // Find the interface matching the config
+      // Priority (matching Node.js logic):
+      // 1. Vendor-specific interface (usagePage >= 0xFF00) - often required on macOS
+      // 2. Exact match (usagePage + usage from config)
+      // 3. UsagePage match only
+      // 4. Standard digitizer (usagePage 13)
       const configUsagePage = this.config.deviceInfo.usage_page;
+      const configUsage = this.config.deviceInfo.usage;
+      console.log('[Dashboard] Looking for device with usagePage:', configUsagePage, '(0x' + configUsagePage?.toString(16) + ') usage:', configUsage);
 
-      const configuredDevice = tabletDevices.find(d =>
+      // Check for vendor-specific interface (highest priority on macOS)
+      const vendorDevice = tabletDevices.find(d =>
+        d.collections.some(c => c.usagePage && c.usagePage >= 0xFF00)
+      );
+      if (vendorDevice) {
+        const vendorCollection = vendorDevice.collections.find(c => c.usagePage && c.usagePage >= 0xFF00);
+        console.log('[Dashboard] Found vendor device with usagePage:', vendorCollection?.usagePage, '(0x' + vendorCollection?.usagePage?.toString(16) + ')');
+      }
+
+      // Try to match both usagePage and usage from config
+      const exactMatch = tabletDevices.find(d =>
+        d.collections.some(c => c.usagePage === configUsagePage && c.usage === configUsage)
+      );
+      if (exactMatch && !vendorDevice) {
+        console.log('[Dashboard] Found exact match device');
+      }
+
+      // Fallback to just usagePage match
+      const usagePageMatch = tabletDevices.find(d =>
         d.collections.some(c => c.usagePage === configUsagePage)
       );
 
-      // Fallback to digitizer (13) or first device if config's usage_page not found
+      // Fallback to digitizer (13) or first device
       const digitizerDevice = tabletDevices.find(d =>
         d.collections.some(c => c.usagePage === 13)
       );
-      const primaryDevice = configuredDevice || digitizerDevice || tabletDevices[0];
+
+      // Try vendor device first, but also try digitizer as fallback
+      const primaryDevice = vendorDevice || exactMatch || usagePageMatch || digitizerDevice || tabletDevices[0];
+      const secondaryDevice = vendorDevice && digitizerDevice && vendorDevice !== digitizerDevice ? digitizerDevice : null;
+
+      // Also try Device 0 (might have button interface)
+      const device0 = tabletDevices[0];
+      const tertiaryDevice = device0 && device0 !== primaryDevice && device0 !== secondaryDevice ? device0 : null;
 
       if (!primaryDevice) {
         console.error('[Dashboard] No suitable device interface found');
         return;
       }
 
+      const selectionReason = vendorDevice ? 'vendor-specific interface (0xFF00+)' :
+                              (exactMatch ? 'exact match (usagePage + usage)' :
+                              (usagePageMatch ? 'usagePage match' :
+                              (digitizerDevice ? 'digitizer fallback' : 'first device fallback')));
       const selectedCollections = primaryDevice.collections.map(c => ({
         usagePage: c.usagePage,
         usage: c.usage,
         usagePageHex: c.usagePage ? '0x' + c.usagePage.toString(16) : 'undefined',
         usageHex: c.usage ? '0x' + c.usage.toString(16) : 'undefined'
       }));
-      console.log('[Dashboard] Selected device:', {
+      console.log('[Dashboard] Selected PRIMARY device (' + selectionReason + '):', {
         productName: primaryDevice.productName,
         collections: selectedCollections,
         opened: primaryDevice.opened
       });
+
+      if (secondaryDevice) {
+        console.log('[Dashboard] Will also open SECONDARY device:', {
+          productName: secondaryDevice.productName,
+          collections: secondaryDevice.collections.map(c => ({ usagePage: c.usagePage, usage: c.usage }))
+        });
+      }
+
+      if (tertiaryDevice) {
+        console.log('[Dashboard] Will also open TERTIARY device:', {
+          productName: tertiaryDevice.productName,
+          collections: tertiaryDevice.collections.map(c => ({ usagePage: c.usagePage, usage: c.usage }))
+        });
+      }
 
       this.hidDevice = primaryDevice;
       this.hidDeviceName = primaryDevice.productName || this.config.name;
       this.hidConnected = true;
 
       // Only open and listen to the interface specified in the config
+      console.log('[Dashboard] Device opened status before open:', primaryDevice.opened);
       if (!primaryDevice.opened) {
-        await primaryDevice.open();
+        try {
+          await primaryDevice.open();
+          console.log('[Dashboard] Device opened successfully');
+        } catch (error) {
+          console.error('[Dashboard] Failed to open device:', error);
+          this.hidConnected = false;
+          return;
+        }
+      } else {
+        console.log('[Dashboard] Device was already open');
       }
 
       // Set up event listener on the config-specified interface
+      console.log('[Dashboard] Setting up inputreport event listener...');
+
+      // Also listen for errors
+      primaryDevice.addEventListener('error', (event: any) => {
+        console.error('[Dashboard] HID Device Error:', event);
+      });
+
       primaryDevice.addEventListener('inputreport', (event: HIDInputReportEvent) => {
         const dv = event.data;
         const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+        const reportId = event.reportId;
 
-        console.log('[Dashboard] Raw bytes received:', Array.from(bytes));
+        // Track current report ID for mode-specific features (like keyboard mappings)
+        this.currentReportId = reportId;
 
         // Raw bytes are native from WebHID
         this.isRawBytesTranslated = false;
@@ -620,10 +714,79 @@ export class HidDashboard extends LitElement {
         // Process through config mappings using shared processDeviceData
         // Events are translated from raw bytes
         // Use offset -1 for WebHID since browser API strips report ID from packets
-        const processed = processDeviceData(bytes, this.config!.byteCodeMappings, -1);
-        console.log('[Dashboard] Processed data:', processed);
+        // For multi-mode configs, get mappings for the specific report ID
+        let mappings = this.config!.getByteCodeMappings(reportId);
+        let mode = this.config!.modes?.find(m => m.reportId === reportId);
+
+        if (!mappings) {
+          // Try to find the mode that has this as buttonInterfaceReportId
+          mode = this.config!.modes?.find(m => m.buttonInterfaceReportId === reportId);
+          if (mode) {
+            // Use the mode's mappings for button processing
+            mappings = mode.byteCodeMappings;
+          } else {
+            return;
+          }
+        }
+
+        // Pass buttonInterfaceReportId to processDeviceData for proper button handling
+        const processed = processDeviceData(bytes, mappings, -1, {
+          buttonInterfaceReportId: mode?.buttonInterfaceReportId
+        });
         this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
       });
+
+      // Also try opening secondary device (digitizer) if we selected vendor-specific
+      if (secondaryDevice) {
+        try {
+          if (!secondaryDevice.opened) {
+            await secondaryDevice.open();
+          }
+          secondaryDevice.addEventListener('inputreport', (event: HIDInputReportEvent) => {
+            const dv = event.data;
+            const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+            const reportId = event.reportId;
+
+            this.isRawBytesTranslated = false;
+            this._updateRawBytes(bytes, 'webhid');
+
+            const mappings = this.config!.getByteCodeMappings(reportId);
+            if (!mappings) {
+              return;
+            }
+            const processed = processDeviceData(bytes, mappings, -1);
+            this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
+          });
+        } catch (error) {
+          console.warn('[Dashboard] Could not open secondary device:', error);
+        }
+      }
+
+      // Also try opening tertiary device (Device 0 - might have buttons)
+      if (tertiaryDevice) {
+        try {
+          if (!tertiaryDevice.opened) {
+            await tertiaryDevice.open();
+          }
+          tertiaryDevice.addEventListener('inputreport', (event: HIDInputReportEvent) => {
+            const dv = event.data;
+            const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+            const reportId = event.reportId;
+
+            this.isRawBytesTranslated = false;
+            this._updateRawBytes(bytes, 'webhid');
+
+            const mappings = this.config!.getByteCodeMappings(reportId);
+            if (!mappings) {
+              return;
+            }
+            const processed = processDeviceData(bytes, mappings, -1);
+            this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
+          });
+        } catch (error) {
+          console.warn('[Dashboard] Could not open tertiary device:', error);
+        }
+      }
 
     } catch (error) {
       console.error('Failed to connect:', error);
@@ -711,6 +874,103 @@ export class HidDashboard extends LitElement {
     // Only reset data if WebHID was the active source
     if (this.activeSource === 'webhid') {
       this._resetTabletData();
+    }
+  }
+
+  // ================== Keyboard Button Mapping Methods ==================
+
+  private _handleKeyDown(e: KeyboardEvent) {
+    // Don't process if typing in an input field
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    // Track pressed keys
+    this.pressedKeys.add(e.code);
+
+    // Check if this key combination matches any button mapping
+    this._checkButtonMapping();
+  }
+
+  private _handleKeyUp(e: KeyboardEvent) {
+    // Remove from pressed keys
+    this.pressedKeys.delete(e.code);
+
+    // Clear button state when keys are released
+    if (this.pressedKeys.size === 0) {
+      this.pressedButtons = new Set();
+    }
+  }
+
+  private _checkButtonMapping() {
+    if (!this.config) {
+      return;
+    }
+
+    // Get keyboard mappings from current mode or fallback to config-level
+    let keyboardMappings = this.config.keyboardMappings;
+
+    if (this.currentReportId !== null) {
+      const currentMode = this.config.getModeByReportId(this.currentReportId);
+      if (currentMode?.keyboardMappings) {
+        keyboardMappings = currentMode.keyboardMappings;
+      }
+    } else {
+      // If no report ID yet, check all modes for keyboard mappings
+      if (this.config.modes) {
+        for (const mode of this.config.modes) {
+          if (mode.keyboardMappings) {
+            keyboardMappings = mode.keyboardMappings;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!keyboardMappings) {
+      return;
+    }
+
+    // Check each button mapping to see if current pressed keys match
+    for (const mapping of keyboardMappings.buttons) {
+      const requiredKeys = mapping.keys;
+
+      // Check if all required keys are pressed and no extra keys
+      if (requiredKeys.length === this.pressedKeys.size &&
+          requiredKeys.every(key => this.pressedKeys.has(key))) {
+
+        // Trigger button press
+        this.pressedButtons = new Set([mapping.button]);
+
+        // Add to events
+        const event: TabletEvent = {
+          timestamp: Date.now(),
+          x: this.tabletData.x,
+          y: this.tabletData.y,
+          pressure: this.tabletData.pressure,
+          tiltX: this.tabletData.tiltX,
+          tiltY: this.tabletData.tiltY,
+          tiltXY: this.tabletData.tiltXY,
+          primaryButtonPressed: this.tabletData.primaryButtonPressed,
+          secondaryButtonPressed: this.tabletData.secondaryButtonPressed,
+          button1: mapping.button === 1,
+          button2: mapping.button === 2,
+          button3: mapping.button === 3,
+          button4: mapping.button === 4,
+          button5: mapping.button === 5,
+          button6: mapping.button === 6,
+          button7: mapping.button === 7,
+          button8: mapping.button === 8,
+          state: 'buttons'
+        };
+
+        this.tabletEvents = [...this.tabletEvents, event];
+        if (this.tabletEvents.length > 50) {
+          this.tabletEvents = this.tabletEvents.slice(-50);
+        }
+
+        break; // Only match one button at a time
+      }
     }
   }
 
@@ -892,8 +1152,10 @@ export class HidDashboard extends LitElement {
 
     // Process through config mappings to update visualizers
     // Use offset -1 for WebHID since browser API strips report ID from packets
+    // Use getByteCodeMappings() to support both single-mode and multi-mode configs
     if (this.config) {
-      const processed = processDeviceData(bytes, this.config.byteCodeMappings, -1);
+      const mappings = this.config.getByteCodeMappings();
+      const processed = processDeviceData(bytes, mappings, -1);
       this._handleTabletData(processed as TabletDataEvent, 'websocket', true);
     }
   }

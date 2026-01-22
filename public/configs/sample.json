@@ -99,6 +99,43 @@
       "reportId": 7,
       "buttonInterfaceReportId": 6,
       "digitizerUsagePage": 13,
+      "keyboardMappings": {
+        "description": "Keyboard shortcuts for WebHID mode when driver is active (blocks HID button interface)",
+        "buttons": [
+          {
+            "button": 1,
+            "keys": ["KeyB"]
+          },
+          {
+            "button": 2,
+            "keys": ["KeyE"]
+          },
+          {
+            "button": 3,
+            "keys": ["BracketLeft"]
+          },
+          {
+            "button": 4,
+            "keys": ["BracketRight"]
+          },
+          {
+            "button": 5,
+            "keys": ["ControlLeft", "NumpadSubtract"]
+          },
+          {
+            "button": 6,
+            "keys": ["ControlLeft", "NumpadAdd"]
+          },
+          {
+            "button": 7,
+            "keys": ["ControlLeft", "KeyZ"]
+          },
+          {
+            "button": 8,
+            "keys": ["ControlLeft", "ShiftLeft", "KeyZ"]
+          }
+        ]
+      },
       "stylusModeStatusByte": 160,
       "capabilities": {
         "hasButtons": true,

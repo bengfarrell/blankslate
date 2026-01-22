@@ -32,9 +32,8 @@ export class EventStreamer extends TabletReaderBase {
   private lastLiveUpdate = 0;
   private lastDisplayedState: string | null = null;
 
-  // Multi-mode support
-  private currentMode: any = null;
-  private detectedReportId: number | null = null;
+  // Multi-mode support (inherited from base class, but redeclared for clarity)
+  // Note: These are already declared as protected in TabletReaderBase
 
   // Calibration tracking - track actual max values seen vs config
   private observedMaxX = 0;

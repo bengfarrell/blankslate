@@ -50,6 +50,7 @@ export interface ConfigMode {
   buttonInterfaceReportId?: number;
   stylusModeStatusByte?: number;
   excludedUsagePages?: number[];
+  keyboardMappings?: KeyboardMappings;
   capabilities: {
     hasButtons: boolean;
     buttonCount: number;
@@ -129,6 +130,19 @@ export interface ConfigMode {
 }
 
 /**
+ * Keyboard button mapping for WebHID mode when driver is active
+ */
+export interface KeyboardButtonMapping {
+  button: number;
+  keys: string[];
+}
+
+export interface KeyboardMappings {
+  description?: string;
+  buttons: KeyboardButtonMapping[];
+}
+
+/**
  * Type definitions for Config properties
  * Supports both single-mode (legacy) and multi-mode configs
  */
@@ -153,6 +167,9 @@ export interface ConfigData {
 
   // Multi-mode support (new)
   modes?: ConfigMode[];
+
+  // Keyboard mappings for WebHID mode when driver blocks HID button interface
+  keyboardMappings?: KeyboardMappings;
 
   // Single-mode fields (legacy - for backward compatibility)
   reportId?: number;
@@ -201,6 +218,9 @@ export class Config implements ConfigData {
   // Multi-mode support
   modes?: ConfigMode[];
 
+  // Keyboard mappings for WebHID mode
+  keyboardMappings?: KeyboardMappings;
+
   // Single-mode fields (for backward compatibility)
   reportId?: number;
   digitizerUsagePage?: number;
@@ -219,6 +239,7 @@ export class Config implements ConfigData {
     this.productId = data.productId;
     this.deviceInfo = data.deviceInfo;
     this.modes = data.modes;
+    this.keyboardMappings = data.keyboardMappings;
     this.reportId = data.reportId;
     this.digitizerUsagePage = data.digitizerUsagePage;
     this.buttonInterfaceReportId = data.buttonInterfaceReportId;
@@ -256,8 +277,8 @@ export class Config implements ConfigData {
         const mode = this.getModeByReportId(reportId);
         return mode?.byteCodeMappings;
       }
-      // If no reportId specified, return undefined (caller needs to specify which mode)
-      return undefined;
+      // If no reportId specified, return first mode's mappings as default
+      return this.modes?.[0]?.byteCodeMappings;
     }
     return this.byteCodeMappings;
   }
@@ -273,8 +294,8 @@ export class Config implements ConfigData {
         const mode = this.getModeByReportId(reportId);
         return mode?.capabilities;
       }
-      // If no reportId specified, return undefined (caller needs to specify which mode)
-      return undefined;
+      // If no reportId specified, return first mode's capabilities as default
+      return this.modes?.[0]?.capabilities;
     }
     return this.capabilities;
   }
@@ -300,6 +321,7 @@ export class Config implements ConfigData {
       productId: this.productId,
       deviceInfo: this.deviceInfo,
       modes: this.modes,
+      keyboardMappings: this.keyboardMappings,
       reportId: this.reportId,
       digitizerUsagePage: this.digitizerUsagePage,
       buttonInterfaceReportId: this.buttonInterfaceReportId,

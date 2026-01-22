@@ -379,7 +379,7 @@ export abstract class TabletReaderBase {
       // If found by main report ID, this becomes the current mode
       if (mode && this.currentMode === null) {
         this.currentMode = mode;
-        this.detectedReportId = rid;
+        this.detectedReportId = rid ?? null;
         console.log(chalk.green(`\n✓ Detected device mode: `) + chalk.cyan.bold(`Report ID ${rid}`));
         if (mode.capabilities?.resolution) {
           console.log(chalk.cyan(`  Resolution: `) + chalk.white(`${mode.capabilities.resolution.x}x${mode.capabilities.resolution.y}\n`));
