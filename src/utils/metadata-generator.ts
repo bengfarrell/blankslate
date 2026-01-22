@@ -129,7 +129,7 @@ export function detectExcludedUsagePages(
 }
 
 /**
- * Generate complete device configuration from all available data
+ * Generate complete device configuration from all available data in multi-mode format
  */
 export function generateCompleteConfig(
   deviceMetadata: DeviceMetadata,
@@ -177,6 +177,23 @@ export function generateCompleteConfig(
   const usagePage = primaryCollection?.usagePage || 13;
   const usage = primaryCollection?.usage || 2;
 
+  // Build mode configuration
+  const modeConfig: any = {
+    reportId: deviceMetadata.detectedReportId || 0,
+    digitizerUsagePage,
+    capabilities,
+    byteCodeMappings,
+  };
+
+  // Add optional fields to mode
+  if (stylusModeStatusByte !== undefined) {
+    modeConfig.stylusModeStatusByte = stylusModeStatusByte;
+  }
+  if (excludedUsagePages.length > 0) {
+    modeConfig.excludedUsagePages = excludedUsagePages;
+  }
+
+  // Always generate multi-mode format (with single mode in array)
   return {
     name: userMetadata.name,
     manufacturer: userMetadata.manufacturer,
@@ -193,11 +210,6 @@ export function generateCompleteConfig(
       usage: usage,
       interfaces: deviceMetadata.allInterfaces || [],
     },
-    reportId: deviceMetadata.detectedReportId || 0,
-    digitizerUsagePage,
-    ...(stylusModeStatusByte !== undefined && { stylusModeStatusByte }),
-    ...(excludedUsagePages.length > 0 && { excludedUsagePages }),
-    capabilities,
-    byteCodeMappings,
+    modes: [modeConfig],
   };
 }

@@ -119,7 +119,7 @@ describe('Metadata Generator', () => {
   });
 
   describe('generateCompleteConfig', () => {
-    it('should generate complete configuration', () => {
+    it('should generate complete configuration in multi-mode format', () => {
       const deviceMetadata: DeviceMetadata = {
         vendorId: 0x28bd,
         productId: 0x2904,
@@ -155,23 +155,31 @@ describe('Metadata Generator', () => {
 
       const config = generateCompleteConfig(deviceMetadata, userMetadata, byteCodeMappings);
 
+      // Check top-level fields
       expect(config.name).toBe('XP-Pen Deco 640');
       expect(config.manufacturer).toBe('XP-Pen');
       expect(config.vendorId).toBe('0x28bd');
       expect(config.productId).toBe('0x2904');
-      expect(config.reportId).toBe(7);
-      expect(config.digitizerUsagePage).toBe(13);
-      expect(config.stylusModeStatusByte).toBe(160);
-      // When buttons are configured, we don't exclude any usage pages (they may contain button data)
-      expect(config.excludedUsagePages).toBeUndefined();
-      expect(config.capabilities.hasButtons).toBe(true);
-      expect(config.capabilities.buttonCount).toBe(8);
-      expect(config.capabilities.hasPressure).toBe(true);
-      expect(config.capabilities.hasTilt).toBe(false);
       expect(config.deviceInfo.vendor_id).toBe(0x28bd);
       expect(config.deviceInfo.product_id).toBe(0x2904);
       expect(config.deviceInfo.product_string).toBe('Deco 640');
+
+      // Check multi-mode format
+      expect(config.modes).toBeDefined();
+      expect(Array.isArray(config.modes)).toBe(true);
+      expect(config.modes.length).toBe(1);
+
+      // Check mode fields
+      const mode = config.modes[0];
+      expect(mode.reportId).toBe(7);
+      expect(mode.digitizerUsagePage).toBe(13);
+      expect(mode.stylusModeStatusByte).toBe(160);
+      // When buttons are configured, we don't exclude any usage pages (they may contain button data)
+      expect(mode.excludedUsagePages).toBeUndefined();
+      expect(mode.capabilities.hasButtons).toBe(true);
+      expect(mode.capabilities.buttonCount).toBe(8);
+      expect(mode.capabilities.hasPressure).toBe(true);
+      expect(mode.capabilities.hasTilt).toBe(false);
     });
   });
 });
-

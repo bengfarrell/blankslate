@@ -626,7 +626,7 @@ class WalkthroughEngine:
         return None
 
     def _generate_complete_config(self) -> Dict:
-        """Generate the complete device configuration"""
+        """Generate the complete device configuration in multi-mode format"""
         device_info = self.state.device_info
         user_meta = self.state.user_metadata
         byte_mappings = self.state.generated_config
@@ -637,21 +637,8 @@ class WalkthroughEngine:
         # Detect stylus mode status byte
         stylus_mode_status_byte = self._detect_stylus_mode_status_byte()
 
-        config = {
-            'name': user_meta.name,
-            'manufacturer': user_meta.manufacturer,
-            'model': user_meta.model,
-            'description': user_meta.description,
-            'vendorId': f"0x{device_info.vendor_id:04x}",
-            'productId': f"0x{device_info.product_id:04x}",
-            'deviceInfo': {
-                'vendor_id': device_info.vendor_id,
-                'product_id': device_info.product_id,
-                'product_string': device_info.product_string,
-                'usage_page': device_info.usage_page,
-                'usage': device_info.usage,
-                'interfaces': device_info.interfaces
-            },
+        # Build mode configuration
+        mode_config = {
             'reportId': self.detected_report_id if self.detected_report_id is not None else 2,
             'digitizerUsagePage': device_info.usage_page if device_info.usage_page else 13,
             'capabilities': {
@@ -670,9 +657,26 @@ class WalkthroughEngine:
 
         # Add optional stylus mode status byte if detected
         if stylus_mode_status_byte is not None:
-            config['stylusModeStatusByte'] = stylus_mode_status_byte
+            mode_config['stylusModeStatusByte'] = stylus_mode_status_byte
 
-        return config
+        # Always generate multi-mode format (with single mode in array)
+        return {
+            'name': user_meta.name,
+            'manufacturer': user_meta.manufacturer,
+            'model': user_meta.model,
+            'description': user_meta.description,
+            'vendorId': f"0x{device_info.vendor_id:04x}",
+            'productId': f"0x{device_info.product_id:04x}",
+            'deviceInfo': {
+                'vendor_id': device_info.vendor_id,
+                'product_id': device_info.product_id,
+                'product_string': device_info.product_string,
+                'usage_page': device_info.usage_page,
+                'usage': device_info.usage,
+                'interfaces': device_info.interfaces
+            },
+            'modes': [mode_config]
+        }
     
     def get_complete_config(self) -> Optional[Dict]:
         """Get the generated complete configuration"""

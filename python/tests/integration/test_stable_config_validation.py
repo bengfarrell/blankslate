@@ -194,12 +194,22 @@ async def test():
     print("VALIDATION")
     print("=" * 80)
 
+    # Generated config should be in multi-mode format
+    if 'modes' not in generated or len(generated['modes']) == 0:
+        print("\n❌ Generated config is not in multi-mode format!")
+        return 1
+
+    print(f"✅ Config is in multi-mode format with {len(generated['modes'])} mode(s)")
+
+    # Extract first mode for comparison
+    gen_mode = generated['modes'][0]
+
     errors = []
     stable_mappings = stable_config.get('byteCodeMappings', {})
-    gen_mappings = generated.get('byteCodeMappings', {})
+    gen_mappings = gen_mode.get('byteCodeMappings', {})
 
     # Report ID (CRITICAL)
-    gen_report_id = generated.get('reportId')
+    gen_report_id = gen_mode.get('reportId')
     stable_report_id = stable_config.get('reportId')
     if gen_report_id != stable_report_id:
         errors.append(f"reportId: {gen_report_id} != {stable_report_id}")
@@ -211,7 +221,7 @@ async def test():
     print("⚠️  Skipping vendorId, productId, deviceInfo validation (mock device values)")
 
     # Digitizer Usage Page (CRITICAL)
-    gen_digitizer = generated.get('digitizerUsagePage')
+    gen_digitizer = gen_mode.get('digitizerUsagePage')
     stable_digitizer = stable_config.get('digitizerUsagePage')
     if gen_digitizer != stable_digitizer:
         errors.append(f"digitizerUsagePage: {gen_digitizer} != {stable_digitizer}")
@@ -219,7 +229,7 @@ async def test():
         print(f"✅ digitizerUsagePage: {gen_digitizer}")
 
     # Stylus Mode Status Byte (CRITICAL)
-    gen_stylus_byte = generated.get('stylusModeStatusByte')
+    gen_stylus_byte = gen_mode.get('stylusModeStatusByte')
     stable_stylus_byte = stable_config.get('stylusModeStatusByte')
     if gen_stylus_byte != stable_stylus_byte:
         errors.append(f"stylusModeStatusByte: {gen_stylus_byte} != {stable_stylus_byte}")
@@ -227,7 +237,7 @@ async def test():
         print(f"✅ stylusModeStatusByte: {gen_stylus_byte}")
 
     # Capabilities (CRITICAL)
-    gen_caps = generated.get('capabilities', {})
+    gen_caps = gen_mode.get('capabilities', {})
     stable_caps = stable_config.get('capabilities', {})
 
     # Validate all capability fields including button-related ones

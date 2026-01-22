@@ -185,12 +185,22 @@ async def test():
     print("VALIDATION")
     print("=" * 80)
 
+    # Generated config should be in multi-mode format
+    if 'modes' not in generated or len(generated['modes']) == 0:
+        print("\n❌ Generated config is not in multi-mode format!")
+        return 1
+
+    print(f"✅ Config is in multi-mode format with {len(generated['modes'])} mode(s)")
+
+    # Extract first mode for comparison
+    gen_mode = generated['modes'][0]
+
     errors = []
     stable_mappings = stable_config.get('byteCodeMappings', {})
-    gen_mappings = generated.get('byteCodeMappings', {})
+    gen_mappings = gen_mode.get('byteCodeMappings', {})
 
     # Report ID (CRITICAL for driver mode: should be 2)
-    gen_report_id = generated.get('reportId')
+    gen_report_id = gen_mode.get('reportId')
     stable_report_id = stable_config.get('reportId')
     if gen_report_id != stable_report_id:
         errors.append(f"reportId: {gen_report_id} != {stable_report_id}")

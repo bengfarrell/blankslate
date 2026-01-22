@@ -59,8 +59,12 @@ class TestButtonStatusByteHandling:
         engine.generate_config()
         config = engine.get_complete_config()
 
+        # Config should be in multi-mode format
+        assert 'modes' in config, "Config should have 'modes' array"
+        assert len(config['modes']) == 1, "Config should have exactly one mode"
+
         # Assert status byte 1 is in the generated config
-        status_values = config['byteCodeMappings']['status']['values']
+        status_values = config['modes'][0]['byteCodeMappings']['status']['values']
         assert '1' in status_values, "Status byte 1 should be in config"
         assert status_values['1']['state'] == 'buttons'
 
@@ -92,7 +96,7 @@ class TestButtonStatusByteHandling:
         config = engine.get_complete_config()
 
         # CRITICAL ASSERTION: Status byte 240 MUST be in the generated config
-        status_values = config['byteCodeMappings']['status']['values']
+        status_values = config['modes'][0]['byteCodeMappings']['status']['values']
         assert '240' in status_values, (
             "Status byte 240 (driver mode) MUST be in config! "
             "Without this, buttons won't be detected in the viewer when driver is active."
@@ -122,7 +126,7 @@ class TestButtonStatusByteHandling:
         engine.generate_config()
         config = engine.get_complete_config()
 
-        status_values = config['byteCodeMappings']['status']['values']
+        status_values = config['modes'][0]['byteCodeMappings']['status']['values']
 
         # Both driverless and driver mode status bytes should be present
         assert '1' in status_values, "Driverless status byte 1 should be in config"
@@ -180,7 +184,7 @@ class TestButtonStatusByteHandling:
         test_packet = bytes([2, 240, 4, 0, 0, 0, 0, 0, 0, 0])  # Button 3 (bit-flag 4)
 
         # Process the packet using the generated config
-        result = process_device_data(test_packet, config['byteCodeMappings'])
+        result = process_device_data(test_packet, config['modes'][0]['byteCodeMappings'])
 
         # The packet should be recognized as button mode
         assert result.get('state') == 'buttons', (
