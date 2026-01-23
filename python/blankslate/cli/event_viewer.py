@@ -14,6 +14,7 @@ Usage:
 import sys
 import argparse
 import asyncio
+from pathlib import Path
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
@@ -562,20 +563,67 @@ class EventViewer(TabletReaderBase):
         await super().stop()
 
 
+def resolve_config_path(config_arg: str, default_dir: str = None) -> str:
+    """
+    Resolve config path - if it's a directory or has no extension, search for matching config.
+
+    Args:
+        config_arg: Config path argument (file or directory)
+        default_dir: Default directory to use if config_arg has no extension
+
+    Returns:
+        Resolved config file path
+    """
+    import os
+    from pathlib import Path
+    from ..utils import find_config_for_device
+
+    config_path = Path(config_arg)
+
+    # If it's a file with .json extension, use it directly
+    if config_path.suffix == '.json':
+        return str(config_path)
+
+    # If it's a directory or has no extension, treat as directory
+    if config_path.is_dir() or not config_path.suffix:
+        search_dir = str(config_path) if config_path.exists() else config_arg
+
+        # If path doesn't exist and no extension, use default directory
+        if not config_path.exists() and default_dir:
+            search_dir = default_dir
+
+        found_config = find_config_for_device(search_dir)
+        if found_config:
+            return found_config
+        else:
+            raise ValueError(f"No matching config found in directory: {search_dir}")
+
+    # Otherwise treat as file path
+    return str(config_path)
+
+
 def main():
+    # Default config directory (relative to python/ directory)
+    default_config_dir = str(Path(__file__).parent.parent.parent.parent / 'public' / 'configs')
+
     parser = argparse.ArgumentParser(description='Tablet Event Viewer')
-    parser.add_argument('-c', '--config', required=True, help='Path to tablet config JSON file')
+    parser.add_argument('-c', '--config',
+                       default=default_config_dir,
+                       help='Path to tablet config JSON file or directory (default: ../public/configs)')
     parser.add_argument('-m', '--mock', action='store_true', help='Use mock data instead of real device')
     parser.add_argument('-l', '--live', action='store_true', help='Live dashboard mode (updates in place)')
     parser.add_argument('--compact', action='store_true', help='Use compact single-line output')
     parser.add_argument('-r', '--raw', action='store_true', help='Show raw byte data')
-    
+
     args = parser.parse_args()
-    
+
     viewer = None
     try:
+        # Resolve config path (handles directory auto-detection)
+        config_path = resolve_config_path(args.config, default_config_dir)
+
         viewer = EventViewer(
-            args.config,
+            config_path,
             mock=args.mock,
             raw=args.raw,
             compact=args.compact,

@@ -10,8 +10,12 @@
 
 import { program } from 'commander';
 import chalk from 'chalk';
+import * as path from 'path';
 
-import { TabletReaderBase, normalizeTabletEvent } from './tablet-reader-base.js';
+import { TabletReaderBase, normalizeTabletEvent, resolveConfigPath } from './tablet-reader-base.js';
+
+// Default config directory (relative to project root)
+const DEFAULT_CONFIG_DIR = path.resolve(process.cwd(), 'public', 'configs');
 
 interface StreamOptions {
   config: string;
@@ -550,14 +554,17 @@ program
   .name('tablet-events')
   .description('View tablet events in real-time using a config file')
   .version('1.0.0')
-  .requiredOption('-c, --config <path>', 'Path to tablet config JSON file')
+  .option('-c, --config <path>', 'Path to tablet config JSON file or directory', DEFAULT_CONFIG_DIR)
   .option('-m, --mock', 'Use mock data instead of real device')
   .option('-l, --live', 'Live dashboard mode (updates in place)')
   .option('--compact', 'Use compact single-line output')
   .option('-r, --raw', 'Show raw byte data')
   .action(async (options: StreamOptions) => {
     try {
-      const streamer = new EventStreamer(options.config, {
+      // Resolve config path (handles directory auto-detection)
+      const configPath = resolveConfigPath(options.config, DEFAULT_CONFIG_DIR);
+
+      const streamer = new EventStreamer(configPath, {
         mock: options.mock,
         raw: options.raw,
         compact: options.compact,

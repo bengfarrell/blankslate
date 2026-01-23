@@ -13,13 +13,18 @@
 
 import { program } from 'commander';
 import chalk from 'chalk';
+import * as path from 'path';
 import { WebSocketServer, WebSocket } from 'ws';
 
 import {
   TabletReaderBase,
   TabletEventData,
   normalizeTabletEvent,
+  resolveConfigPath,
 } from './tablet-reader-base.js';
+
+// Default config directory (relative to project root)
+const DEFAULT_CONFIG_DIR = path.resolve(process.cwd(), 'public', 'configs');
 
 /**
  * Tablet event structure sent over WebSocket
@@ -252,13 +257,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .name('tablet-websocket')
     .description('Start a WebSocket server that broadcasts tablet events')
     .version('1.0.0')
-    .requiredOption('-c, --config <path>', 'Path to tablet config JSON file')
+    .option('-c, --config <path>', 'Path to tablet config JSON file or directory', DEFAULT_CONFIG_DIR)
     .option('-p, --port <number>', 'WebSocket server port', '8765')
     .option('-m, --mock', 'Use mock data instead of real device')
     .option('-r, --raw', 'Send raw bytes instead of translated events')
     .action(async (options: ServerOptions) => {
       try {
-        const server = new TabletWebSocketServer(options.config, {
+        // Resolve config path (handles directory auto-detection)
+        const configPath = resolveConfigPath(options.config, DEFAULT_CONFIG_DIR);
+
+        const server = new TabletWebSocketServer(configPath, {
           mock: options.mock,
           port: parseInt(String(options.port), 10),
           raw: options.raw,

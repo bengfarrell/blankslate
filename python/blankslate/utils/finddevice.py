@@ -452,3 +452,86 @@ class HotplugMonitor:
             
             # Wait before next check
             time.sleep(self.check_interval)
+
+
+def find_config_for_device(config_dir: str, vendor_id: int = None, product_id: int = None) -> Optional[str]:
+    """
+    Find a config file in a directory that matches the connected device.
+
+    If vendor_id and product_id are provided, searches for a config matching those IDs.
+    If not provided, enumerates connected HID devices and tries to find a matching config.
+
+    Args:
+        config_dir: Directory containing JSON config files
+        vendor_id: Optional vendor ID to match (if None, auto-detects from connected devices)
+        product_id: Optional product ID to match (if None, auto-detects from connected devices)
+
+    Returns:
+        Path to matching config file, or None if not found
+    """
+    import os
+    import json
+    from pathlib import Path
+
+    config_path = Path(config_dir)
+    if not config_path.exists() or not config_path.is_dir():
+        print(f"[FindConfig] Config directory not found: {config_dir}")
+        return None
+
+    # Get list of JSON files in directory
+    json_files = list(config_path.glob('*.json'))
+    if not json_files:
+        print(f"[FindConfig] No JSON files found in: {config_dir}")
+        return None
+
+    # If no device IDs provided, get connected devices
+    if vendor_id is None or product_id is None:
+        try:
+            devices = hid.enumerate()
+            # Filter to likely tablet devices (digitizer usage page or known vendors)
+            tablet_vendors = [0x056a, 0x28bd, 0x256c, 0x2179, 0x5543]  # Wacom, XP-Pen, Huion, Parblo, UC-Logic
+            tablet_devices = [d for d in devices
+                           if d.get('usage_page') == 13 or d.get('vendor_id') in tablet_vendors]
+
+            if not tablet_devices:
+                print("[FindConfig] No tablet devices found")
+                return None
+
+            # Get unique vendor/product pairs
+            device_pairs = set((d['vendor_id'], d['product_id']) for d in tablet_devices)
+            print(f"[FindConfig] Found {len(device_pairs)} potential tablet device(s)")
+        except Exception as e:
+            print(f"[FindConfig] Error enumerating devices: {e}")
+            return None
+    else:
+        device_pairs = {(vendor_id, product_id)}
+
+    # Search config files for matching device
+    for json_file in json_files:
+        try:
+            with open(json_file, 'r') as f:
+                config = json.load(f)
+
+            # Get device info from config
+            device_info = config.get('deviceInfo', {})
+            config_vid = device_info.get('vendor_id')
+            config_pid = device_info.get('product_id')
+
+            if config_vid is None or config_pid is None:
+                continue
+
+            # Check if this config matches any connected device
+            for vid, pid in device_pairs:
+                if config_vid == vid and config_pid == pid:
+                    config_name = config.get('name', json_file.name)
+                    print(f"[FindConfig] ✓ Found matching config: {config_name}")
+                    print(f"[FindConfig]   File: {json_file}")
+                    print(f"[FindConfig]   Device: 0x{vid:04x}:0x{pid:04x}")
+                    return str(json_file)
+
+        except (json.JSONDecodeError, IOError) as e:
+            # Skip invalid JSON files
+            continue
+
+    print(f"[FindConfig] No matching config found for connected device(s)")
+    return None

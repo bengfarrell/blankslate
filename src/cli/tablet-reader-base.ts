@@ -8,6 +8,7 @@
 import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
+import HID from 'node-hid';
 
 import { Config } from '../models/config.js';
 import { processDeviceData } from '../utils/data-helpers.js';
@@ -76,6 +77,126 @@ export function loadConfig(configPath: string): Config {
 
   const configString = fs.readFileSync(fullPath, 'utf-8');
   return Config.fromJSON(configString);
+}
+
+/**
+ * Find a config file in a directory that matches a connected device
+ *
+ * @param configDir Directory containing JSON config files
+ * @returns Path to matching config file, or null if not found
+ */
+export function findConfigForDevice(configDir: string): string | null {
+  const resolvedDir = path.resolve(configDir);
+  if (!fs.existsSync(resolvedDir) || !fs.statSync(resolvedDir).isDirectory()) {
+    console.log(chalk.yellow(`[FindConfig] Config directory not found: ${configDir}`));
+    return null;
+  }
+
+  // Get list of JSON files in directory
+  const jsonFiles = fs.readdirSync(resolvedDir)
+    .filter(f => f.endsWith('.json'))
+    .map(f => path.join(resolvedDir, f));
+
+  if (jsonFiles.length === 0) {
+    console.log(chalk.yellow(`[FindConfig] No JSON files found in: ${configDir}`));
+    return null;
+  }
+
+  // Get connected devices
+  const devices = HID.devices() as Array<{
+    vendorId: number;
+    productId: number;
+    usagePage?: number;
+  }>;
+
+  // Filter to likely tablet devices (digitizer usage page or known vendors)
+  const tabletVendors = [0x056a, 0x28bd, 0x256c, 0x2179, 0x5543]; // Wacom, XP-Pen, Huion, Parblo, UC-Logic
+  const tabletDevices = devices.filter(d =>
+    d.usagePage === 13 || tabletVendors.includes(d.vendorId)
+  );
+
+  if (tabletDevices.length === 0) {
+    console.log(chalk.yellow('[FindConfig] No tablet devices found'));
+    return null;
+  }
+
+  // Get unique vendor/product pairs
+  const devicePairs = new Set(
+    tabletDevices.map(d => `${d.vendorId}:${d.productId}`)
+  );
+  console.log(chalk.gray(`[FindConfig] Found ${devicePairs.size} potential tablet device(s)`));
+
+  // Search config files for matching device
+  for (const jsonFile of jsonFiles) {
+    try {
+      const configString = fs.readFileSync(jsonFile, 'utf-8');
+      const config = JSON.parse(configString);
+
+      // Get device info from config
+      const deviceInfo = config.deviceInfo || {};
+      const configVid = deviceInfo.vendor_id;
+      const configPid = deviceInfo.product_id;
+
+      if (configVid === undefined || configPid === undefined) {
+        continue;
+      }
+
+      // Check if this config matches any connected device
+      const configKey = `${configVid}:${configPid}`;
+      if (devicePairs.has(configKey)) {
+        const configName = config.name || path.basename(jsonFile);
+        console.log(chalk.green(`[FindConfig] ✓ Found matching config: ${configName}`));
+        console.log(chalk.gray(`[FindConfig]   File: ${jsonFile}`));
+        console.log(chalk.gray(`[FindConfig]   Device: 0x${configVid.toString(16)}:0x${configPid.toString(16)}`));
+        return jsonFile;
+      }
+    } catch {
+      // Skip invalid JSON files
+      continue;
+    }
+  }
+
+  console.log(chalk.yellow('[FindConfig] No matching config found for connected device(s)'));
+  return null;
+}
+
+/**
+ * Resolve config path - if it's a directory or has no extension, search for matching config
+ *
+ * @param configArg Config path argument (file or directory)
+ * @param defaultDir Default directory to use if configArg has no extension
+ * @returns Resolved config file path
+ */
+export function resolveConfigPath(configArg: string, defaultDir?: string): string {
+  // If it's a file with .json extension, use it directly
+  if (configArg.endsWith('.json')) {
+    return configArg;
+  }
+
+  const configPath = path.resolve(configArg);
+
+  // If it's a directory or has no extension, treat as directory
+  const isDirectory = fs.existsSync(configPath) && fs.statSync(configPath).isDirectory();
+  const hasNoExtension = !path.extname(configArg);
+
+  if (isDirectory || hasNoExtension) {
+    let searchDir = isDirectory ? configPath : configArg;
+
+    // If path doesn't exist and no extension, use default directory
+    if (!fs.existsSync(configPath) && defaultDir) {
+      searchDir = defaultDir;
+    }
+
+    const foundConfig = findConfigForDevice(searchDir);
+    if (foundConfig) {
+      return foundConfig;
+    } else {
+      throw new Error(`No matching config found in directory: ${searchDir}`);
+    }
+  }
+
+  // Otherwise treat as file path
+  return configArg;
 }
 
 /**
