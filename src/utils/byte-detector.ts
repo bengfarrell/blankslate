@@ -41,16 +41,11 @@ export interface StatusConfig {
 export interface TabletButtonsConfig {
   byteIndex: number[];
   buttonCount: number;
-  type: 'bit-flags' | 'code' | 'keyboard-events';
-  values?: Record<string, { button: number }>;
-  keyMappings?: Record<string, {
-    key: string;
-    code: string;
-    ctrlKey?: boolean;
-    shiftKey?: boolean;
-    altKey?: boolean;
-    metaKey?: boolean;
-  }>;
+  type: 'bit-flags' | 'code';
+  // For type 'code': maps scan code/bitmask value to button info
+  // Can include both HID button number AND keyboard shortcut info (for documentation/UI)
+  // Python/Node readers only use 'button', keyboard info is for WebHID fallback display
+  values?: Record<string, { button?: number; key?: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean }>;
 }
 
 /**
@@ -550,39 +545,19 @@ export function generateDeviceConfig(
     const hasKeyboardMappings = buttonMappings.some(m => m.key !== undefined);
     const hasHIDMappings = buttonMappings.some(m => m.scanCode !== undefined);
 
-    if (hasKeyboardMappings) {
-      // Keyboard event detection (driver active)
-      const keyMappings: Record<string, {
-        key: string;
-        code: string;
-        ctrlKey?: boolean;
-        shiftKey?: boolean;
-        altKey?: boolean;
-        metaKey?: boolean;
-      }> = {};
-
-      for (const mapping of buttonMappings) {
-        if (mapping.key && mapping.code) {
-          keyMappings[String(mapping.buttonNumber)] = {
-            key: mapping.key,
-            code: mapping.code,
-            ctrlKey: mapping.ctrlKey,
-            shiftKey: mapping.shiftKey,
-            altKey: mapping.altKey,
-            metaKey: mapping.metaKey,
-          };
-        }
+    // Build keyboard info lookup by button number (for merging into HID mappings)
+    const keyboardInfoByButton = new Map<number, ButtonMapping>();
+    for (const mapping of buttonMappings) {
+      if (mapping.key !== undefined) {
+        keyboardInfoByButton.set(mapping.buttonNumber, mapping);
       }
+    }
 
-      config.tabletButtons = {
-        byteIndex: [], // Not used for keyboard events
-        buttonCount: buttonMappings.length,
-        type: 'keyboard-events',
-        keyMappings,
-      };
-    } else if (hasHIDMappings) {
-      // HID scan code detection (works for both driver and no-driver mode)
-      const values: Record<string, { button: number }> = {};
+    if (hasHIDMappings) {
+      // HID scan code detection - include keyboard info when available
+      // This creates combined entries like { button: 1, key: "b" } for documentation/UI
+      // Python/Node readers only use 'button', keyboard info is preserved for WebHID fallback
+      const values: Record<string, { button: number; key?: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean }> = {};
       const conflictingButtons: Array<{ scanCode: number; statusByte: number; buttonNumber: number }> = [];
 
       // Check for scan code conflicts and track status byte overrides
@@ -597,10 +572,11 @@ export function generateDeviceConfig(
 
       // Build value mappings - for conflicts, use the lower button number as default
       for (const [scanCode, mappings] of scanCodeGroups) {
+        let buttonNum: number;
         if (mappings.length > 1) {
           // Multiple buttons share this scan code
           const sorted = [...mappings].sort((a, b) => a.buttonNumber - b.buttonNumber);
-          values[String(scanCode)] = { button: sorted[0].buttonNumber };
+          buttonNum = sorted[0].buttonNumber;
 
           // Record conflicts for runtime status byte checking
           for (let i = 1; i < sorted.length; i++) {
@@ -614,8 +590,23 @@ export function generateDeviceConfig(
             }
           }
         } else {
-          values[String(scanCode)] = { button: mappings[0].buttonNumber };
+          buttonNum = mappings[0].buttonNumber;
         }
+
+        // Build entry with button number and optional keyboard info
+        const entry: { button: number; key?: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean } = { button: buttonNum };
+
+        // Merge keyboard info if available for this button
+        const kbInfo = keyboardInfoByButton.get(buttonNum);
+        if (kbInfo?.key) {
+          entry.key = kbInfo.key;
+          if (kbInfo.ctrlKey) entry.ctrl = true;
+          if (kbInfo.shiftKey) entry.shift = true;
+          if (kbInfo.altKey) entry.alt = true;
+          if (kbInfo.metaKey) entry.meta = true;
+        }
+
+        values[String(scanCode)] = entry;
       }
 
       const tabletButtonsConfig: TabletButtonsConfig = {
@@ -635,6 +626,34 @@ export function generateDeviceConfig(
       }
 
       config.tabletButtons = tabletButtonsConfig;
+    } else if (hasKeyboardMappings) {
+      // Keyboard-only detection (driver active, HID button interface blocked)
+      // This is a WebHID-specific fallback - buttons are detected via browser keyboard events
+      // Python/Node don't need this since they can read raw HID in driverless mode
+      // Note: We don't include 'button' field here because there's no HID byte data to decode
+      // The button number is the key in the values object, keyboard info is for documentation only
+      const values: Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean }> = {};
+
+      for (const mapping of buttonMappings) {
+        if (mapping.key) {
+          const entry: { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean } = {
+            key: mapping.key,
+          };
+          if (mapping.ctrlKey) entry.ctrl = true;
+          if (mapping.shiftKey) entry.shift = true;
+          if (mapping.altKey) entry.alt = true;
+          if (mapping.metaKey) entry.meta = true;
+          values[String(mapping.buttonNumber)] = entry;
+        }
+      }
+
+      config.tabletButtons = {
+        // No byteIndex - buttons come via keyboard events, not HID packets
+        byteIndex: [],
+        buttonCount: buttonMappings.length,
+        type: 'code',
+        values,
+      };
     }
   } else if (tabletButtonBytes.length > 0) {
     // Fallback: auto-detected bytes with bit-flags type

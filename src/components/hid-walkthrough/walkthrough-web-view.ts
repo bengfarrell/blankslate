@@ -505,6 +505,14 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
     this.handleGestureComplete();
   }
 
+  private handleForceNext(): void {
+    // Force navigation to next step (workaround for button detection completion)
+    if (this.controller) {
+      this.controller.nextStep();
+      this.requestUpdate();
+    }
+  }
+
   // -------------------- Render Methods --------------------
 
   render() {
@@ -650,14 +658,24 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
             <h4>Detected Buttons:</h4>
             ${this.detectedButtons.map(btn => html`
               <div class="detected-button">
-                ${btn.key ? html`
-                  ✓ Button ${btn.buttonNumber}: ${btn.ctrlKey ? 'Ctrl+' : ''}${btn.shiftKey ? 'Shift+' : ''}${btn.altKey ? 'Alt+' : ''}${btn.metaKey ? 'Meta+' : ''}${btn.key} (${btn.code})
+                ${btn.code ? html`
+                  ✓ Button ${btn.buttonNumber}: ${btn.ctrlKey ? 'Ctrl+' : ''}${btn.shiftKey ? 'Shift+' : ''}${btn.altKey ? 'Alt+' : ''}${btn.metaKey ? 'Meta+' : ''}${btn.code?.split('+').pop()} (${btn.code})
                 ` : html`
                   ✓ Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
                 `}
-                • Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
               </div>
             `)}
+          </div>
+        ` : ''}
+
+        ${this.currentButtonPrompt === null && this.detectedButtons.length > 0 && !this.pendingNavigation ? html`
+          <div style="margin-top: 1rem; padding: 1rem; background: #f0f0f0; border-radius: 4px;">
+            <p style="margin: 0 0 0.5rem 0; color: #666;">
+              ✅ Detection complete! ${this.detectedButtons.length} button(s) detected.
+            </p>
+            <sp-button variant="accent" data-spectrum-pattern="button-accent" @click=${this.handleForceNext} style="margin-top: 0.5rem;">
+              Continue to Next Step →
+            </sp-button>
           </div>
         ` : ''}
       </div>
@@ -774,11 +792,12 @@ export class WalkthroughWebView extends LitElement implements IWalkthroughView {
   }
 
   private renderNavigationButtons() {
-    const hasData = this.captureStatus.packetCount > 0;
+    // Allow next if we have HID packets OR detected buttons (keyboard mode)
+    const hasData = this.captureStatus.packetCount > 0 || this.detectedButtons.length > 0;
     return html`
       <div class="navigation-buttons">
-        <button 
-          class="nav-button primary" 
+        <button
+          class="nav-button primary"
           ?disabled=${!hasData}
           @click=${() => this.handleNavigation('next')}>
           → Next step

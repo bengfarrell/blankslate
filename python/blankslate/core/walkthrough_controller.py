@@ -465,7 +465,7 @@ class WalkthroughController:
             self.engine.set_button_mappings(button_mappings)
 
     async def _detect_single_button(self, button_number: int) -> Optional[DetectedButton]:
-        """Detect a single button press (via HID or keyboard events)"""
+        """Detect a single button press (via HID packets)"""
         if not self.reader:
             return None
 
@@ -483,9 +483,6 @@ class WalkthroughController:
             if finished:
                 return
             finished = True
-            # Don't stop reading here - it causes "cannot join current thread" error
-            # The reader will be stopped after this function returns
-            # self.reader.stop_reading()
 
         def data_handler(data: bytes, report_id: int = None):
             try:
@@ -503,7 +500,7 @@ class WalkthroughController:
                 #         OR X low byte for pen data
 
                 status_byte = data[1]  # Status at index 1
-                
+
                 # CRITICAL: Only process BUTTON mode packets, not pen packets!
                 # Button mode status bytes:
                 #   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
@@ -511,7 +508,7 @@ class WalkthroughController:
                 # Pen mode status bytes: 160-165, 192 (hover, contact, etc.)
                 # If we don't filter, pen X/Y coordinates get misinterpreted as button scan codes
                 BUTTON_MODE_STATUS_BYTES = {0, 1, 3, 6, 240}
-                
+
                 if status_byte not in BUTTON_MODE_STATUS_BYTES:
                     # This is a pen packet, not a button packet - ignore it
                     return
@@ -549,14 +546,9 @@ class WalkthroughController:
                     detected = DetectedButton(
                         button_number=button_number,
                         byte_index=best_status,
-                        bit_position=best_scan_code
+                        bit_position=best_scan_code,
                     )
                     finish()
-
-        # Note: Keyboard detection is not supported in CLI mode
-        # Keyboard events will be echoed to the terminal and interfere with the UI
-        # Users should disable their tablet driver so buttons come through as HID data
-        # (Keyboard detection works in web UI where we can use window.addEventListener)
 
         # Start reading HID data
         self.reader.start_reading(data_handler)

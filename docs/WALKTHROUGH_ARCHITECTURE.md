@@ -211,6 +211,55 @@ processDeviceData(bytes, config.byteCodeMappings, 0);
 
 ---
 
+## Tablet Button Detection
+
+Tablet buttons can be detected in different ways depending on the driver state and platform:
+
+### Detection Methods
+
+| Method | When Used | Config Output |
+|--------|-----------|---------------|
+| **HID Scan Codes** | Driverless mode (all platforms) | `type: "code"` with `{ button: N }` |
+| **HID Bitmask** | Some tablets (driver mode) | `type: "code"` with bitmask values |
+| **Keyboard Events** | WebHID only, driver active | `type: "code"` with `{ button: N, key: "x" }` |
+
+### Keyboard Fallback (WebHID Only)
+
+When the tablet driver is active, it often intercepts the HID button interface and converts button presses to keyboard shortcuts. In this case:
+
+- **WebHID** can capture keyboard events via the browser's `keydown` API alongside HID data
+- **Python/Node.js** only read raw HID packets and cannot capture OS keyboard events
+
+This means WebHID can detect buttons via keyboard events even when the driver blocks HID button data:
+
+```json
+"tabletButtons": {
+  "byteIndex": [],
+  "buttonCount": 8,
+  "type": "code",
+  "values": {
+    "1": { "key": "b", "code": "KeyB" },
+    "2": { "key": "e", "code": "KeyE" }
+  }
+}
+```
+
+**Key points:**
+- When `byteIndex` is empty `[]`, buttons were detected via keyboard events only
+- The `key` and `code` fields match the browser's KeyboardEvent properties
+- Python/Node readers cannot use keyboard-only configs - they require HID scan codes
+
+### Platform Comparison
+
+| Scenario | Python/Node.js | WebHID |
+|----------|----------------|--------|
+| Driverless mode | ✅ Full HID button detection | ✅ Full HID button detection |
+| Driver active | ⚠️ May not see button HID data | ✅ Keyboard fallback available |
+
+**Recommendation:** For best results, generate configs in driverless mode when possible. This ensures HID scan codes are captured, which work across all platforms.
+
+---
+
 ## Key Design Decisions
 
 1. **`WalkthroughEngine` is platform-agnostic** - All step logic, state transitions, and byte analysis happen in shared code
@@ -224,3 +273,5 @@ processDeviceData(bytes, config.byteCodeMappings, 0);
 5. **Mock mode for development** - Both platforms support `--mock` flag for testing without physical hardware
 
 6. **Unified config byte indices** - The `packetIncludesReportId` option ensures all generated configs use consistent indexing (report ID at byte 0) regardless of which platform created them
+
+7. **Combined button + keyboard info** - WebHID configs include both HID button numbers and keyboard shortcut info in the same `tabletButtons.values` entries, allowing Python/Node to use the `button` field while preserving keyboard info for documentation

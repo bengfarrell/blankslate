@@ -134,11 +134,13 @@ export interface ConfigMode {
  */
 export interface KeyboardButtonMapping {
   button: number;
-  keys: string[];
+  usageIds: number[]; // USB HID keyboard usage IDs (e.g., [0xE0, 0x56] for Ctrl+NumpadSubtract)
+  keys: string[]; // JavaScript KeyboardEvent codes for reference (e.g., ["ControlLeft", "NumpadSubtract"])
 }
 
 export interface KeyboardMappings {
   description?: string;
+  note?: string;
   buttons: KeyboardButtonMapping[];
 }
 

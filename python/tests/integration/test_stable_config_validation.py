@@ -22,8 +22,8 @@ from blankslate.mockbytes.tablet_data_generator import TabletDataGenerator, Gene
 from blankslate.cli.cli_walkthrough_view import CLIWalkthroughView
 
 
-# Path to stable config (relative to this file's location)
-STABLE_CONFIG_PATH = Path(__file__).parent.parent.parent.parent / 'public' / 'configs' / 'xp-pen-deco640-osx-python-nodriver.json'
+# Path to stable config (test fixture)
+STABLE_CONFIG_PATH = Path(__file__).parent.parent / 'fixtures' / 'xp-pen-deco640-driverless.json'
 
 
 class SingleReportIDGenerator:

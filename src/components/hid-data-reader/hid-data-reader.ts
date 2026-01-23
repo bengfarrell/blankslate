@@ -485,11 +485,34 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     }
     
     // Store all button mappings in engine for config generation
-    engine.setButtonMappings(this.detectedButtons.map(btn => ({
-      buttonNumber: btn.buttonNumber,
-      statusByte: btn.statusByte,
-      scanCode: btn.scanCode,
-    })));
+    // Include keyboard event properties for driver-mode detection
+    engine.setButtonMappings(this.detectedButtons.map(btn => {
+      // Build the code string for keyboard-detected buttons
+      // Format: "ControlLeft+ShiftLeft+KeyZ" for Ctrl+Shift+Z
+      let code: string | undefined;
+      if (btn.code) {
+        const parts: string[] = [];
+        if (btn.ctrlKey) parts.push('ControlLeft');
+        if (btn.shiftKey) parts.push('ShiftLeft');
+        if (btn.altKey) parts.push('AltLeft');
+        if (btn.metaKey) parts.push('MetaLeft');
+        parts.push(btn.code);
+        code = parts.join('+');
+      }
+
+      return {
+        buttonNumber: btn.buttonNumber,
+        statusByte: btn.statusByte,
+        scanCode: btn.scanCode,
+        // Keyboard event properties (for driver-mode detection)
+        key: btn.key,
+        code,
+        ctrlKey: btn.ctrlKey,
+        shiftKey: btn.shiftKey,
+        altKey: btn.altKey,
+        metaKey: btn.metaKey,
+      };
+    }));
     
     // Show summary and enable navigation
     this.showInfo(`Detected ${this.detectedButtons.length} of ${this.buttonCount} buttons`);
@@ -999,8 +1022,9 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
   private _renderButtonDetectionStep() {
     const info = this.stepInfo!;
-    const hasData = this.captureStatus.packetCount > 0;
-    
+    // Allow navigation if we have HID packets OR detected buttons (keyboard mode)
+    const hasData = this.captureStatus.packetCount > 0 || this.detectedButtons.length > 0;
+
     return html`
       <div class="section walkthrough active">
         <div class="step-header">
@@ -1276,8 +1300,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     });
 
     // Connect mock reader - it will be used when controller starts
-    this.mockReader.startReading((data) => {
-      this._handleDeviceData(-1, data);
+    this.mockReader.startReading((data, reportId) => {
+      this._handleDeviceData(-1, data, reportId);
     });
   }
 
@@ -1359,8 +1383,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
     // Start reading from all devices
     this.webReaders.forEach((reader, index) => {
-      reader.startReading((data) => {
-        this._handleDeviceData(index, data);
+      reader.startReading((data, reportId) => {
+        this._handleDeviceData(index, data, reportId);
       });
     });
 
@@ -1401,7 +1425,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     }
   }
 
-  private _handleDeviceData(deviceIndex: number, data: Uint8Array) {
+  private _handleDeviceData(deviceIndex: number, data: Uint8Array, reportId?: number) {
     const hexString = Array.from(data)
       .map(byte => byte.toString(16).padStart(2, '0').toUpperCase())
       .join(' ');
@@ -1429,7 +1453,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     }
 
     // Feed packet to controller (which feeds to engine)
-    this.controller.processPacket(data);
+    // Pass reportId for accurate report ID detection in generated config
+    this.controller.processPacket(data, reportId);
 
     // Always store latest packet for display
     this.latestDisplayPacket = new Uint8Array(data);

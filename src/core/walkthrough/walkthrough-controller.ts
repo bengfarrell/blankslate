@@ -495,6 +495,8 @@ export class WalkthroughController {
 
   /**
    * Detect a single button press
+   * Listens for HID packets. Keyboard event listening is platform-specific
+   * and should be handled by the view/CLI layer.
    */
   private async detectSingleButton(buttonNumber: number): Promise<DetectedButton | null> {
     if (!this.reader) return null;
@@ -507,17 +509,17 @@ export class WalkthroughController {
       const seenPackets: Array<{ status: number; scanCode: number }> = [];
       const MIN_CONFIRMATIONS = this.options.buttonConfirmations;
 
-      const finish = () => {
+      const finish = (result: DetectedButton | null) => {
         if (finished) return;
         finished = true;
         this.reader!.stopReading();
-        resolve(detected);
+        resolve(result);
       };
 
       // Set up skip handler (view will call this when user wants to skip)
       const skipPromise = this.view.waitForGestureComplete().then(() => {
         if (!detected) {
-          finish();
+          finish(null);
         }
       });
 
@@ -529,7 +531,7 @@ export class WalkthroughController {
         // WebHID (false):  [status, scanCode, ...]
         const statusIndex = this.options.packetIncludesReportId ? 1 : 0;
         const scanCodeIndex = this.options.packetIncludesReportId ? 2 : 1;
-        
+
         const statusByte = data.length > statusIndex ? data[statusIndex] : 0;
         const scanCode = data.length > scanCodeIndex ? data[scanCodeIndex] : 0;
 
@@ -539,7 +541,7 @@ export class WalkthroughController {
         // Skip known pen status bytes (160-165, 192)
         if (statusByte >= 0xA0 && statusByte <= 0xA5) return;
         if (statusByte === 0xC0) return;
-        
+
         // Only process button mode packets:
         //   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
         //   With driver: 240 (0xF0) - bit-flags at byte 1
@@ -577,7 +579,7 @@ export class WalkthroughController {
               statusByte: bestStatus,
               scanCode: bestScanCode,
             };
-            finish();
+            finish(detected);
           }
         }
       };

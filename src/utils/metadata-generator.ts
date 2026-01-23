@@ -1,12 +1,14 @@
 /**
  * Metadata Generation Utilities
- * 
+ *
  * This module contains utilities for generating device configuration metadata
  * from detected byte mappings and WebHID device information.
  */
 
 import type { DeviceByteCodeMappings } from './byte-detector.js';
 import type { ConfigData } from '../models/config.js';
+import type { DetectedButton } from '../core/walkthrough/walkthrough-controller.js';
+import { keyCodeArrayToHidUsages } from './keyboard-hid-codes.js';
 
 export interface DeviceMetadata {
   vendorId?: number;
@@ -15,6 +17,8 @@ export interface DeviceMetadata {
   collections?: Array<{ usagePage: number; usage: number }>;
   allInterfaces?: number[];
   detectedReportId?: number;
+  /** Report ID for button packets (if different from pen data report ID) */
+  detectedButtonReportId?: number;
   /** The usage page of the interface that actually sends pen data */
   dataSourceUsagePage?: number;
 }
@@ -128,13 +132,16 @@ export function detectExcludedUsagePages(
   return allInterfaces.filter(up => up !== digUsagePage);
 }
 
+
+
 /**
  * Generate complete device configuration from all available data in multi-mode format
  */
 export function generateCompleteConfig(
   deviceMetadata: DeviceMetadata,
   userMetadata: UserProvidedMetadata,
-  byteCodeMappings: DeviceByteCodeMappings
+  byteCodeMappings: DeviceByteCodeMappings,
+  detectedButtons?: DetectedButton[]
 ): any {
   const capabilities = inferCapabilities(byteCodeMappings);
   const digitizerUsagePage = detectDigitizerUsagePage(deviceMetadata.collections);
@@ -192,6 +199,15 @@ export function generateCompleteConfig(
   if (excludedUsagePages.length > 0) {
     modeConfig.excludedUsagePages = excludedUsagePages;
   }
+
+  // Add buttonInterfaceReportId if buttons come on a different report ID than pen data
+  if (deviceMetadata.detectedButtonReportId !== undefined &&
+      deviceMetadata.detectedButtonReportId !== deviceMetadata.detectedReportId) {
+    modeConfig.buttonInterfaceReportId = deviceMetadata.detectedButtonReportId;
+  }
+
+  // Note: Keyboard button mappings are now handled in byte-detector.ts
+  // as part of tabletButtons with type: 'keyboard'
 
   // Always generate multi-mode format (with single mode in array)
   return {

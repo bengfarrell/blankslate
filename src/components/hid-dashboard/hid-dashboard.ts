@@ -536,12 +536,6 @@ export class HidDashboard extends LitElement {
       return;
     }
 
-    console.log('[Dashboard] Connecting WebHID with config:', {
-      vendorId: this.config.deviceInfo.vendor_id,
-      productId: this.config.deviceInfo.product_id,
-      usagePage: this.config.deviceInfo.usage_page
-    });
-
     try {
       // Request HID device access
       const requestedDevices = await navigator.hid.requestDevice({
@@ -552,45 +546,18 @@ export class HidDashboard extends LitElement {
       });
 
       if (requestedDevices.length === 0) {
-        console.log('No device selected');
         return;
       }
-
-      console.log('[Dashboard] Requested devices:', requestedDevices.length);
 
       // IMPORTANT: Get ALL authorized devices (like the walkthrough does)
       // The requestDevice picker authorizes access, but we need to get ALL interfaces
       const allDevices = await navigator.hid.getDevices();
-      console.log('[Dashboard] All authorized devices:', allDevices.length);
 
       // Filter to just devices from this tablet (same vendor/product)
       const tabletDevices = allDevices.filter(d =>
         d.vendorId === this.config!.deviceInfo.vendor_id &&
         d.productId === this.config!.deviceInfo.product_id
       );
-
-      console.log('[Dashboard] Tablet devices found:', tabletDevices.length);
-      tabletDevices.forEach((d, i) => {
-        const collections = d.collections.map(c => ({
-          usagePage: c.usagePage,
-          usage: c.usage,
-          usagePageHex: c.usagePage ? '0x' + c.usagePage.toString(16) : 'undefined',
-          usageHex: c.usage ? '0x' + c.usage.toString(16) : 'undefined'
-        }));
-        console.log(`[Dashboard] Device ${i}:`, d.productName, 'opened:', d.opened);
-        console.log(`[Dashboard] Device ${i} collections:`, collections);
-
-        // Also check if this device has vendor-specific interface (0xFF0A = 65290)
-        const hasVendorInterface = d.collections.some(c => c.usagePage === 65290 || (c.usagePage && c.usagePage >= 0xFF00));
-        if (hasVendorInterface) {
-          console.log(`[Dashboard] Device ${i} has VENDOR-SPECIFIC interface!`, collections);
-        }
-
-        // Check if device is already opened by another tab/app
-        if (d.opened) {
-          console.warn(`[Dashboard] Device ${i} is already opened!`);
-        }
-      });
 
       // Find the interface matching the config
       // Priority (matching Node.js logic):
@@ -600,24 +567,16 @@ export class HidDashboard extends LitElement {
       // 4. Standard digitizer (usagePage 13)
       const configUsagePage = this.config.deviceInfo.usage_page;
       const configUsage = this.config.deviceInfo.usage;
-      console.log('[Dashboard] Looking for device with usagePage:', configUsagePage, '(0x' + configUsagePage?.toString(16) + ') usage:', configUsage);
 
       // Check for vendor-specific interface (highest priority on macOS)
       const vendorDevice = tabletDevices.find(d =>
         d.collections.some(c => c.usagePage && c.usagePage >= 0xFF00)
       );
-      if (vendorDevice) {
-        const vendorCollection = vendorDevice.collections.find(c => c.usagePage && c.usagePage >= 0xFF00);
-        console.log('[Dashboard] Found vendor device with usagePage:', vendorCollection?.usagePage, '(0x' + vendorCollection?.usagePage?.toString(16) + ')');
-      }
 
       // Try to match both usagePage and usage from config
       const exactMatch = tabletDevices.find(d =>
         d.collections.some(c => c.usagePage === configUsagePage && c.usage === configUsage)
       );
-      if (exactMatch && !vendorDevice) {
-        console.log('[Dashboard] Found exact match device');
-      }
 
       // Fallback to just usagePage match
       const usagePageMatch = tabletDevices.find(d =>
@@ -638,65 +597,28 @@ export class HidDashboard extends LitElement {
       const tertiaryDevice = device0 && device0 !== primaryDevice && device0 !== secondaryDevice ? device0 : null;
 
       if (!primaryDevice) {
-        console.error('[Dashboard] No suitable device interface found');
+        console.error('No suitable device interface found');
         return;
-      }
-
-      const selectionReason = vendorDevice ? 'vendor-specific interface (0xFF00+)' :
-                              (exactMatch ? 'exact match (usagePage + usage)' :
-                              (usagePageMatch ? 'usagePage match' :
-                              (digitizerDevice ? 'digitizer fallback' : 'first device fallback')));
-      const selectedCollections = primaryDevice.collections.map(c => ({
-        usagePage: c.usagePage,
-        usage: c.usage,
-        usagePageHex: c.usagePage ? '0x' + c.usagePage.toString(16) : 'undefined',
-        usageHex: c.usage ? '0x' + c.usage.toString(16) : 'undefined'
-      }));
-      console.log('[Dashboard] Selected PRIMARY device (' + selectionReason + '):', {
-        productName: primaryDevice.productName,
-        collections: selectedCollections,
-        opened: primaryDevice.opened
-      });
-
-      if (secondaryDevice) {
-        console.log('[Dashboard] Will also open SECONDARY device:', {
-          productName: secondaryDevice.productName,
-          collections: secondaryDevice.collections.map(c => ({ usagePage: c.usagePage, usage: c.usage }))
-        });
-      }
-
-      if (tertiaryDevice) {
-        console.log('[Dashboard] Will also open TERTIARY device:', {
-          productName: tertiaryDevice.productName,
-          collections: tertiaryDevice.collections.map(c => ({ usagePage: c.usagePage, usage: c.usage }))
-        });
       }
 
       this.hidDevice = primaryDevice;
       this.hidDeviceName = primaryDevice.productName || this.config.name;
       this.hidConnected = true;
 
-      // Only open and listen to the interface specified in the config
-      console.log('[Dashboard] Device opened status before open:', primaryDevice.opened);
+      // Open the device if not already open
       if (!primaryDevice.opened) {
         try {
           await primaryDevice.open();
-          console.log('[Dashboard] Device opened successfully');
         } catch (error) {
-          console.error('[Dashboard] Failed to open device:', error);
+          console.error('Failed to open device:', error);
           this.hidConnected = false;
           return;
         }
-      } else {
-        console.log('[Dashboard] Device was already open');
       }
 
-      // Set up event listener on the config-specified interface
-      console.log('[Dashboard] Setting up inputreport event listener...');
-
-      // Also listen for errors
+      // Listen for errors
       primaryDevice.addEventListener('error', (event: any) => {
-        console.error('[Dashboard] HID Device Error:', event);
+        console.error('HID Device Error:', event);
       });
 
       primaryDevice.addEventListener('inputreport', (event: HIDInputReportEvent) => {
@@ -757,8 +679,8 @@ export class HidDashboard extends LitElement {
             const processed = processDeviceData(bytes, mappings, -1);
             this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
           });
-        } catch (error) {
-          console.warn('[Dashboard] Could not open secondary device:', error);
+        } catch {
+          // Could not open secondary device
         }
       }
 
@@ -783,8 +705,8 @@ export class HidDashboard extends LitElement {
             const processed = processDeviceData(bytes, mappings, -1);
             this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
           });
-        } catch (error) {
-          console.warn('[Dashboard] Could not open tertiary device:', error);
+        } catch {
+          // Could not open tertiary device
         }
       }
 
@@ -990,7 +912,6 @@ export class HidDashboard extends LitElement {
       this.websocket.binaryType = 'arraybuffer';
 
       this.websocket.onopen = () => {
-        console.log('[Dashboard] WebSocket connected');
         this.websocketConnected = true;
       };
 
@@ -1000,8 +921,8 @@ export class HidDashboard extends LitElement {
           try {
             const data = JSON.parse(event.data) as WebSocketTabletEvent;
             this._handleWebSocketMessage(data);
-          } catch (error) {
-            console.error('[Dashboard] Failed to parse WebSocket message:', error);
+          } catch {
+            // Failed to parse WebSocket message
           }
         } else if (event.data instanceof Blob) {
           // Handle binary data (raw bytes)
@@ -1017,20 +938,18 @@ export class HidDashboard extends LitElement {
       };
 
       this.websocket.onclose = () => {
-        console.log('[Dashboard] WebSocket disconnected');
         this.websocketConnected = false;
         this.websocketServerInfo = '';
         this.websocket = null;
       };
 
-      this.websocket.onerror = (error) => {
-        console.error('[Dashboard] WebSocket error:', error);
+      this.websocket.onerror = () => {
         this.websocketConnected = false;
         this.websocket = null;
       };
 
-    } catch (error) {
-      console.error('[Dashboard] Failed to connect WebSocket:', error);
+    } catch {
+      // Failed to connect WebSocket
     }
   }
 
@@ -1055,15 +974,11 @@ export class HidDashboard extends LitElement {
       // Detect data format from server
       if (data.dataFormat) {
         this.websocketDataMode = data.dataFormat;
-        console.log('[Dashboard] Connected to:', this.websocketServerInfo, 'Mode:', data.mode, 'Format:', data.dataFormat);
 
         // If raw mode, load the config from server
         if (data.dataFormat === 'raw' && data.fullConfig) {
           this.config = new Config(data.fullConfig);
-          console.log('[Dashboard] Loaded config from server:', this.config.name);
         }
-      } else {
-        console.log('[Dashboard] Connected to:', this.websocketServerInfo, 'Mode:', data.mode);
       }
       return;
     }

@@ -99,9 +99,8 @@ class CaptureStatus:
 class DetectedButton:
     """Information about a detected button"""
     button_number: int
-    byte_index: int
-    bit_position: int
-    key: Optional[str] = None  # For keyboard events (when driver is active)
+    byte_index: int  # Status byte value
+    bit_position: int  # Scan code value
 
 
 @dataclass

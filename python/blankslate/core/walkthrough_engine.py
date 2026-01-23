@@ -522,86 +522,54 @@ class WalkthroughEngine:
         
         # Tablet Buttons
         if self.button_mappings:
-            # Check if we have keyboard mappings or HID scan codes
-            has_keyboard_mappings = any(m.get('key') is not None for m in self.button_mappings)
-            has_hid_mappings = any(m.get('scanCode') is not None for m in self.button_mappings)
+            # HID scan code detection
+            values = {}
 
-            if has_keyboard_mappings:
-                # Keyboard event detection (driver active)
-                key_mappings = {}
-                for mapping in self.button_mappings:
-                    if mapping.get('key') and mapping.get('code'):
-                        button_num = str(mapping['buttonNumber'])
-                        key_mappings[button_num] = {
-                            'key': mapping['key'],
-                            'code': mapping['code']
-                        }
-                        # Add optional modifier keys if present
-                        if mapping.get('ctrlKey'):
-                            key_mappings[button_num]['ctrlKey'] = True
-                        if mapping.get('shiftKey'):
-                            key_mappings[button_num]['shiftKey'] = True
-                        if mapping.get('altKey'):
-                            key_mappings[button_num]['altKey'] = True
-                        if mapping.get('metaKey'):
-                            key_mappings[button_num]['metaKey'] = True
+            # Check for scan code conflicts and track status byte overrides
+            scan_code_groups = {}
+            for mapping in self.button_mappings:
+                scan_code = mapping.get('scanCode')
+                if scan_code is not None:
+                    if scan_code not in scan_code_groups:
+                        scan_code_groups[scan_code] = []
+                    scan_code_groups[scan_code].append(mapping)
 
-                mappings['tabletButtons'] = {
-                    'byteIndex': [],  # Not used for keyboard events
-                    'buttonCount': len(self.button_mappings),
-                    'type': 'keyboard-events',
-                    'keyMappings': key_mappings
-                }
+            # Track conflicting buttons (share same scan code, differentiated by status byte)
+            conflicting_buttons = []
 
-            elif has_hid_mappings:
-                # HID scan code detection (no driver)
-                values = {}
+            # Build value mappings - for conflicts, use the lower button number as default
+            for scan_code, mappings_list in scan_code_groups.items():
+                if len(mappings_list) > 1:
+                    # Multiple buttons share this scan code
+                    # Use the lowest button number as the default mapping
+                    # Store the others as conflicts for status-byte-based override
+                    sorted_mappings = sorted(mappings_list, key=lambda m: m['buttonNumber'])
+                    values[str(scan_code)] = {'button': sorted_mappings[0]['buttonNumber']}
 
-                # Check for scan code conflicts and track status byte overrides
-                scan_code_groups = {}
-                for mapping in self.button_mappings:
-                    scan_code = mapping.get('scanCode')
-                    if scan_code is not None:
-                        if scan_code not in scan_code_groups:
-                            scan_code_groups[scan_code] = []
-                        scan_code_groups[scan_code].append(mapping)
+                    # Record conflicts for runtime status byte checking
+                    for i in range(1, len(sorted_mappings)):
+                        status_byte = sorted_mappings[i].get('statusByte')
+                        if status_byte is not None:
+                            conflicting_buttons.append({
+                                'scanCode': scan_code,
+                                'statusByte': status_byte,
+                                'buttonNumber': sorted_mappings[i]['buttonNumber']
+                            })
+                else:
+                    values[str(scan_code)] = {'button': mappings_list[0]['buttonNumber']}
 
-                # Track conflicting buttons (share same scan code, differentiated by status byte)
-                conflicting_buttons = []
+            tablet_buttons_config = {
+                'byteIndex': [2],  # Button scan codes at byte index 2 (after report ID and status byte)
+                'buttonCount': len(self.button_mappings),
+                'type': 'code',
+                'values': values
+            }
 
-                # Build value mappings - for conflicts, use the lower button number as default
-                for scan_code, mappings_list in scan_code_groups.items():
-                    if len(mappings_list) > 1:
-                        # Multiple buttons share this scan code
-                        # Use the lowest button number as the default mapping
-                        # Store the others as conflicts for status-byte-based override
-                        sorted_mappings = sorted(mappings_list, key=lambda m: m['buttonNumber'])
-                        values[str(scan_code)] = {'button': sorted_mappings[0]['buttonNumber']}
+            # Add conflict overrides if any buttons share scan codes
+            if conflicting_buttons:
+                tablet_buttons_config['statusOverrides'] = conflicting_buttons
 
-                        # Record conflicts for runtime status byte checking
-                        for i in range(1, len(sorted_mappings)):
-                            status_byte = sorted_mappings[i].get('statusByte')
-                            if status_byte is not None:
-                                conflicting_buttons.append({
-                                    'scanCode': scan_code,
-                                    'statusByte': status_byte,
-                                    'buttonNumber': sorted_mappings[i]['buttonNumber']
-                                })
-                    else:
-                        values[str(scan_code)] = {'button': mappings_list[0]['buttonNumber']}
-
-                tablet_buttons_config = {
-                    'byteIndex': [2],  # Button scan codes at byte index 2 (after report ID and status byte)
-                    'buttonCount': len(self.button_mappings),
-                    'type': 'code',
-                    'values': values
-                }
-
-                # Add conflict overrides if any buttons share scan codes
-                if conflicting_buttons:
-                    tablet_buttons_config['statusOverrides'] = conflicting_buttons
-
-                mappings['tabletButtons'] = tablet_buttons_config
+            mappings['tabletButtons'] = tablet_buttons_config
 
         # Fallback: auto-detected button bytes (if no interactive mappings)
         else:

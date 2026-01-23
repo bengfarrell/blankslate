@@ -77,11 +77,15 @@ export class WalkthroughEngine {
   private duplicateCount: number = 0;
   private idlePacketCount: number = 0;
   private buttonMappings: ButtonMapping[] = [];
-  
+
   // Report ID detection (matches Python implementation)
   private detectedReportId: number | undefined = undefined;  // Will be set to first valid report ID seen
   private candidateReportIds: Set<number> = new Set();
   private reportIdLocked: boolean = false;
+
+  // Button interface report ID detection
+  private detectedButtonReportId: number | undefined = undefined;
+  private buttonReportIdCandidates: Set<number> = new Set();
 
   constructor(options: WalkthroughEngineOptions = {}) {
     this.options = {
@@ -194,6 +198,9 @@ export class WalkthroughEngine {
     this.detectedReportId = undefined;
     this.candidateReportIds.clear();
     this.reportIdLocked = false;
+    // Reset button report ID tracking
+    this.detectedButtonReportId = undefined;
+    this.buttonReportIdCandidates.clear();
     this.emit({ type: 'step-changed', step: 'idle' });
   }
 
@@ -258,17 +265,30 @@ export class WalkthroughEngine {
     const statusIndex = this.options.packetIncludesReportId ? 1 : 0;
     const dataStartIndex = this.options.packetIncludesReportId ? 2 : 1;
 
-    // Report ID detection and locking (matches Python implementation)
-    // Only relevant when packets include report ID
-    if (reportId !== undefined && this.options.packetIncludesReportId) {
+    // Report ID detection and locking
+    // Works for both:
+    // - Node.js: reportId embedded in packet (packetIncludesReportId=true)
+    // - WebHID: reportId passed separately via event.reportId (packetIncludesReportId=false)
+    if (reportId !== undefined) {
       // Track all report IDs we see with pen data
       if (packet.length > statusIndex) {
         const statusByte = packet[statusIndex];
         // Pen status bytes: 0xA0-0xA5 (160-165)
         const isPenPacket = statusByte >= 0xA0 && statusByte <= 0xA5;
+        // Button status byte: 0xF0 (240)
+        const isButtonPacket = statusByte === 0xF0;
 
         if (isPenPacket) {
           this.candidateReportIds.add(reportId);
+        }
+
+        // Track button report IDs during button step
+        if (isButtonStep && isButtonPacket) {
+          this.buttonReportIdCandidates.add(reportId);
+          // Lock onto first button report ID we see
+          if (this.detectedButtonReportId === undefined) {
+            this.detectedButtonReportId = reportId;
+          }
         }
       }
 
@@ -687,6 +707,13 @@ export class WalkthroughEngine {
   }
 
   /**
+   * Get the detected button interface report ID
+   */
+  getDetectedButtonReportId(): number | undefined {
+    return this.detectedButtonReportId;
+  }
+
+  /**
    * Set user metadata and complete the walkthrough
    */
   submitMetadata(metadata: UserMetadata): void {
@@ -704,6 +731,8 @@ export class WalkthroughEngine {
         allInterfaces: this.state.deviceInfo.allInterfaces,
         // Use the engine's detected report ID, not deviceInfo which may not have it set
         detectedReportId: this.detectedReportId,
+        // Include button interface report ID if detected (for configs where buttons come on different report ID)
+        detectedButtonReportId: this.detectedButtonReportId,
         dataSourceUsagePage: this.state.deviceInfo.dataSourceUsagePage,
       };
 
@@ -718,7 +747,8 @@ export class WalkthroughEngine {
       this.state.completeConfig = generateCompleteConfig(
         deviceMetadata,
         userProvidedMetadata,
-        this.state.generatedConfig
+        this.state.generatedConfig,
+        this.buttonMappings as any // Cast to DetectedButton[] (compatible interface)
       );
 
       this.state.currentStep = 'complete';
@@ -793,4 +823,3 @@ export class WalkthroughEngine {
     };
   }
 }
-

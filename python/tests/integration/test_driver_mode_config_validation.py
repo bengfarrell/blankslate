@@ -21,8 +21,8 @@ from blankslate.mockbytes.tablet_data_generator import TabletDataGenerator, DRIV
 from blankslate.cli.cli_walkthrough_view import CLIWalkthroughView
 
 
-# Path to stable driver-mode config (relative to this file's location)
-STABLE_CONFIG_PATH = Path(__file__).parent.parent.parent.parent / 'public' / 'configs' / 'xp-pen-deco640-osx-python-driver.json'
+# Path to stable driver-mode config (test fixture)
+STABLE_CONFIG_PATH = Path(__file__).parent.parent / 'fixtures' / 'xp-pen-deco640-driver.json'
 
 
 class SingleReportIDGenerator:
