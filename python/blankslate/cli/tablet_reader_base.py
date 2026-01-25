@@ -171,13 +171,11 @@ class TabletReaderBase(ABC):
         print()
         print(colored('Config: ', Colors.CYAN) + colored(self.config_data.name or 'Unknown', Colors.WHITE))
 
-        # Show multi-mode info
-        if self.config_data.is_multi_mode():
-            print(colored('Config Type: ', Colors.CYAN) + colored('Multi-Mode', Colors.MAGENTA, bold=True))
-            print(colored('Available Modes:', Colors.CYAN))
-            for mode in self.config_data.modes:
-                print(colored(f'  • Report ID {mode.reportId}', Colors.WHITE))
-            print(colored('  (Mode will be auto-detected from first packet)', Colors.GRAY))
+        # Show available modes
+        print(colored('Available Modes:', Colors.CYAN))
+        for mode in self.config_data.modes:
+            print(colored(f'  • Report ID {mode.reportId}', Colors.WHITE))
+        print(colored('  (Mode will be auto-detected from first packet)', Colors.GRAY))
 
         print(colored('Mode: ', Colors.CYAN) +
               (colored('Mock Data', Colors.YELLOW) if self.is_mock_mode else colored('Real Device', Colors.GREEN)))
@@ -242,53 +240,48 @@ class TabletReaderBase(ABC):
     
     def process_packet(self, data: bytes) -> Dict[str, Any]:
         """Process a raw packet through the config mappings"""
-        # Handle multi-mode configs
-        if self.config_data.is_multi_mode():
-            if len(data) == 0:
-                return {}
+        if len(data) == 0:
+            return {}
 
-            report_id = data[0]
+        report_id = data[0]
 
-            # Detect mode from first packet if not already detected
-            if self.current_mode is None:
-                self.detected_report_id = report_id
-                self.current_mode = self.config_data.get_mode_by_report_id(report_id)
+        # Detect mode from first packet if not already detected
+        if self.current_mode is None:
+            self.detected_report_id = report_id
+            self.current_mode = self.config_data.get_mode_by_report_id(report_id)
 
-                if self.current_mode:
-                    print(colored(f'\n✓ Detected device mode: ', Colors.GREEN) +
-                          colored(f'Report ID {report_id}', Colors.CYAN, bold=True))
-                    print(colored(f'  Resolution: ', Colors.CYAN) +
-                          colored(f'{self.current_mode.capabilities.resolution.x}x{self.current_mode.capabilities.resolution.y}', Colors.WHITE))
-                    print()
-                else:
-                    print(colored(f'\n⚠ Warning: Unknown Report ID {report_id}', Colors.YELLOW))
-                    print(colored(f'  Available modes:', Colors.YELLOW))
-                    for mode in self.config_data.modes:
-                        print(colored(f'    - Report ID {mode.reportId}', Colors.YELLOW))
-                    print()
-                    return {}
-
-            # Find the appropriate mode for this packet's Report ID
-            # First try to find by main report ID
-            mode = self.config_data.get_mode_by_report_id(report_id)
-
-            # If not found, check if this is a button interface report ID for any mode
-            if not mode and self.config_data.modes:
-                for m in self.config_data.modes:
-                    if hasattr(m, 'buttonInterfaceReportId') and m.buttonInterfaceReportId == report_id:
-                        mode = m
-                        break
-
-            # Use the found mode's mappings, or current mode as fallback
-            if mode:
-                return process_device_data(data, mode.byteCodeMappings)
-            elif self.current_mode:
-                return process_device_data(data, self.current_mode.byteCodeMappings)
+            if self.current_mode:
+                print(colored(f'\n✓ Detected device mode: ', Colors.GREEN) +
+                      colored(f'Report ID {report_id}', Colors.CYAN, bold=True))
+                print(colored(f'  Resolution: ', Colors.CYAN) +
+                      colored(f'{self.current_mode.capabilities.resolution.x}x{self.current_mode.capabilities.resolution.y}', Colors.WHITE))
+                print()
             else:
+                print(colored(f'\n⚠ Warning: Unknown Report ID {report_id}', Colors.YELLOW))
+                print(colored(f'  Available modes:', Colors.YELLOW))
+                for mode in self.config_data.modes:
+                    print(colored(f'    - Report ID {mode.reportId}', Colors.YELLOW))
+                print()
                 return {}
+
+        # Find the appropriate mode for this packet's Report ID
+        # First try to find by main report ID
+        mode = self.config_data.get_mode_by_report_id(report_id)
+
+        # If not found, check if this is a button interface report ID for any mode
+        if not mode:
+            for m in self.config_data.modes:
+                if hasattr(m, 'buttonInterfaceReportId') and m.buttonInterfaceReportId == report_id:
+                    mode = m
+                    break
+
+        # Use the found mode's mappings, or current mode as fallback
+        if mode:
+            return process_device_data(data, mode.byteCodeMappings)
+        elif self.current_mode:
+            return process_device_data(data, self.current_mode.byteCodeMappings)
         else:
-            # Single-mode config (legacy)
-            return process_device_data(data, self.config_data.byteCodeMappings)
+            return {}
     
     @abstractmethod
     def handle_packet(self, data: bytes):

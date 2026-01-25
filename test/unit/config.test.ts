@@ -19,43 +19,47 @@ describe('Config Utilities', () => {
       usage: 2,
       interfaces: [0],
     },
-    reportId: 1,
-    digitizerUsagePage: 13,
-    capabilities: {
-      hasButtons: true,
-      buttonCount: 8,
-      hasPressure: true,
-      pressureLevels: 8191,
-      hasTilt: true,
-      resolution: {
-        x: 32768,
-        y: 32768,
-      },
-    },
-    byteCodeMappings: {
-      status: {
-        byteIndex: [0],
-        type: MappingType.CODE,
-        values: {
-          '160': { state: 'stylus' },
+    modes: [
+      {
+        reportId: 1,
+        digitizerUsagePage: 13,
+        capabilities: {
+          hasButtons: true,
+          buttonCount: 8,
+          hasPressure: true,
+          pressureLevels: 8191,
+          hasTilt: true,
+          resolution: {
+            x: 32768,
+            y: 32768,
+          },
         },
-      },
-      x: {
-        byteIndex: [1, 2],
-        max: 65535,
-        type: MappingType.MULTI_BYTE_RANGE,
-      },
-      y: {
-        byteIndex: [3, 4],
-        max: 65535,
-        type: MappingType.MULTI_BYTE_RANGE,
-      },
-      pressure: {
-        byteIndex: [5, 6],
-        max: 8191,
-        type: MappingType.MULTI_BYTE_RANGE,
-      },
-    },
+        byteCodeMappings: {
+          status: {
+            byteIndex: [0],
+            type: MappingType.CODE,
+            values: {
+              '160': { state: 'stylus' },
+            },
+          },
+          x: {
+            byteIndex: [1, 2],
+            max: 65535,
+            type: MappingType.MULTI_BYTE_RANGE,
+          },
+          y: {
+            byteIndex: [3, 4],
+            max: 65535,
+            type: MappingType.MULTI_BYTE_RANGE,
+          },
+          pressure: {
+            byteIndex: [5, 6],
+            max: 8191,
+            type: MappingType.MULTI_BYTE_RANGE,
+          },
+        },
+      }
+    ],
   };
   
   let mockConfig: Config;
@@ -92,7 +96,7 @@ describe('Config Utilities', () => {
       expect(result).toBeInstanceOf(Config);
       expect(result.name).toBe(mockConfig.name);
       expect(result.vendorId).toBe(mockConfig.vendorId);
-      expect(result.byteCodeMappings).toEqual(mockConfig.byteCodeMappings);
+      expect(result.getByteCodeMappings()).toEqual(mockConfig.getByteCodeMappings());
     });
 
     it('should throw error for invalid JSON', () => {
@@ -111,8 +115,7 @@ describe('Config Utilities', () => {
     it('should validate all required fields', () => {
       const requiredFields = [
         'name', 'manufacturer', 'model', 'description',
-        'vendorId', 'productId', 'deviceInfo', 'reportId',
-        'digitizerUsagePage', 'capabilities', 'byteCodeMappings'
+        'vendorId', 'productId', 'deviceInfo', 'modes'
       ];
 
       requiredFields.forEach(field => {
@@ -139,7 +142,7 @@ describe('Config Utilities', () => {
       expect(parsed).toBeInstanceOf(Config);
       expect(parsed.name).toBe(mockConfig.name);
       expect(parsed.vendorId).toBe(mockConfig.vendorId);
-      expect(parsed.byteCodeMappings).toEqual(mockConfig.byteCodeMappings);
+      expect(parsed.getByteCodeMappings()).toEqual(mockConfig.getByteCodeMappings());
     });
 
     it('should maintain data integrity through toJSON (pretty) -> fromJSON', () => {
@@ -147,7 +150,7 @@ describe('Config Utilities', () => {
       const parsed = Config.fromJSON(jsonString);
       expect(parsed).toBeInstanceOf(Config);
       expect(parsed.name).toBe(mockConfig.name);
-      expect(parsed.byteCodeMappings).toEqual(mockConfig.byteCodeMappings);
+      expect(parsed.getByteCodeMappings()).toEqual(mockConfig.getByteCodeMappings());
     });
   });
 
@@ -156,10 +159,10 @@ describe('Config Utilities', () => {
       // Load the fixture file
       const fixturePath = join(__dirname, '..', 'fixtures', 'test-tablet-config.json');
       const fixtureContent = readFileSync(fixturePath, 'utf-8');
-      
+
       // Parse it using Config.fromJSON
       const config = Config.fromJSON(fixtureContent);
-      
+
       // Validate the parsed config
       expect(config).toBeInstanceOf(Config);
       expect(config.name).toBe('Test Tablet');
@@ -167,38 +170,38 @@ describe('Config Utilities', () => {
       expect(config.model).toBe('Test Model');
       expect(config.vendorId).toBe('0x1234');
       expect(config.productId).toBe('0x5678');
-      expect(config.reportId).toBe(1);
-      expect(config.capabilities.hasPressure).toBe(true);
-      expect(config.capabilities.pressureLevels).toBe(8191);
-      expect(config.byteCodeMappings).toHaveProperty('x');
-      expect(config.byteCodeMappings).toHaveProperty('y');
-      expect(config.byteCodeMappings).toHaveProperty('pressure');
+      expect(config.modes[0].reportId).toBe(1);
+      expect(config.getCapabilities()?.hasPressure).toBe(true);
+      expect(config.getCapabilities()?.pressureLevels).toBe(8191);
+      expect(config.getByteCodeMappings()).toHaveProperty('x');
+      expect(config.getByteCodeMappings()).toHaveProperty('y');
+      expect(config.getByteCodeMappings()).toHaveProperty('pressure');
     });
 
     it('should round-trip the fixture file through toJSON/fromJSON', () => {
       // Load the fixture file
       const fixturePath = join(__dirname, '..', 'fixtures', 'test-tablet-config.json');
       const fixtureContent = readFileSync(fixturePath, 'utf-8');
-      
+
       // Parse, serialize, and parse again
       const config1 = Config.fromJSON(fixtureContent);
       const serialized = config1.toJSON();
       const config2 = Config.fromJSON(serialized);
-      
+
       // Should have identical properties
       expect(config2.name).toBe(config1.name);
-      expect(config2.byteCodeMappings).toEqual(config1.byteCodeMappings);
+      expect(config2.getByteCodeMappings()).toEqual(config1.getByteCodeMappings());
     });
 
     it('should validate the fixture file structure', () => {
       const fixturePath = join(__dirname, '..', 'fixtures', 'test-tablet-config.json');
       const fixtureContent = readFileSync(fixturePath, 'utf-8');
-      
+
       // Should not throw an error
       expect(() => Config.fromJSON(fixtureContent)).not.toThrow();
-      
+
       const config = Config.fromJSON(fixtureContent);
-      
+
       // Check all required fields exist
       expect(config).toHaveProperty('name');
       expect(config).toHaveProperty('manufacturer');
@@ -207,10 +210,11 @@ describe('Config Utilities', () => {
       expect(config).toHaveProperty('vendorId');
       expect(config).toHaveProperty('productId');
       expect(config).toHaveProperty('deviceInfo');
-      expect(config).toHaveProperty('reportId');
-      expect(config).toHaveProperty('digitizerUsagePage');
-      expect(config).toHaveProperty('capabilities');
-      expect(config).toHaveProperty('byteCodeMappings');
+      expect(config).toHaveProperty('modes');
+      expect(config.modes.length).toBeGreaterThan(0);
+      expect(config.modes[0]).toHaveProperty('reportId');
+      expect(config.modes[0]).toHaveProperty('capabilities');
+      expect(config.modes[0]).toHaveProperty('byteCodeMappings');
     });
   });
 });

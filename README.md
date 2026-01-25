@@ -1,361 +1,130 @@
-# The Learning Tablet
+# Blankslate
 
-A comprehensive toolkit for reading and processing HID data from graphics tablets, available in both **TypeScript/Node.js** and **Python**.
+Hi, welcome to Blankslate! Much of this project and documentation were done with AI coding tools, but I wanted to
+write this introduction myself.
 
-## 📦 Packages
+Blankslate is the second iteration of a project I was working on. The human interface device part of that project became
+a little to big and confusing, so I broke it out into this project.
 
-This repository contains two implementations:
+I started with a $30 drawing tablet ([the XPPen Deco 640](https://www.amazon.com/Deco-640-Sensitivity-Battery-Free-Designing/dp/B0D6XZF9N4)) with the goal to
+use like a musical instrument - specifically to strum a guitar like the [Suzuki Omnichord](https://www.suzuki-music.co.jp/special/omnichord_om-108/en/).
 
-- **[TypeScript/Node.js Package](#nodejs--typescript)** - Web components, CLI tools, and library for Node.js
-- **[Python Package](#python)** - CLI tools and library for Python
+Choosing to use a drawing tablet not as a drawing tablet requires reading and interpreting those low level bytes.
+I only have this one drawing tablet right now, and if I plan to share what I've done, other drawing tablets need to work.
 
-Both packages share the same core functionality and configuration format.
+Unfortunately, it's looking like reading those bytes across tablets will all be different. So in addition to reading a data stream and translating to tablet events,
+this project also features a way to generate JSON configuration files that can be used to interpret the raw data into tablet events.
 
-## 📚 Documentation
+Will this work for your tablet? I don't know! I've just done the one so far.
 
-All documentation is organized in the [`projectdocs/`](./projectdocs) folder:
+Blankslate has support for Node.js, Python and Web. Node.js and Python are low level enough that things work pretty well.
+Web is based on Chrome's experimental [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API). There are some restrictions here.
+For one, the tablet has some "hot shortcut" keys. The keys are buttons that a user would tap to perform some kind of action. Node.js and Python can easily
+read these with the HID interface. I'm seeing that WebHID cannot without the driver app installed/running. Instead, they come in as keyboard events only.
 
-- **[Quick Start Guide](./projectdocs/QUICKSTART.md)** - Get up and running in minutes
-- **[Python Setup Guide](./projectdocs/PYTHON_SETUP.md)** - Complete Python development setup with venv
-- **[Test Coverage](./projectdocs/TEST_COVERAGE.md)** - Comprehensive testing documentation
-- **[Component Organization](./projectdocs/COMPONENT_ORGANIZATION.md)** - Architecture and structure guide
-- **[Project Structure](./projectdocs/PROJECT_STRUCTURE.md)** - Complete directory organization
-- **[Dependencies](./projectdocs/DEPENDENCIES.md)** - Dependency guide and management
+This project supports learning and viewing these buttons as keyboard events for when the driver is not loaded.
 
-→ **[View all documentation](./projectdocs/README.md)**
+It's a quirk, but one that we work around.
 
-## 🚀 Features
+## Tablet Modes
 
-### Core Features (Both Packages)
-- **HID Data Processing** - Parse and interpret raw HID bytes from graphics tablets
-- **Byte Detection** - Automatic detection of byte mappings for coordinates, pressure, tilt, and buttons
-- **Device Configuration** - JSON-based configuration format for tablet devices
-- **Mock Data Generators** - Test without physical hardware
-- **CLI Tools** - Command-line utilities for device configuration and event monitoring
+For the most part, the same tablet will require the same configuration regardless of how you run it. The bytes will
+be interpreted largely the same. When having the tablet's driver app loaded, the tablet could actually send data through
+another interface. We can see this with different ReportIDs.
 
-### TypeScript/Node.js Specific
-- **LitElement Web Components** - Modern, lightweight web components
-- **WebHID Integration** - Direct browser access to graphics tablets
-- **Interactive Walkthrough** - Guided configuration wizard in the browser
-- **WebSocket Server** - Broadcast tablet events over WebSocket
+Each configuration file can have multiple modes. Each mode supports reading the different interfaces.
 
-### Python Specific
-- **hidapi Integration** - Cross-platform HID device access
-- **Async WebSocket Server** - Real-time event broadcasting
-- **Simple CLI Tools** - Easy-to-use command-line interface
+Realistically, when generating a configuration file, you can't have both modes active simultaneously.
+So only one mode will be added to your configuration file. Running the configuration utility in a different mode (with the driver or not)
+will generate a new configuration file. You can manually drop the new mode into an existing file.
 
----
+The viewer will see which report ID is being used when connecting and choose the right mode from this array and properly read the tablet event stream.
 
-# Node.js / TypeScript
+## Mouse control
 
-## 📋 Prerequisites
+Both Node and Python are low level enough that when they connect to the tablet, they get exclusive control.
+This means your OS won't control the mouse anymore. This is what I want from this project, otherwise, we could
+just use the tablet as a mouse and Blankslate wouldn't even be necessary.
 
+WebHID however, when doing this in a browser only, cannot get exclusive control. This means that while your tablet
+is sending events, you'll also be controlling the mouse. At least on OSX, this seems too low level to turn this off in the
+OS level settings. Maybe this is better on Windows or Linux.
+
+There is one workaround, and it's a hack. That is, to start the XPPen driver tablet app. This gives the app mouse control, but then when quitting
+this driver app, the tablet will still have the mouse being read in this mode. However, without the driver app to intercept,
+your mouse no longer moves.
+
+
+## Summary
+
+To sum up, Blankslate is a utility to read raw byte data from a HID (human interface device) drawing tablet
+and translate those events into what the user is actually doing. We can see horizontal and vertical coordinates, pressure,
+tilt, and button presses (both hotkeys and stylus buttons).
+
+Blankslate also provides a way to generate JSON configuration files to interpret those raw bytes.
+Again, it's only tested on a single tablet, so there will likely be some work to get other tablets working. But for now it's a start!
+
+
+### Key Features
+
+- **Cross-Platform**: Works on macOS, Linux, and Windows
+- **Multi-Runtime**: Node.js CLI, Python CLI, and WebHID browser app
+- **Configuration Generator**: Interactive walkthrough to create configs for any tablet
+- **Real-Time Viewer**: Visualize tablet data as you draw
+- **WebSocket Server**: Stream tablet events to any application
+- **Driver-Independent**: Works with or without manufacturer drivers installed
+
+## Quick Example
+
+With a configuration file, reading tablet data is straightforward:
+
+**Node.js:**
+```bash
+# View live tablet events
+npx tsx src/cli/event-viewer.ts -c config.json --live
+```
+
+**Python:**
+```bash
+# View live tablet events
+tablet-events -c config.json --live
+```
+
+**Web:**
+Open the web app, connect your tablet via WebHID, and see real-time visualization of pen position, pressure, and tilt.
+
+## Use Cases
+
+- **Custom Applications**: Build drawing apps, music controllers, or accessibility tools
+- **Tablet Testing**: Verify tablet functionality and calibration
+- **Driver Development**: Understand HID protocols for new tablet support
+- **Cross-Platform Tools**: Create apps that work identically across platforms
+
+## System Requirements
+
+### Node.js
 - Node.js 18+ and npm
-- A Chromium-based browser (Chrome, Edge, etc.) for WebHID support
+- Works on macOS, Linux, Windows
 
-## 🛠️ Installation
+### Python
+- Python 3.8+
+- hidapi library (installed automatically)
 
-```bash
-npm install blankslate
-```
+### Web
+- Chromium-based browser (Chrome, Edge, Brave) for WebHID support
+- Firefox and Safari do not support WebHID
 
-Or for development:
-
-```bash
-git clone https://github.com/bengfarrell/blankslate.git
-cd blankslate
-npm install
-```
-
-## 📚 Usage
-
-### As a Library
-
-```typescript
-import { Config, analyzeBytes, calculateMultiByteMax } from 'blankslate';
-
-// Load configuration
-const config = await Config.load('path/to/config.json');
-
-// Analyze HID packets
-const packets: Uint8Array[] = [/* captured packets */];
-const analysis = analyzeBytes(packets);
-
-// Find coordinate bytes
-const xBytes = getBestGuessBytesByVariance(analysis, 2);
-const xMax = calculateMultiByteMax(xBytes.map(b => b.byteIndex), packets);
-```
-
-### Web Components
-
-```typescript
-import 'blankslate/components';
-
-// Use in HTML
-<hid-app></hid-app>
-<tablet-visualizer></tablet-visualizer>
-```
-
-### CLI Tools
-
-```bash
-# Generate device configuration
-npx tablet-config
-
-# View tablet events
-npx tablet-events -c config.json --live
-
-# Start WebSocket server
-npx tablet-websocket -c config.json --port 8765
-```
-
-## 🏃 Development
-
-Start the development server with hot module replacement:
-
-```bash
-npm run dev
-```
-
-The app will open at `http://localhost:3000`
-
-## 🧪 Testing
-
-### Unit Tests (Vitest)
-
-Run unit tests for the tablet services:
-
-```bash
-npm test                # Run tests in watch mode
-npm run test:ui         # Run with Vitest UI
-npm run test:coverage   # Generate coverage report
-```
-
-### Integration Tests (Playwright)
-
-Run end-to-end tests for the UI components:
-
-```bash
-npm run test:integration        # Run integration tests
-npm run test:integration:ui     # Run with Playwright UI
-```
-
-Install Playwright browsers (first time only):
-
-```bash
-npx playwright install
-```
-
-## 🏗️ Building
-
-Build the project for production:
-
-```bash
-npm run build
-```
-
-Preview the production build:
-
-```bash
-npm run preview
-```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 blankslate/
-├── src/
-│   ├── components/           # LitElement web components
-│   │   ├── hid-data-reader/  # Main HID data reader component
-│   │   ├── bytes-display/    # Byte visualization component
-│   │   ├── drawing-canvas/   # Interactive drawing canvas
-│   │   └── ...               # Other UI components
-│   ├── utils/                # Utility modules
-│   │   ├── finddevice.ts     # HID device discovery
-│   │   ├── hid-reader.ts     # HID data reading
-│   │   ├── data-helpers.ts   # Data parsing utilities
-│   │   └── byte-detector.ts  # Byte analysis for config detection
-│   ├── models/               # Data models
-│   │   └── config.ts         # Tablet configuration model
-│   ├── mockbytes/            # Mock tablet simulation
-│   └── index.ts              # Public API exports
-├── test/
-│   ├── unit/                 # Vitest unit tests
-│   ├── integration/          # Playwright integration tests
-│   └── setup.ts              # Test setup configuration
-├── index.html                # App entry point
-├── vite.config.ts            # Vite configuration
-├── playwright.config.ts      # Playwright configuration
-└── tsconfig.json             # TypeScript configuration
+├── src/                    # TypeScript source (Node.js + Web)
+│   ├── cli/                # CLI tools
+│   ├── components/         # Web components (LitElement)
+│   ├── core/               # Shared walkthrough engine
+│   └── utils/              # Data processing utilities
+├── python/                 # Python implementation
+│   └── blankslate/         # Python package
+├── public/configs/         # Sample tablet configurations
+└── docs/                   # This documentation
 ```
-
-## 🎨 Components
-
-### `<hid-data-reader>`
-Main application component that provides an interactive walkthrough for configuring tablet devices. Guides users through detecting byte mappings for coordinates, pressure, tilt, and buttons.
-
-### `<bytes-display>`
-Visualizes raw HID byte data with real-time analysis and labeling of detected byte functions.
-
-### `<drawing-canvas>`
-Interactive canvas for drawing with mouse or tablet input.
-
-## 🧩 Core Services
-
-### HIDReader
-Handles reading data from HID devices and processing raw data according to configuration mappings.
-
-### DeviceFinder
-Manages device discovery, enumeration, and connection via WebHID API.
-
-### Config
-Tablet configuration model with serialization/deserialization for loading and saving device configurations.
-
-## 📝 Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm test` - Run unit tests (watch mode)
-- `npm run test:coverage` - Run tests with coverage
-- `npm run test:integration` - Run Playwright integration tests
-- `npm run lint` - Lint TypeScript files
-- `npm run format` - Format code with Prettier
-
-## 🌐 Browser Support
-
-This application requires WebHID API support, which is available in:
-- Chrome/Edge 89+
-- Opera 75+
-
-WebHID is **not** currently supported in Firefox or Safari.
-
----
-
-# Python
-
-## 📋 Prerequisites
-
-- Python 3.8+
-- pip
-
-## 🛠️ Quick Setup
-
-**For complete setup instructions, see [Python Setup Guide](./projectdocs/PYTHON_SETUP.md)**
-
-### Quick Start
-
-```bash
-# Navigate to Python directory
-cd python
-
-# Run setup script (creates venv and installs everything)
-./setup_venv.sh
-
-# Or manually:
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e ".[dev,websocket,keyboard]"
-```
-
-### Verify Installation
-
-```bash
-# Test CLI tools
-tablet-config --help
-tablet-events --help
-
-# Run tests
-pytest
-```
-
-## 📚 Usage
-
-### As a Library
-
-```python
-from blankslate import Config, HIDReader, find_and_open_device
-
-# Load configuration
-config = Config.load('path/to/config.json')
-
-# Find and open device
-device = find_and_open_device(config.deviceInfo)
-
-# Create reader with callback
-def on_tablet_data(data):
-    print(f"X: {data.get('x'):.3f}, Y: {data.get('y'):.3f}")
-    print(f"Pressure: {data.get('pressure'):.3f}")
-
-reader = HIDReader(device, config, on_tablet_data)
-
-# Start reading
-try:
-    reader.start_reading()
-except KeyboardInterrupt:
-    reader.stop()
-    reader.close()
-```
-
-### CLI Tools
-
-#### Configuration Generator
-```bash
-tablet-config
-tablet-config --output my-config.json
-```
-
-#### Event Viewer
-```bash
-# Live dashboard mode
-tablet-events -c config.json --live
-
-# Compact mode
-tablet-events -c config.json --compact
-```
-
-#### WebSocket Server
-```bash
-tablet-websocket -c config.json
-tablet-websocket -c config.json --port 8765
-```
-
-## 🧪 Testing (Python)
-
-```bash
-cd python
-pip install -e ".[dev]"
-pytest
-```
-
-## 📁 Python Package Structure
-
-```
-python/
-├── pyproject.toml              # Modern Python packaging
-├── blankslate/
-│   ├── __init__.py            # Main package exports
-│   ├── core/                  # Core functionality
-│   │   ├── data_helpers.py    # Data parsing functions
-│   │   ├── hid_reader.py      # HID data reader
-│   │   └── byte_detector.py   # Byte detection utilities
-│   ├── models/                # Data models
-│   │   └── config.py          # Configuration model
-│   ├── utils/                 # Utilities
-│   │   ├── finddevice.py      # Device discovery
-│   │   └── websocket_server.py # WebSocket server
-│   └── cli/                   # CLI tools
-│       ├── config_generator.py
-│       ├── event_viewer.py
-│       └── websocket_server.py
-```
-
----
-
-## 📄 License
-
-MIT
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.

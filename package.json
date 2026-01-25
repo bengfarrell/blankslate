@@ -99,7 +99,10 @@
     "test:spectrumizer:ci": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts --reporter=line",
     "test:spectrumizer:ui": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts --ui",
     "test:spectrumizer:headed": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts --headed",
-    "test:spectrumizer:debug": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts --debug"
+    "test:spectrumizer:debug": "APP_ROOT_COMPONENT=hid-app playwright test --config=playwright.spectrumizer.config.ts --debug",
+    "docs:build": "eleventy --config=eleventy.config.mjs",
+    "docs:serve": "eleventy --config=eleventy.config.mjs --serve",
+    "docs:watch": "eleventy --config=eleventy.config.mjs --watch"
   },
   "repository": {
     "type": "git",
@@ -116,6 +119,8 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.2",
     "@playwright/test": "^1.45.0",
     "@testing-library/jest-dom": "^6.4.6",
     "@types/inquirer": "^9.0.7",
@@ -130,6 +135,7 @@
     "gh-pages": "^6.1.1",
     "happy-dom": "^14.12.3",
     "jsdom": "^24.1.0",
+    "markdown-it-anchor": "^9.2.0",
     "prettier": "^3.3.2",
     "tsx": "^4.7.1",
     "typescript": "~5.5.3",
