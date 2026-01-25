@@ -1,0 +1,50 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="canonical" href="{{ page.url }}" />
+    <meta property="og:site_name" content="Blankslate" />
+    <meta property="og:title" content="Blankslate: {{ title }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{ page.url }}" />
+
+    <title>Blankslate: {{ title }}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{{ page.url | resolvePath('/docs.css') }}" />
+    <link rel="stylesheet" href="{{ page.url | resolvePath('/prism-okaidia.css') }}" />
+    <link rel="preload" href="{{ page.url | resolvePath('/docs.css') }}" as="style" />
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"/>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"/>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="{{ page.url | resolvePath('/img/github-logo.svg') }}" alt="Github Logo" /></a>
+    </div>
+</header>

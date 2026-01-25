@@ -1,0 +1,69 @@
+{% set aboutNav = [
+    { url: '/', label: 'Introduction' },
+    { url: '/about/getting-started/', label: 'Getting Started' }
+] %}
+
+{% set cliNav = [
+    { url: '/about/cli-overview/', label: 'Overview' },
+    { url: '/about/cli-node/', label: 'Node.js CLI' },
+    { url: '/about/cli-python/', label: 'Python CLI' }
+] %}
+
+{% set configNav = [
+    { url: '/about/config-schema/', label: 'Configuration Schema' },
+    { url: '/about/config-modes/', label: 'Multi-Mode Configs' }
+] %}
+
+{% set webAppNav = [
+    { url: '/about/web-app/', label: 'Web Application' },
+    { url: '/about/walkthrough/', label: 'Config Walkthrough' }
+] %}
+
+{% set developmentNav = [
+    { url: '/about/dev-node/', label: 'Node.js Setup' },
+    { url: '/about/dev-python/', label: 'Python Setup' },
+    { url: '/about/dev-web/', label: 'Web Development' },
+    { url: '/about/sharing-code/', label: 'Using as a Library' }
+] %}
+
+{% set architectureNav = [
+    { url: '/about/hid-reading/', label: 'HID Data Reading' },
+    { url: '/about/implementation-differences/', label: 'Platform Differences' },
+    { url: '/about/limitations/', label: 'Known Limitations' }
+] %}
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    {% for item in aboutNav %}
+    <a href="{{ page.url | resolvePath(item.url) }}">{{item.label}}</a>
+    {% endfor %}
+
+    <h4>CLI Tools</h4>
+    {% for item in cliNav %}
+        <a href="{{ page.url | resolvePath(item.url) }}">{{item.label}}</a>
+    {% endfor %}
+
+    <h4>Configuration</h4>
+    {% for item in configNav %}
+        <a href="{{ page.url | resolvePath(item.url) }}">{{item.label}}</a>
+    {% endfor %}
+
+    <h4>Web Application</h4>
+    {% for item in webAppNav %}
+        <a href="{{ page.url | resolvePath(item.url) }}">{{item.label}}</a>
+    {% endfor %}
+
+    <h4>Development</h4>
+    {% for item in developmentNav %}
+        <a href="{{ page.url | resolvePath(item.url) }}">{{item.label}}</a>
+    {% endfor %}
+
+    <h4>Architecture</h4>
+    {% for item in architectureNav %}
+        <a href="{{ page.url | resolvePath(item.url) }}">{{item.label}}</a>
+    {% endfor %}
+</nav>
