@@ -1,0 +1,330 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/cli-overview/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: CLI Tools Overview">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/cli-overview/">
+
+    <title>Blankslate: CLI Tools Overview</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href=".">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Command-line tools for tablet configuration and event viewing</h2>
+        <h1>CLI Tools Overview</h1>
+<p>Blankslate provides three CLI tools available in both Node.js and Python:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Config Generator</strong></td>
+<td>Interactive wizard to create tablet configurations</td>
+</tr>
+<tr>
+<td><strong>Event Viewer</strong></td>
+<td>Real-time display of tablet events</td>
+</tr>
+<tr>
+<td><strong>WebSocket Server</strong></td>
+<td>Broadcast tablet events over WebSocket</td>
+</tr>
+</tbody>
+</table>
+<h2>Tool Comparison</h2>
+<p>Both Node.js and Python implementations provide identical functionality:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Node.js</th>
+<th>Python</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Config generation</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Live event viewing</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>WebSocket server</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Mock mode</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Raw byte display</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Multi-interface support</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h2>Quick Reference</h2>
+<h3>Config Generator</h3>
+<p>Creates JSON configuration files for your tablet:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Node.js</span>
+<span class="token function">npm</span> run config
+npx tsx src/cli/config-generator.ts <span class="token parameter variable">--mock</span>
+
+<span class="token comment"># Python</span>
+tablet-config
+tablet-config <span class="token parameter variable">--mock</span></code></pre>
+<h3>Event Viewer</h3>
+<p>Displays real-time tablet data:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Node.js</span>
+<span class="token function">npm</span> run events -- <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span>
+npx tsx src/cli/event-viewer.ts <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span> <span class="token parameter variable">--raw</span>
+
+<span class="token comment"># Python</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span> <span class="token parameter variable">--raw</span></code></pre>
+<h3>WebSocket Server</h3>
+<p>Broadcasts tablet events for remote applications:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Node.js</span>
+<span class="token function">npm</span> run websocket -- <span class="token parameter variable">-c</span> config.json
+npx tsx src/cli/tablet-websocket-server.ts <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--port</span> <span class="token number">9000</span>
+
+<span class="token comment"># Python</span>
+tablet-websocket <span class="token parameter variable">-c</span> config.json
+tablet-websocket <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--port</span> <span class="token number">9000</span></code></pre>
+<h2>Common Options</h2>
+<p>All tools support these options:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-c, --config &lt;file&gt;</code></td>
+<td>Path to tablet configuration JSON</td>
+</tr>
+<tr>
+<td><code>--mock</code></td>
+<td>Use simulated tablet data</td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>Show help message</td>
+</tr>
+</tbody>
+</table>
+<h2>Mock Mode</h2>
+<p>All tools support <code>--mock</code> for testing without hardware:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Test config generation workflow</span>
+<span class="token function">npm</span> run config -- <span class="token parameter variable">--mock</span>
+
+<span class="token comment"># View simulated tablet events</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span></code></pre>
+<p>Mock mode generates realistic data patterns:</p>
+<ul>
+<li>Horizontal and vertical lines</li>
+<li>Circular movements</li>
+<li>Pressure sweeps</li>
+<li>Tilt variations</li>
+<li>Button presses</li>
+</ul>
+<h2>Output Formats</h2>
+<h3>Event Viewer Modes</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Live</td>
+<td><code>--live</code></td>
+<td>Interactive dashboard with real-time updates</td>
+</tr>
+<tr>
+<td>Compact</td>
+<td><code>--compact</code></td>
+<td>Single-line format for logging</td>
+</tr>
+<tr>
+<td>Raw</td>
+<td><code>--raw</code></td>
+<td>Include raw HID bytes</td>
+</tr>
+<tr>
+<td>Default</td>
+<td>(none)</td>
+<td>Detailed multi-line format</td>
+</tr>
+</tbody>
+</table>
+<h3>WebSocket Data Formats</h3>
+<p><strong>Translated Events (default):</strong></p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"tablet-data"</span><span class="token punctuation">,</span>
+  <span class="token property">"timestamp"</span><span class="token operator">:</span> <span class="token number">1234567890</span><span class="token punctuation">,</span>
+  <span class="token property">"x"</span><span class="token operator">:</span> <span class="token number">0.5</span><span class="token punctuation">,</span>
+  <span class="token property">"y"</span><span class="token operator">:</span> <span class="token number">0.5</span><span class="token punctuation">,</span>
+  <span class="token property">"pressure"</span><span class="token operator">:</span> <span class="token number">0.8</span><span class="token punctuation">,</span>
+  <span class="token property">"tiltX"</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>
+  <span class="token property">"tiltY"</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>
+  <span class="token property">"primaryButton"</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+  <span class="token property">"secondaryButton"</span><span class="token operator">:</span> <span class="token boolean">false</span>
+<span class="token punctuation">}</span></code></pre>
+<p><strong>Raw Bytes (<code>--raw</code> flag):</strong>
+Binary Uint8Array sent directly over WebSocket.</p>
+<hr>
+<h2>Platform-Specific Guides</h2>
+<ul>
+<li><strong><a href="/blankslate/about/cli-node/">Node.js CLI</a></strong> - Detailed Node.js usage</li>
+<li><strong><a href="/blankslate/about/cli-python/">Python CLI</a></strong> - Detailed Python usage</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

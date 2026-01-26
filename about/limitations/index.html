@@ -1,0 +1,331 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/limitations/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Known Limitations">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/limitations/">
+
+    <title>Blankslate: Known Limitations</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href=".">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Platform limitations and workarounds</h2>
+        <h1>Known Limitations</h1>
+<p>This document outlines known limitations of Blankslate, particularly around WebHID and driver interactions.</p>
+<h2>WebHID Limitations</h2>
+<h3>Device Ownership</h3>
+<p>WebHID cannot &quot;own&quot; or exclusively claim a drawing tablet device. By default, the tablet continues to control the system mouse cursor even when connected via WebHID. This means:</p>
+<ul>
+<li>Stylus movements will move your mouse pointer</li>
+<li>Stylus clicks will trigger mouse clicks</li>
+<li>This can make the tablet unusable for drawing since input is duplicated</li>
+</ul>
+<h4>Workaround: Driver Mode Toggle</h4>
+<p>To prevent the tablet from controlling the mouse:</p>
+<ol>
+<li><strong>Start the manufacturer's driver application</strong> - This redirects tablet input through the driver</li>
+<li><strong>Stop/quit the driver application</strong> - The tablet remains in &quot;driver mode&quot; but with no active driver</li>
+<li><strong>The tablet now sends data via WebHID without controlling the mouse</strong></li>
+</ol>
+<p>This workaround is necessary for practical use of WebHID with drawing tablets.</p>
+<hr>
+<h2>Tablet Button Capture</h2>
+<h3>Without a Driver (Driverless Mode)</h3>
+<ul>
+<li>WebHID <strong>cannot</strong> capture the raw byte codes for tablet buttons</li>
+<li>The tablet sends default keyboard events (scan codes) for button presses</li>
+<li>These keyboard scan codes are what get recorded in the configuration</li>
+<li>This is specific to WebHID and is used only in that context</li>
+</ul>
+<h3>With a Driver (Driver Mode)</h3>
+<ul>
+<li>Button mappings are controlled by the driver software</li>
+<li>Users can customize buttons to perform any action</li>
+<li>Capturing key codes in driver mode doesn't make sense for a global configuration because:
+<ul>
+<li>The mappings are user-specific and customizable</li>
+<li>They don't represent the tablet's inherent button behavior</li>
+<li>Different users will have different driver configurations</li>
+</ul>
+</li>
+</ul>
+<h3>Implications for Configuration Files</h3>
+<p>The <code>modes</code> array in configuration files reflects these differences:</p>
+<ul>
+<li><strong>Mode 1 (Driver)</strong>: Uses bit-flag button values, doesn't include keyboard scan codes</li>
+<li><strong>Mode 2 (Driverless)</strong>: Includes <code>statusOverrides</code> with keyboard scan codes for button detection</li>
+</ul>
+<hr>
+<h2>Platform-Specific Limitations</h2>
+<h3>Keyboard Event Capture</h3>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Can Capture Keyboard Events</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WebHID (Browser)</td>
+<td>✅ Yes, via <code>keydown</code> API</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>❌ No, only raw HID packets</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>❌ No, only raw HID packets</td>
+</tr>
+</tbody>
+</table>
+<p>When the tablet driver is active, it often converts button presses to keyboard shortcuts. WebHID can capture these via the browser's keyboard API, but Node.js and Python cannot intercept OS-level keyboard events.</p>
+<p><strong>Recommendation:</strong> For best cross-platform compatibility, generate configs in <strong>driverless mode</strong> to capture HID scan codes that work everywhere.</p>
+<h3>Multi-Interface Devices</h3>
+<p>Some tablets expose multiple HID interfaces:</p>
+<ul>
+<li><strong>Digitizer interface</strong> (usage page 13) - Pen position, pressure, tilt</li>
+<li><strong>Keyboard interface</strong> (usage page 1) - Tablet buttons as keyboard shortcuts</li>
+<li><strong>Consumer interface</strong> (usage page 12) - Media keys</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Multi-Interface Support</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WebHID</td>
+<td>✅ Can open multiple interfaces</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>✅ <code>MultiInterfaceReader</code> class</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>✅ Multiple device handles</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Browser Support</h2>
+<p>WebHID is only supported in Chromium-based browsers:</p>
+<table>
+<thead>
+<tr>
+<th>Browser</th>
+<th>WebHID Support</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chrome</td>
+<td>✅ Full support</td>
+</tr>
+<tr>
+<td>Edge</td>
+<td>✅ Full support</td>
+</tr>
+<tr>
+<td>Brave</td>
+<td>✅ Full support</td>
+</tr>
+<tr>
+<td>Firefox</td>
+<td>❌ Not supported</td>
+</tr>
+<tr>
+<td>Safari</td>
+<td>❌ Not supported</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Device Compatibility</h2>
+<h3>Tested Devices</h3>
+<table>
+<thead>
+<tr>
+<th>Device</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XP-Pen Deco 640</td>
+<td>✅ Full support</td>
+<td>Included config</td>
+</tr>
+</tbody>
+</table>
+<h3>Untested Devices</h3>
+<p>Blankslate should work with any HID-compatible tablet, but:</p>
+<ul>
+<li>You'll need to generate a configuration using the walkthrough</li>
+<li>Some tablets may have unusual byte layouts</li>
+<li>Proprietary protocols may not be fully supported</li>
+</ul>
+<hr>
+<h2>Performance Considerations</h2>
+<h3>Packet Rate</h3>
+<p>Drawing tablets typically send packets at 100-200 Hz. All platforms handle this well, but:</p>
+<ul>
+<li>WebSocket broadcasting adds latency</li>
+<li>Complex UI updates may lag at high packet rates</li>
+<li>Consider throttling for visualization-heavy applications</li>
+</ul>
+<h3>Memory Usage</h3>
+<ul>
+<li>Mock mode generates continuous data and may accumulate memory over long sessions</li>
+<li>WebSocket servers with many clients may use significant memory</li>
+<li>Close unused connections to free resources</li>
+</ul>
+<hr>
+<h2>Security Considerations</h2>
+<h3>WebHID Permissions</h3>
+<ul>
+<li>Users must explicitly grant permission to access HID devices</li>
+<li>Permission is per-device and per-origin</li>
+<li>HTTPS is required (except for localhost)</li>
+</ul>
+<h3>Node.js/Python</h3>
+<ul>
+<li>Requires appropriate OS permissions to access USB devices</li>
+<li>On macOS, may need to grant terminal/IDE access to USB</li>
+<li>On Linux, may need udev rules for non-root access</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

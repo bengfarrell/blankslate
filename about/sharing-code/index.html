@@ -1,0 +1,347 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/sharing-code/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Sharing Code">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/sharing-code/">
+
+    <title>Blankslate: Sharing Code</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href=".">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">How to use Blankslate as a library in other projects</h2>
+        <h1>Sharing Code with Other Projects</h1>
+<p>Blankslate is designed to be used as a library by other projects. This guide explains how to import and use Blankslate's modules in your own applications.</p>
+<h2>Setup Methods</h2>
+<h3>Method 1: npm link (Local Development)</h3>
+<p>For local development when both projects are on your machine:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># In the blankslate directory</span>
+<span class="token function">npm</span> run build    <span class="token comment"># Build the dist/ folder</span>
+<span class="token function">npm</span> <span class="token function">link</span>         <span class="token comment"># Create global symlink</span>
+
+<span class="token comment"># In your project directory</span>
+<span class="token function">npm</span> <span class="token function">link</span> blankslate</code></pre>
+<p>This creates a symlink so changes to blankslate are immediately available.</p>
+<h3>Method 2: File Path Dependency</h3>
+<p>Reference blankslate directly in your <code>package.json</code>:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"dependencies"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"blankslate"</span><span class="token operator">:</span> <span class="token string">"file:../path/to/blankslate"</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<p>Then run <code>npm install</code>.</p>
+<h3>Method 3: Git Repository</h3>
+<p>Install directly from GitHub:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> github:bengfarrell/blankslate</code></pre>
+<p>Or in <code>package.json</code>:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"dependencies"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"blankslate"</span><span class="token operator">:</span> <span class="token string">"github:bengfarrell/blankslate"</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Method 4: npm Registry</h3>
+<p>Once published to npm:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> blankslate</code></pre>
+<hr>
+<h2>Available Exports</h2>
+<p>Blankslate provides multiple entry points for different use cases:</p>
+<h3>Main Entry (<code>blankslate</code>)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> 
+  Config<span class="token punctuation">,</span>
+  analyzeBytes<span class="token punctuation">,</span>
+  processDeviceData<span class="token punctuation">,</span>
+  calculateMultiByteMax<span class="token punctuation">,</span>
+  getBestGuessBytesByVariance
+<span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate'</span><span class="token punctuation">;</span></code></pre>
+<p>Includes utilities, models, mock devices, and walkthrough strings.</p>
+<h3>Core Module (<code>blankslate/core</code>)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span>
+  <span class="token comment">// Walkthrough engine</span>
+  WalkthroughEngine<span class="token punctuation">,</span>
+  WalkthroughController<span class="token punctuation">,</span>
+  
+  <span class="token comment">// HID interfaces</span>
+  IHIDReader<span class="token punctuation">,</span>
+  MockHIDReader<span class="token punctuation">,</span>
+  
+  <span class="token comment">// Data processing</span>
+  processDeviceData<span class="token punctuation">,</span>
+  analyzeBytes<span class="token punctuation">,</span>
+  generateDeviceConfig<span class="token punctuation">,</span>
+  
+  <span class="token comment">// Mock data</span>
+  TabletDataGenerator<span class="token punctuation">,</span>
+  
+  <span class="token comment">// Config</span>
+  Config
+<span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/core'</span><span class="token punctuation">;</span></code></pre>
+<p>Platform-agnostic code for both browser and Node.js environments.</p>
+<h3>Models (<code>blankslate/models</code>)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> Config <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/models'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> config <span class="token operator">=</span> <span class="token keyword">await</span> Config<span class="token punctuation">.</span><span class="token function">load</span><span class="token punctuation">(</span><span class="token string">'path/to/config.json'</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Utilities (<code>blankslate/utils</code>)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span>
+  analyzeBytes<span class="token punctuation">,</span>
+  processDeviceData<span class="token punctuation">,</span>
+  getBestGuessBytesByVariance<span class="token punctuation">,</span>
+  calculateMultiByteMax<span class="token punctuation">,</span>
+  MockHIDReader
+<span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/utils'</span><span class="token punctuation">;</span></code></pre>
+<h3>Web Components (<code>blankslate/components</code>)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// Import all components</span>
+<span class="token keyword">import</span> <span class="token string">'blankslate/components'</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Or import specific components</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> TabletVisualizer <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/components'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> HidDashboard <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/components'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> BytesDisplay <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/components'</span><span class="token punctuation">;</span></code></pre>
+<h3>CLI Modules (<code>blankslate/cli/*</code>)</h3>
+<p>For Node.js applications that need HID device access:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> TabletReaderBase <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/cli/tablet-reader-base'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> NodeHIDReader<span class="token punctuation">,</span> MultiInterfaceReader <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/cli/node-hid-reader'</span><span class="token punctuation">;</span></code></pre>
+<hr>
+<h2>Usage Examples</h2>
+<h3>Reading Tablet Data (Node.js)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> Config <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/models'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> processDeviceData <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/utils'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> NodeHIDReader <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/cli/node-hid-reader'</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Load configuration</span>
+<span class="token keyword">const</span> config <span class="token operator">=</span> <span class="token keyword">await</span> Config<span class="token punctuation">.</span><span class="token function">load</span><span class="token punctuation">(</span><span class="token string">'./my-tablet-config.json'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Create HID reader</span>
+<span class="token keyword">const</span> reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">NodeHIDReader</span><span class="token punctuation">(</span>
+  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>vendorId<span class="token punctuation">,</span>
+  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>productId<span class="token punctuation">,</span>
+  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>usagePage<span class="token punctuation">,</span>
+  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>usage
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Process incoming data</span>
+reader<span class="token punctuation">.</span><span class="token function">onData</span><span class="token punctuation">(</span><span class="token punctuation">(</span>bytes<span class="token operator">:</span> Uint8Array<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token keyword">const</span> event <span class="token operator">=</span> <span class="token function">processDeviceData</span><span class="token punctuation">(</span>bytes<span class="token punctuation">,</span> config<span class="token punctuation">.</span>byteCodeMappings<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">`</span><span class="token string">X: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>event<span class="token punctuation">.</span>x<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">, Y: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>event<span class="token punctuation">.</span>y<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">, Pressure: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>event<span class="token punctuation">.</span>pressure<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+reader<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Using Web Components</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> TabletVisualizer <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/components'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> Config <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/models'</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Components auto-register their custom elements</span>
+<span class="token comment">// Use in HTML:</span>
+<span class="token comment">// &lt;tablet-visualizer>&lt;/tablet-visualizer></span>
+
+<span class="token comment">// Or create programmatically</span>
+<span class="token keyword">const</span> visualizer <span class="token operator">=</span> document<span class="token punctuation">.</span><span class="token function">createElement</span><span class="token punctuation">(</span><span class="token string">'tablet-visualizer'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+visualizer<span class="token punctuation">.</span>config <span class="token operator">=</span> <span class="token keyword">await</span> Config<span class="token punctuation">.</span><span class="token function">load</span><span class="token punctuation">(</span><span class="token string">'./config.json'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+document<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">appendChild</span><span class="token punctuation">(</span>visualizer<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Using the Walkthrough Engine</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> 
+  WalkthroughEngine<span class="token punctuation">,</span> 
+  WalkthroughController<span class="token punctuation">,</span>
+  MockHIDReader 
+<span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/core'</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Create a mock reader for testing</span>
+<span class="token keyword">const</span> mockReader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MockHIDReader</span><span class="token punctuation">(</span>mockConfig<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Create walkthrough controller</span>
+<span class="token keyword">const</span> controller <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">WalkthroughController</span><span class="token punctuation">(</span>
+  myViewImplementation<span class="token punctuation">,</span>  <span class="token comment">// Implements IWalkthroughView</span>
+  mockReader<span class="token punctuation">,</span>
+  <span class="token punctuation">{</span> packetIncludesReportId<span class="token operator">:</span> <span class="token boolean">true</span> <span class="token punctuation">}</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Start the walkthrough</span>
+controller<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Mock Data for Testing</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> TabletDataGenerator<span class="token punctuation">,</span> <span class="token constant">PRESETS</span> <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/core'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> MockHIDReader <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/utils'</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Create a data generator with a preset</span>
+<span class="token keyword">const</span> generator <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">TabletDataGenerator</span><span class="token punctuation">(</span><span class="token constant">PRESETS</span><span class="token punctuation">.</span><span class="token constant">XP_PEN_DECO_640</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Generate mock packets</span>
+<span class="token keyword">const</span> packet <span class="token operator">=</span> generator<span class="token punctuation">.</span><span class="token function">generatePacket</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  x<span class="token operator">:</span> <span class="token number">0.5</span><span class="token punctuation">,</span>
+  y<span class="token operator">:</span> <span class="token number">0.5</span><span class="token punctuation">,</span>
+  pressure<span class="token operator">:</span> <span class="token number">0.8</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Or use MockHIDReader for continuous data</span>
+<span class="token keyword">const</span> mockReader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MockHIDReader</span><span class="token punctuation">(</span>config<span class="token punctuation">)</span><span class="token punctuation">;</span>
+mockReader<span class="token punctuation">.</span><span class="token function">onData</span><span class="token punctuation">(</span><span class="token punctuation">(</span>bytes<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token comment">// Process mock tablet data</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+mockReader<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<hr>
+<h2>TypeScript Support</h2>
+<p>All exports include TypeScript type definitions. Import types as needed:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token keyword">type</span> <span class="token punctuation">{</span> 
+  DeviceByteCodeMappings<span class="token punctuation">,</span>
+  ByteAnalysis<span class="token punctuation">,</span>
+  TabletEvent<span class="token punctuation">,</span>
+  WalkthroughStep<span class="token punctuation">,</span>
+  WalkthroughState
+<span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/core'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token keyword">type</span> <span class="token punctuation">{</span> ConfigJSON <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/models'</span><span class="token punctuation">;</span></code></pre>
+<hr>
+<h2>Building Before Use</h2>
+<p>Before using blankslate as a dependency, ensure it's built:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token builtin class-name">cd</span> blankslate
+<span class="token function">npm</span> <span class="token function">install</span>
+<span class="token function">npm</span> run build</code></pre>
+<p>This generates the <code>dist/</code> folder with compiled JavaScript and type definitions.</p>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>&quot;Cannot find module 'blankslate'&quot;</h3>
+<p>Ensure you've run <code>npm run build</code> in the blankslate directory and that the link/dependency is properly set up.</p>
+<h3>Type errors with imports</h3>
+<p>Make sure your <code>tsconfig.json</code> has:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"compilerOptions"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"moduleResolution"</span><span class="token operator">:</span> <span class="token string">"bundler"</span><span class="token punctuation">,</span>  <span class="token comment">// or "node16"</span>
+    <span class="token property">"esModuleInterop"</span><span class="token operator">:</span> <span class="token boolean">true</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Web components not rendering</h3>
+<p>Web components must be imported before use. Import at your app's entry point:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// main.ts or index.ts</span>
+<span class="token keyword">import</span> <span class="token string">'blankslate/components'</span><span class="token punctuation">;</span></code></pre>
+<h3>Node.js HID errors</h3>
+<p>The <code>node-hid</code> library requires native compilation. If you see build errors:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> rebuild node-hid</code></pre>
+<p>On macOS, you may need to grant terminal/IDE permissions in System Preferences → Security &amp; Privacy → Input Monitoring.</p>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

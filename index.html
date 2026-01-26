@@ -1,0 +1,256 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Welcome to Blankslate">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/">
+
+    <title>Blankslate: Welcome to Blankslate</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="docs.css">
+    <link rel="stylesheet" href="prism-okaidia.css">
+    <link rel="preload" href="docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href=".">Introduction</a>
+    
+    <a href="about/getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="about/cli-overview/">Overview</a>
+    
+        <a href="about/cli-node/">Node.js CLI</a>
+    
+        <a href="about/cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="about/config-schema/">Configuration Schema</a>
+    
+        <a href="about/config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="app/">🚀 Launch App</a>
+    
+        <a href="about/web-app/">Web Application</a>
+    
+        <a href="about/walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="about/dev-node/">Node.js Setup</a>
+    
+        <a href="about/dev-python/">Python Setup</a>
+    
+        <a href="about/dev-web/">Web Development</a>
+    
+        <a href="about/sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="about/hid-reading/">HID Data Reading</a>
+    
+        <a href="about/implementation-differences/">Platform Differences</a>
+    
+        <a href="about/limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Universal HID tablet configuration toolkit for Node.js, Python, and the Web</h2>
+        <h1>Welcome to Blankslate</h1>
+<p style="margin: 20px 0;">
+  <a href="app/" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1.1em; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">🚀 Launch the Web App</a>
+</p>
+<p>Hi, welcome to Blankslate! Much of this project and documentation were done with AI coding tools, but I wanted to
+write this introduction myself.</p>
+<p>Blankslate is the second iteration of a project I was working on. The human interface device part of that project became
+a little to big and confusing, so I broke it out into this project.</p>
+<p>I started with a $30 drawing tablet (<a href="https://www.amazon.com/Deco-640-Sensitivity-Battery-Free-Designing/dp/B0D6XZF9N4">the XPPen Deco 640</a>) with the goal to
+use like a musical instrument - specifically to strum a guitar like the <a href="https://www.suzuki-music.co.jp/special/omnichord_om-108/en/">Suzuki Omnichord</a>.</p>
+<p>Choosing to use a drawing tablet not as a drawing tablet requires reading and interpreting those low level bytes.
+I only have this one drawing tablet right now, and if I plan to share what I've done, other drawing tablets need to work.</p>
+<p>Unfortunately, it's looking like reading those bytes across tablets will all be different. So in addition to reading a data stream and translating to tablet events,
+this project also features a way to generate JSON configuration files that can be used to interpret the raw data into tablet events.</p>
+<p>Will this work for your tablet? I don't know! I've just done the one so far.</p>
+<p>Blankslate has support for Node.js, Python and Web. Node.js and Python are low level enough that things work pretty well.
+Web is based on Chrome's experimental <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API">WebHID API</a>. There are some restrictions here.
+For one, the tablet has some &quot;hot shortcut&quot; keys. The keys are buttons that a user would tap to perform some kind of action. Node.js and Python can easily
+read these with the HID interface. I'm seeing that WebHID cannot without the driver app installed/running. Instead, they come in as keyboard events only.</p>
+<p>This project supports learning and viewing these buttons as keyboard events for when the driver is not loaded.</p>
+<p>It's a quirk, but one that we work around.</p>
+<h2>Tablet Modes</h2>
+<p>For the most part, the same tablet will require the same configuration regardless of how you run it. The bytes will
+be interpreted largely the same. When having the tablet's driver app loaded, the tablet could actually send data through
+another interface. We can see this with different ReportIDs.</p>
+<p>Each configuration file can have multiple modes. Each mode supports reading the different interfaces.</p>
+<p>Realistically, when generating a configuration file, you can't have both modes active simultaneously.
+So only one mode will be added to your configuration file. Running the configuration utility in a different mode (with the driver or not)
+will generate a new configuration file. You can manually drop the new mode into an existing file.</p>
+<p>The viewer will see which report ID is being used when connecting and choose the right mode from this array and properly read the tablet event stream.</p>
+<h2>Mouse control</h2>
+<p>Both Node and Python are low level enough that when they connect to the tablet, they get exclusive control.
+This means your OS won't control the mouse anymore. This is what I want from this project, otherwise, we could
+just use the tablet as a mouse and Blankslate wouldn't even be necessary.</p>
+<p>WebHID however, when doing this in a browser only, cannot get exclusive control. This means that while your tablet
+is sending events, you'll also be controlling the mouse. At least on OSX, this seems too low level to turn this off in the
+OS level settings. Maybe this is better on Windows or Linux.</p>
+<p>There is one workaround, and it's a hack. That is, to start the XPPen driver tablet app. This gives the app mouse control, but then when quitting
+this driver app, the tablet will still have the mouse being read in this mode. However, without the driver app to intercept,
+your mouse no longer moves.</p>
+<h2>Summary</h2>
+<p>To sum up, Blankslate is a utility to read raw byte data from a HID (human interface device) drawing tablet
+and translate those events into what the user is actually doing. We can see horizontal and vertical coordinates, pressure,
+tilt, and button presses (both hotkeys and stylus buttons).</p>
+<p>Blankslate also provides a way to generate JSON configuration files to interpret those raw bytes.
+Again, it's only tested on a single tablet, so there will likely be some work to get other tablets working. But for now it's a start!</p>
+<h3>Key Features</h3>
+<ul>
+<li><strong>Cross-Platform</strong>: Works on macOS, Linux, and Windows</li>
+<li><strong>Multi-Runtime</strong>: Node.js CLI, Python CLI, and WebHID browser app</li>
+<li><strong>Configuration Generator</strong>: Interactive walkthrough to create configs for any tablet</li>
+<li><strong>Real-Time Viewer</strong>: Visualize tablet data as you draw</li>
+<li><strong>WebSocket Server</strong>: Stream tablet events to any application</li>
+<li><strong>Driver-Independent</strong>: Works with or without manufacturer drivers installed</li>
+</ul>
+<h2>Quick Example</h2>
+<p>With a configuration file, reading tablet data is straightforward:</p>
+<p><strong>Node.js:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># View live tablet events</span>
+npx tsx src/cli/event-viewer.ts <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span></code></pre>
+<p><strong>Python:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># View live tablet events</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span></code></pre>
+<p><strong>Web:</strong>
+Open the web app, connect your tablet via WebHID, and see real-time visualization of pen position, pressure, and tilt.</p>
+<h2>Use Cases</h2>
+<ul>
+<li><strong>Custom Applications</strong>: Build drawing apps, music controllers, or accessibility tools</li>
+<li><strong>Tablet Testing</strong>: Verify tablet functionality and calibration</li>
+<li><strong>Driver Development</strong>: Understand HID protocols for new tablet support</li>
+<li><strong>Cross-Platform Tools</strong>: Create apps that work identically across platforms</li>
+</ul>
+<h2>Getting Started</h2>
+<ol>
+<li><strong><a href="/blankslate/about/getting-started/">Getting Started</a></strong> - Quick setup guide</li>
+<li><strong><a href="/blankslate/about/cli-overview/">CLI Tools</a></strong> - Command-line interface for Node.js and Python</li>
+<li><strong><a href="/blankslate/about/web-app/">Web Application</a></strong> - Browser-based tablet viewer and config generator</li>
+<li><strong><a href="/blankslate/about/config-schema/">Configuration Schema</a></strong> - Understanding config files</li>
+</ol>
+<h2>Supported Tablets</h2>
+<p>Blankslate works with any HID-compatible graphics tablet. Currently tested:</p>
+<ul>
+<li><strong>XP-Pen Deco 640</strong> - Full support with included configuration</li>
+<li><strong>Other tablets</strong> - Use the config generator walkthrough to create support</li>
+</ul>
+<h2>System Requirements</h2>
+<h3>Node.js</h3>
+<ul>
+<li>Node.js 18+ and npm</li>
+<li>Works on macOS, Linux, Windows</li>
+</ul>
+<h3>Python</h3>
+<ul>
+<li>Python 3.8+</li>
+<li>hidapi library (installed automatically)</li>
+</ul>
+<h3>Web</h3>
+<ul>
+<li>Chromium-based browser (Chrome, Edge, Brave) for WebHID support</li>
+<li>Firefox and Safari do not support WebHID</li>
+</ul>
+<h2>Project Structure</h2>
+<pre><code>blankslate/
+├── src/                    # TypeScript source (Node.js + Web)
+│   ├── cli/                # CLI tools
+│   ├── components/         # Web components (LitElement)
+│   ├── core/               # Shared walkthrough engine
+│   └── utils/              # Data processing utilities
+├── python/                 # Python implementation
+│   └── blankslate/         # Python package
+├── public/configs/         # Sample tablet configurations
+└── docs/                   # This documentation
+</code></pre>
+<p>Ready to get started? Head to the <a href="/blankslate/about/getting-started/">Getting Started</a> guide!</p>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

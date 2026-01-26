@@ -1,0 +1,327 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/getting-started/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Getting Started">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/getting-started/">
+
+    <title>Blankslate: Getting Started</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href=".">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Quick start guide to install and run Blankslate</h2>
+        <h1>Getting Started</h1>
+<p>Get up and running with Blankslate quickly. Choose your platform and start reading tablet data!</p>
+<h2>Prerequisites</h2>
+<p>Choose your runtime:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Requirements</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Node.js</strong></td>
+<td>Node.js 18+, npm</td>
+</tr>
+<tr>
+<td><strong>Python</strong></td>
+<td>Python 3.8+, pip</td>
+</tr>
+<tr>
+<td><strong>Web</strong></td>
+<td>Chrome, Edge, or Brave browser</td>
+</tr>
+</tbody>
+</table>
+<h2>Installation</h2>
+<h3>Node.js</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Clone the repository</span>
+<span class="token function">git</span> clone https://github.com/bengfarrell/blankslate.git
+<span class="token builtin class-name">cd</span> blankslate
+
+<span class="token comment"># Install dependencies</span>
+<span class="token function">npm</span> <span class="token function">install</span>
+
+<span class="token comment"># Run the event viewer</span>
+<span class="token function">npm</span> run events -- <span class="token parameter variable">-c</span> public/configs/xp-pen-deco640.json <span class="token parameter variable">--live</span></code></pre>
+<p>Or install globally:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> <span class="token parameter variable">-g</span> blankslate
+
+<span class="token comment"># Then use the CLI commands</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span></code></pre>
+<h3>Python</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Clone the repository</span>
+<span class="token function">git</span> clone https://github.com/bengfarrell/blankslate.git
+<span class="token builtin class-name">cd</span> blankslate/python
+
+<span class="token comment"># Create virtual environment</span>
+python3 <span class="token parameter variable">-m</span> venv venv
+<span class="token builtin class-name">source</span> venv/bin/activate  <span class="token comment"># On Windows: venv\Scripts\activate</span>
+
+<span class="token comment"># Install the package</span>
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token string">".[dev,websocket]"</span>
+
+<span class="token comment"># Run the event viewer</span>
+tablet-events <span class="token parameter variable">-c</span> <span class="token punctuation">..</span>/public/configs/xp-pen-deco640.json <span class="token parameter variable">--live</span></code></pre>
+<h3>Web Application</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Clone and install</span>
+<span class="token function">git</span> clone https://github.com/bengfarrell/blankslate.git
+<span class="token builtin class-name">cd</span> blankslate
+<span class="token function">npm</span> <span class="token function">install</span>
+
+<span class="token comment"># Start the dev server</span>
+<span class="token function">npm</span> run dev</code></pre>
+<p>Open http://localhost:3000 in Chrome, Edge, or Brave.</p>
+<hr>
+<h2>Quick Test (Mock Mode)</h2>
+<p>Test without a physical tablet using mock mode:</p>
+<p><strong>Node.js:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run events -- <span class="token parameter variable">-c</span> public/configs/xp-pen-deco640.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span></code></pre>
+<p><strong>Python:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">tablet-events <span class="token parameter variable">-c</span> <span class="token punctuation">..</span>/public/configs/xp-pen-deco640.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span></code></pre>
+<p>Mock mode generates realistic tablet data (circles, lines, pressure sweeps) so you can test the tools without hardware.</p>
+<hr>
+<h2>Connecting a Real Tablet</h2>
+<h3>1. Find Your Tablet</h3>
+<p><strong>Node.js:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run diagnose</code></pre>
+<p><strong>Python:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">python <span class="token parameter variable">-c</span> <span class="token string">"import hid; print([d for d in hid.enumerate() if d['usage_page'] == 13])"</span></code></pre>
+<p>Look for devices with <code>usage_page: 13</code> (Digitizer).</p>
+<h3>2. Generate a Configuration</h3>
+<p>If your tablet isn't in <code>public/configs/</code>, generate one:</p>
+<p><strong>Node.js:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run config</code></pre>
+<p><strong>Python:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">tablet-config</code></pre>
+<p>The interactive walkthrough guides you through:</p>
+<ol>
+<li>Connecting your device</li>
+<li>Drawing horizontal/vertical lines</li>
+<li>Applying pressure</li>
+<li>Tilting the stylus</li>
+<li>Pressing tablet buttons</li>
+<li>Entering device metadata</li>
+</ol>
+<h3>3. View Tablet Events</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Node.js</span>
+<span class="token function">npm</span> run events -- <span class="token parameter variable">-c</span> your-config.json <span class="token parameter variable">--live</span>
+
+<span class="token comment"># Python</span>
+tablet-events <span class="token parameter variable">-c</span> your-config.json <span class="token parameter variable">--live</span></code></pre>
+<hr>
+<h2>Common Commands</h2>
+<h3>Node.js</h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>npm run dev</code></td>
+<td>Start web dev server</td>
+</tr>
+<tr>
+<td><code>npm run config</code></td>
+<td>Generate tablet config</td>
+</tr>
+<tr>
+<td><code>npm run events -- -c config.json --live</code></td>
+<td>View live events</td>
+</tr>
+<tr>
+<td><code>npm run websocket -- -c config.json</code></td>
+<td>Start WebSocket server</td>
+</tr>
+<tr>
+<td><code>npm run diagnose</code></td>
+<td>List HID devices</td>
+</tr>
+</tbody>
+</table>
+<h3>Python</h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tablet-config</code></td>
+<td>Generate tablet config</td>
+</tr>
+<tr>
+<td><code>tablet-events -c config.json --live</code></td>
+<td>View live events</td>
+</tr>
+<tr>
+<td><code>tablet-websocket -c config.json</code></td>
+<td>Start WebSocket server</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>&quot;Device not found&quot;</h3>
+<ul>
+<li>Ensure the tablet is connected via USB</li>
+<li>Check that no other application has exclusive access to the device</li>
+<li>On macOS, grant terminal/IDE permission to access USB devices</li>
+</ul>
+<h3>&quot;Open failed&quot; error</h3>
+<p>The tablet driver or another application may be holding the device:</p>
+<ol>
+<li>Quit the manufacturer's tablet application (XP-Pen, Wacom, etc.)</li>
+<li>Try again</li>
+</ol>
+<h3>WebHID not working</h3>
+<ul>
+<li>Use Chrome, Edge, or Brave (Firefox/Safari don't support WebHID)</li>
+<li>The page must be served over HTTPS or localhost</li>
+<li>Click &quot;Connect&quot; and select your tablet in the browser dialog</li>
+</ul>
+<hr>
+<h2>Next Steps</h2>
+<ul>
+<li><strong><a href="/blankslate/about/cli-overview/">CLI Tools</a></strong> - Learn the command-line interface</li>
+<li><strong><a href="/blankslate/about/config-schema/">Configuration Schema</a></strong> - Understand config files</li>
+<li><strong><a href="/blankslate/about/web-app/">Web Application</a></strong> - Use the browser-based tools</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

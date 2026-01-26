@@ -1,0 +1,663 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/implementation-differences/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Platform Differences">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/implementation-differences/">
+
+    <title>Blankslate: Platform Differences</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href=".">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Differences between Node.js, Python, and Web implementations</h2>
+        <h1>Platform Differences</h1>
+<p>Blankslate provides implementations for Node.js, Python, and the Web. While they share core logic, there are important differences in how each platform handles HID data.</p>
+<h2>Architecture Overview</h2>
+<h3>Shared vs Platform-Specific</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                      SHARED LAYER                           │
+│  ┌─────────────────┐  ┌─────────────┐  ┌─────────────────┐  │
+│  │ data-helpers    │  │   Config    │  │  IHIDReader     │  │
+│  │ processDevice   │  │   class     │  │  interface      │  │
+│  │ Data()          │  │             │  │                 │  │
+│  └─────────────────┘  └─────────────┘  └─────────────────┘  │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Walkthrough Engine, Byte Detector, Mock HID Reader      ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+            │                    │                    │
+            ▼                    ▼                    ▼
+┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
+│     NODE.JS       │ │      PYTHON       │ │       WEB         │
+│  ┌─────────────┐  │ │  ┌─────────────┐  │ │  ┌─────────────┐  │
+│  │ node-hid    │  │ │  │   hidapi    │  │ │  │   WebHID    │  │
+│  │ library     │  │ │  │   library   │  │ │  │   API       │  │
+│  └─────────────┘  │ │  └─────────────┘  │ │  └─────────────┘  │
+│  CLI tools        │ │  CLI tools        │ │  Web components   │
+└───────────────────┘ └───────────────────┘ └───────────────────┘
+</code></pre>
+<h3>Shared Files (Used by All Platforms)</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/utils/data-helpers.ts</code></td>
+<td><strong>Core data processing</strong> - <code>processDeviceData()</code> parses raw HID bytes into normalized tablet events</td>
+</tr>
+<tr>
+<td><code>src/models/config.ts</code></td>
+<td><strong>Config model</strong> - Defines the <code>Config</code> class for loading and validating tablet configuration JSON files</td>
+</tr>
+<tr>
+<td><code>src/core/hid/hid-interface.ts</code></td>
+<td><strong>HID interface</strong> - Platform-agnostic <code>IHIDReader</code> interface that all readers implement</td>
+</tr>
+<tr>
+<td><code>src/core/hid/mock-hid-reader.ts</code></td>
+<td><strong>Mock HID reader</strong> - Implements <code>IHIDReader</code> for testing without hardware</td>
+</tr>
+<tr>
+<td><code>src/mockbytes/tablet-data-generator.ts</code></td>
+<td><strong>Data generator</strong> - Generates realistic tablet byte sequences for mock devices</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Packet Format Differences</h2>
+<p>The most significant difference is how each platform receives HID packets.</p>
+<h3>Physical Packet Structure (on the wire)</h3>
+<pre><code>[Report ID][Status][X_lo][X_hi][Y_lo][Y_hi][Pressure_lo][Pressure_hi]...
+    0         1       2     3     4     5       6            7
+</code></pre>
+<h3>How Each Platform Sees the Packet</h3>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Report ID Handling</th>
+<th>Packet Start</th>
+<th>Status Index</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Python (hidapi)</strong></td>
+<td>Included in data</td>
+<td>Report ID</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Node.js (node-hid)</strong></td>
+<td>Included in data</td>
+<td>Report ID</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>WebHID (browser)</strong></td>
+<td>Stripped by browser</td>
+<td>Status</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h3>Byte Index Offset Handling</h3>
+<p>To handle this, viewers apply an offset when reading config byte indices:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// Node.js/Python - use config indices directly</span>
+<span class="token function">processDeviceData</span><span class="token punctuation">(</span>packet<span class="token punctuation">,</span> mappings<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">// offset = 0</span>
+
+<span class="token comment">// WebHID - subtract 1 from config indices</span>
+<span class="token function">processDeviceData</span><span class="token punctuation">(</span>packet<span class="token punctuation">,</span> mappings<span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">// offset = -1</span></code></pre>
+<hr>
+<h2>Config Generation</h2>
+<p>When generating configs, the walkthrough accounts for platform differences:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th><code>packetIncludesReportId</code></th>
+<th>Index Adjustment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node.js</td>
+<td><code>true</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td>Python</td>
+<td><code>true</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td>WebHID</td>
+<td><code>false</code></td>
+<td>+1 to detected indices</td>
+</tr>
+</tbody>
+</table>
+<p>This ensures all configs use the same indexing convention (report ID at byte 0).</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// Node.js CLI walkthrough</span>
+<span class="token keyword">new</span> <span class="token class-name">WalkthroughController</span><span class="token punctuation">(</span>view<span class="token punctuation">,</span> reader<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+  packetIncludesReportId<span class="token operator">:</span> <span class="token boolean">true</span>  <span class="token comment">// Detected indices used as-is</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// WebHID browser walkthrough  </span>
+<span class="token keyword">new</span> <span class="token class-name">WalkthroughController</span><span class="token punctuation">(</span>view<span class="token punctuation">,</span> reader<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+  packetIncludesReportId<span class="token operator">:</span> <span class="token boolean">false</span>  <span class="token comment">// +1 added to detected indices</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<hr>
+<h2>Config Interchangeability</h2>
+<p><strong>Configs are fully interchangeable</strong> across all platforms and driver states. Testing with the XP-Pen Deco 640 confirmed that all 6 generated configs (Python driver/nodriver, Node.js driver/nodriver, WebHID driver/nodriver) have <strong>identical <code>byteCodeMappings</code></strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Mapping</th>
+<th>Value</th>
+<th>All Configs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x.byteIndex</code></td>
+<td><code>[2, 3]</code></td>
+<td>✅ Same</td>
+</tr>
+<tr>
+<td><code>y.byteIndex</code></td>
+<td><code>[4, 5]</code></td>
+<td>✅ Same</td>
+</tr>
+<tr>
+<td><code>pressure.byteIndex</code></td>
+<td><code>[6, 7]</code></td>
+<td>✅ Same</td>
+</tr>
+<tr>
+<td><code>status.byteIndex</code></td>
+<td><code>[1]</code></td>
+<td>✅ Same</td>
+</tr>
+<tr>
+<td><code>tiltX/Y.byteIndex</code></td>
+<td><code>[8]</code> / <code>[9]</code></td>
+<td>✅ Same</td>
+</tr>
+<tr>
+<td><code>tabletButtons.byteIndex</code></td>
+<td><code>[2]</code></td>
+<td>✅ Same</td>
+</tr>
+</tbody>
+</table>
+<h3>The <code>reportId</code> Field</h3>
+<p>The only notable difference between configs is the <code>reportId</code> field:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th><code>reportId</code> Value</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python / Node.js</td>
+<td><code>2</code> (actual value)</td>
+<td>Raw HID packets include Report ID</td>
+</tr>
+<tr>
+<td>WebHID</td>
+<td><code>0</code></td>
+<td>Browser strips Report ID from packets</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Important:</strong> The <code>reportId</code> field is purely <strong>informational metadata</strong>. The viewer does <strong>not</strong> use this field to determine byte offsets. Instead, the viewer applies offsets based on the <strong>runtime environment</strong>:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// WebHID viewer always applies -1 offset (browser strips report ID)</span>
+<span class="token function">processDeviceData</span><span class="token punctuation">(</span>bytes<span class="token punctuation">,</span> config<span class="token punctuation">.</span>byteCodeMappings<span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Node.js/Python viewer uses 0 offset (packet includes report ID)</span>
+<span class="token function">processDeviceData</span><span class="token punctuation">(</span>bytes<span class="token punctuation">,</span> config<span class="token punctuation">.</span>byteCodeMappings<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Practical Implications</h3>
+<ol>
+<li><strong>Generate once, use anywhere</strong> - A config created on Python works in the Node.js viewer and WebHID viewer</li>
+<li><strong>Driver state doesn't matter</strong> - Configs created with the driver enabled work identically when the driver is disabled (and vice versa)</li>
+<li><strong>No need for platform-specific configs</strong> - A single config file serves all use cases for a given tablet model</li>
+</ol>
+<hr>
+<h2>Tablet Button Detection</h2>
+<p>Tablet buttons can be detected in different ways depending on the driver state and platform.</p>
+<h3>Detection Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>When Used</th>
+<th>Config Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HID Scan Codes</strong></td>
+<td>Driverless mode (all platforms)</td>
+<td><code>type: &quot;code&quot;</code> with <code>{ button: N }</code></td>
+</tr>
+<tr>
+<td><strong>HID Bitmask</strong></td>
+<td>Some tablets (driver mode)</td>
+<td><code>type: &quot;code&quot;</code> with bitmask values</td>
+</tr>
+<tr>
+<td><strong>Keyboard Events</strong></td>
+<td>WebHID only, driver active</td>
+<td><code>type: &quot;code&quot;</code> with <code>{ button: N, key: &quot;x&quot; }</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Detection Methods by Platform</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Node.js</th>
+<th>Python</th>
+<th>WebHID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HID Scan Codes</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>HID Bitmask</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Keyboard Events</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h3>Keyboard Fallback (WebHID Only)</h3>
+<p>When the tablet driver is active, it often intercepts the HID button interface and converts button presses to keyboard shortcuts. In this case:</p>
+<ul>
+<li><strong>WebHID</strong> can capture keyboard events via the browser's <code>keydown</code> API alongside HID data</li>
+<li><strong>Python/Node.js</strong> only read raw HID packets and cannot capture OS keyboard events</li>
+</ul>
+<p>This means WebHID can detect buttons via keyboard events even when the driver blocks HID button data:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token property">"tabletButtons"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token property">"buttonCount"</span><span class="token operator">:</span> <span class="token number">8</span><span class="token punctuation">,</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"code"</span><span class="token punctuation">,</span>
+  <span class="token property">"values"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"1"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">"key"</span><span class="token operator">:</span> <span class="token string">"b"</span><span class="token punctuation">,</span> <span class="token property">"code"</span><span class="token operator">:</span> <span class="token string">"KeyB"</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"2"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token property">"key"</span><span class="token operator">:</span> <span class="token string">"e"</span><span class="token punctuation">,</span> <span class="token property">"code"</span><span class="token operator">:</span> <span class="token string">"KeyE"</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<p><strong>Key points:</strong></p>
+<ul>
+<li>When <code>byteIndex</code> is empty <code>[]</code>, buttons were detected via keyboard events only</li>
+<li>The <code>key</code> and <code>code</code> fields match the browser's KeyboardEvent properties</li>
+<li>Python/Node readers cannot use keyboard-only configs - they require HID scan codes</li>
+<li>WebHID configs include both HID button numbers and keyboard shortcut info, allowing Python/Node to use the <code>button</code> field while preserving keyboard info</li>
+</ul>
+<h3>Platform Comparison for Button Detection</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Python/Node.js</th>
+<th>WebHID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Driverless mode</td>
+<td>✅ Full HID button detection</td>
+<td>✅ Full HID button detection</td>
+</tr>
+<tr>
+<td>Driver active</td>
+<td>⚠️ May not see button HID data</td>
+<td>✅ Keyboard fallback available</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation:</strong> For best cross-platform compatibility, generate configs in <strong>driverless mode</strong> when possible. This ensures HID scan codes are captured, which work across all platforms.</p>
+<hr>
+<h2>Feature Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Node.js</th>
+<th>Python</th>
+<th>WebHID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Config generation</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Event viewing</td>
+<td>✅ CLI</td>
+<td>✅ CLI</td>
+<td>✅ GUI</td>
+</tr>
+<tr>
+<td>WebSocket server</td>
+<td>✅</td>
+<td>✅</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td>Mock mode</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Multi-interface</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Keyboard capture</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>GUI visualization</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>No browser required</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Library Dependencies</h2>
+<h3>Node.js</h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>node-hid</code></td>
+<td>HID device access</td>
+</tr>
+<tr>
+<td><code>commander</code></td>
+<td>CLI argument parsing</td>
+</tr>
+<tr>
+<td><code>inquirer</code></td>
+<td>Interactive prompts</td>
+</tr>
+<tr>
+<td><code>chalk</code></td>
+<td>Terminal colors</td>
+</tr>
+<tr>
+<td><code>ora</code></td>
+<td>Spinners</td>
+</tr>
+<tr>
+<td><code>ws</code></td>
+<td>WebSocket server</td>
+</tr>
+</tbody>
+</table>
+<h3>Python</h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hidapi</code></td>
+<td>HID device access</td>
+</tr>
+<tr>
+<td><code>click</code></td>
+<td>CLI framework</td>
+</tr>
+<tr>
+<td><code>rich</code></td>
+<td>Terminal formatting</td>
+</tr>
+<tr>
+<td><code>websockets</code></td>
+<td>WebSocket server</td>
+</tr>
+</tbody>
+</table>
+<h3>Web</h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lit</code></td>
+<td>Web components</td>
+</tr>
+<tr>
+<td><code>@spectrum-web-components</code></td>
+<td>UI components</td>
+</tr>
+<tr>
+<td>WebHID API</td>
+<td>Browser HID access</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Key Design Decisions</h2>
+<ol>
+<li>
+<p><strong><code>processDeviceData()</code> is the single source of truth</strong> - Both platforms use the exact same function to parse raw bytes into tablet events</p>
+</li>
+<li>
+<p><strong><code>IHIDReader</code> interface enables polymorphism</strong> - Real devices, mock devices, and multi-interface readers all implement the same interface</p>
+</li>
+<li>
+<p><strong>Config-driven byte parsing</strong> - The JSON config file defines how to interpret each byte, making the viewer work with any HID tablet without code changes</p>
+</li>
+<li>
+<p><strong>Mock devices for testing</strong> - Both platforms have mock implementations that generate realistic data, enabling development without physical hardware</p>
+</li>
+<li>
+<p><strong>Unified byte indices in configs</strong> - Configuration files always use indices based on the full physical packet (report ID at byte 0), with runtime offset applied for WebHID</p>
+</li>
+<li>
+<p><strong>Combined button + keyboard info</strong> - WebHID configs include both HID button numbers and keyboard shortcut info in the same <code>tabletButtons.values</code> entries, allowing Python/Node to use the <code>button</code> field while preserving keyboard info for documentation</p>
+</li>
+</ol>
+<hr>
+<h2>When to Use Each Platform</h2>
+<h3>Use Node.js When:</h3>
+<ul>
+<li>Building CLI tools or scripts</li>
+<li>Need WebSocket server for other apps</li>
+<li>Want TypeScript type safety</li>
+<li>Integrating with Node.js ecosystem</li>
+</ul>
+<h3>Use Python When:</h3>
+<ul>
+<li>Building Python applications</li>
+<li>Integrating with data science tools</li>
+<li>Prefer Python syntax</li>
+<li>Need hidapi's cross-platform support</li>
+</ul>
+<h3>Use WebHID When:</h3>
+<ul>
+<li>Building web applications</li>
+<li>Need visual interface</li>
+<li>Want no installation required</li>
+<li>Need keyboard event capture</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

@@ -1,0 +1,389 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/hid-reading/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: HID Reading">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/hid-reading/">
+
+    <title>Blankslate: HID Reading</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href=".">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">How Blankslate reads and interprets HID data</h2>
+        <h1>HID Reading</h1>
+<p>This document explains how Blankslate reads raw HID (Human Interface Device) data from graphics tablets and translates it into meaningful events.</p>
+<h2>HID Basics</h2>
+<h3>What is HID?</h3>
+<p>HID (Human Interface Device) is a USB protocol for input devices like keyboards, mice, and drawing tablets. Devices send data in fixed-size packets called &quot;reports.&quot;</p>
+<h3>Report Structure</h3>
+<p>A typical tablet report looks like:</p>
+<pre><code>[Report ID][Status][X_lo][X_hi][Y_lo][Y_hi][Pressure_lo][Pressure_hi][Tilt_X][Tilt_Y]
+    0         1       2     3     4     5       6            7          8       9
+</code></pre>
+<ul>
+<li><strong>Report ID</strong>: Identifies the type of report</li>
+<li><strong>Status</strong>: Pen state (hovering, touching, buttons)</li>
+<li><strong>X/Y</strong>: Pen position (little-endian 16-bit)</li>
+<li><strong>Pressure</strong>: Pen pressure (little-endian 16-bit)</li>
+<li><strong>Tilt</strong>: Pen angle (signed 8-bit)</li>
+</ul>
+<hr>
+<h2>Reading HID Data</h2>
+<h3>Node.js (node-hid)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token constant">HID</span> <span class="token keyword">from</span> <span class="token string">'node-hid'</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Find the device</span>
+<span class="token keyword">const</span> devices <span class="token operator">=</span> <span class="token constant">HID</span><span class="token punctuation">.</span><span class="token function">devices</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> tablet <span class="token operator">=</span> devices<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>d <span class="token operator">=></span> 
+  d<span class="token punctuation">.</span>vendorId <span class="token operator">===</span> <span class="token number">0x28bd</span> <span class="token operator">&amp;&amp;</span> 
+  d<span class="token punctuation">.</span>productId <span class="token operator">===</span> <span class="token number">0x2904</span> <span class="token operator">&amp;&amp;</span>
+  d<span class="token punctuation">.</span>usagePage <span class="token operator">===</span> <span class="token number">13</span>  <span class="token comment">// Digitizer</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Open and read</span>
+<span class="token keyword">const</span> device <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name"><span class="token constant">HID</span></span><span class="token punctuation">.</span><span class="token constant">HID</span><span class="token punctuation">(</span>tablet<span class="token punctuation">.</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+device<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">'data'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>data<span class="token operator">:</span> Buffer<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token comment">// data includes Report ID at byte 0</span>
+  <span class="token keyword">const</span> reportId <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> status <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> x <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">|</span> <span class="token punctuation">(</span>data<span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span> <span class="token operator">&lt;&lt;</span> <span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">// ...</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Python (hidapi)</h3>
+<pre class="language-python" tabindex="0"><code class="language-python"><span class="token keyword">import</span> hid
+
+<span class="token comment"># Find the device</span>
+devices <span class="token operator">=</span> hid<span class="token punctuation">.</span><span class="token builtin">enumerate</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+tablet <span class="token operator">=</span> <span class="token builtin">next</span><span class="token punctuation">(</span>d <span class="token keyword">for</span> d <span class="token keyword">in</span> devices 
+              <span class="token keyword">if</span> d<span class="token punctuation">[</span><span class="token string">'vendor_id'</span><span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token number">0x28bd</span> 
+              <span class="token keyword">and</span> d<span class="token punctuation">[</span><span class="token string">'product_id'</span><span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token number">0x2904</span>
+              <span class="token keyword">and</span> d<span class="token punctuation">[</span><span class="token string">'usage_page'</span><span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token number">13</span><span class="token punctuation">)</span>
+
+<span class="token comment"># Open and read</span>
+device <span class="token operator">=</span> hid<span class="token punctuation">.</span>device<span class="token punctuation">(</span><span class="token punctuation">)</span>
+device<span class="token punctuation">.</span>open_path<span class="token punctuation">(</span>tablet<span class="token punctuation">[</span><span class="token string">'path'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+    data <span class="token operator">=</span> device<span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span>  <span class="token comment"># Includes Report ID at byte 0</span>
+    report_id <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+    status <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span>
+    x <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">|</span> <span class="token punctuation">(</span>data<span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span> <span class="token operator">&lt;&lt;</span> <span class="token number">8</span><span class="token punctuation">)</span>
+    <span class="token comment"># ...</span></code></pre>
+<h3>WebHID (Browser)</h3>
+<pre class="language-javascript" tabindex="0"><code class="language-javascript"><span class="token comment">// Request device access</span>
+<span class="token keyword">const</span> <span class="token punctuation">[</span>device<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token keyword">await</span> navigator<span class="token punctuation">.</span>hid<span class="token punctuation">.</span><span class="token function">requestDevice</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  <span class="token literal-property property">filters</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">{</span> <span class="token literal-property property">vendorId</span><span class="token operator">:</span> <span class="token number">0x28bd</span><span class="token punctuation">,</span> <span class="token literal-property property">productId</span><span class="token operator">:</span> <span class="token number">0x2904</span> <span class="token punctuation">}</span><span class="token punctuation">]</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">await</span> device<span class="token punctuation">.</span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+device<span class="token punctuation">.</span><span class="token function">addEventListener</span><span class="token punctuation">(</span><span class="token string">'inputreport'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token parameter">event</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token comment">// WebHID strips the Report ID!</span>
+  <span class="token keyword">const</span> data <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Uint8Array</span><span class="token punctuation">(</span>event<span class="token punctuation">.</span>data<span class="token punctuation">.</span>buffer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> reportId <span class="token operator">=</span> event<span class="token punctuation">.</span>reportId<span class="token punctuation">;</span>  <span class="token comment">// Available separately</span>
+  <span class="token keyword">const</span> status <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>  <span class="token comment">// First byte is status, not report ID</span>
+  <span class="token keyword">const</span> x <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">|</span> <span class="token punctuation">(</span>data<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">&lt;&lt;</span> <span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">// ...</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<hr>
+<h2>Data Processing</h2>
+<h3>The <code>processDeviceData</code> Function</h3>
+<p>Blankslate's core data processing function handles all platforms:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">function</span> <span class="token function">processDeviceData</span><span class="token punctuation">(</span>
+  data<span class="token operator">:</span> Uint8Array<span class="token punctuation">,</span>
+  mappings<span class="token operator">:</span> ByteCodeMappings<span class="token punctuation">,</span>
+  offset<span class="token operator">:</span> <span class="token builtin">number</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token punctuation">)</span><span class="token operator">:</span> TabletEvent <span class="token punctuation">{</span>
+  <span class="token comment">// Apply offset for WebHID (offset = -1)</span>
+  <span class="token keyword">const</span> <span class="token function-variable function">getIndex</span> <span class="token operator">=</span> <span class="token punctuation">(</span>idx<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">)</span> <span class="token operator">=></span> idx <span class="token operator">+</span> offset<span class="token punctuation">;</span>
+  
+  <span class="token comment">// Extract X coordinate</span>
+  <span class="token keyword">const</span> xBytes <span class="token operator">=</span> mappings<span class="token punctuation">.</span>x<span class="token punctuation">.</span>byteIndex<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span>i <span class="token operator">=></span> data<span class="token punctuation">[</span><span class="token function">getIndex</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> x <span class="token operator">=</span> <span class="token function">parseMultiByteRange</span><span class="token punctuation">(</span>xBytes<span class="token punctuation">,</span> mappings<span class="token punctuation">.</span>x<span class="token punctuation">.</span>max<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  
+  <span class="token comment">// Extract Y coordinate</span>
+  <span class="token keyword">const</span> yBytes <span class="token operator">=</span> mappings<span class="token punctuation">.</span>y<span class="token punctuation">.</span>byteIndex<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span>i <span class="token operator">=></span> data<span class="token punctuation">[</span><span class="token function">getIndex</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> y <span class="token operator">=</span> <span class="token function">parseMultiByteRange</span><span class="token punctuation">(</span>yBytes<span class="token punctuation">,</span> mappings<span class="token punctuation">.</span>y<span class="token punctuation">.</span>max<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  
+  <span class="token comment">// ... pressure, tilt, status, buttons</span>
+  
+  <span class="token keyword">return</span> <span class="token punctuation">{</span> x<span class="token punctuation">,</span> y<span class="token punctuation">,</span> pressure<span class="token punctuation">,</span> tiltX<span class="token punctuation">,</span> tiltY<span class="token punctuation">,</span> status<span class="token punctuation">,</span> buttons <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Multi-Byte Values</h3>
+<p>Coordinates and pressure are typically 16-bit little-endian:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">function</span> <span class="token function">parseMultiByteRange</span><span class="token punctuation">(</span>bytes<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span> max<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">number</span> <span class="token punctuation">{</span>
+  <span class="token comment">// Little-endian: low byte first</span>
+  <span class="token keyword">let</span> value <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">let</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> bytes<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    value <span class="token operator">|=</span> bytes<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&lt;&lt;</span> <span class="token punctuation">(</span>i <span class="token operator">*</span> <span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment">// Normalize to 0-1 range</span>
+  <span class="token keyword">return</span> value <span class="token operator">/</span> max<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Bipolar Values (Tilt)</h3>
+<p>Tilt uses a bipolar encoding where:</p>
+<ul>
+<li>0 to <code>positiveMax</code> = positive tilt</li>
+<li><code>negativeMin</code> to 255 = negative tilt</li>
+</ul>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">function</span> <span class="token function">parseBipolarRange</span><span class="token punctuation">(</span>
+  value<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">,</span>
+  positiveMax<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">,</span>
+  negativeMin<span class="token operator">:</span> <span class="token builtin">number</span>
+<span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">number</span> <span class="token punctuation">{</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>value <span class="token operator">&lt;=</span> positiveMax<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Positive range: 0 to positiveMax → 0 to 1</span>
+    <span class="token keyword">return</span> value <span class="token operator">/</span> positiveMax<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>value <span class="token operator">>=</span> negativeMin<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Negative range: negativeMin to 255 → -1 to 0</span>
+    <span class="token keyword">return</span> <span class="token punctuation">(</span>value <span class="token operator">-</span> <span class="token number">256</span><span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token punctuation">(</span><span class="token number">256</span> <span class="token operator">-</span> negativeMin<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<hr>
+<h2>Status Byte Decoding</h2>
+<p>The status byte indicates pen state and button presses:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">const</span> statusValues <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token number">160</span><span class="token operator">:</span> <span class="token punctuation">{</span> state<span class="token operator">:</span> <span class="token string">'hover'</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token number">161</span><span class="token operator">:</span> <span class="token punctuation">{</span> state<span class="token operator">:</span> <span class="token string">'contact'</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token number">162</span><span class="token operator">:</span> <span class="token punctuation">{</span> state<span class="token operator">:</span> <span class="token string">'hover'</span><span class="token punctuation">,</span> secondaryButton<span class="token operator">:</span> <span class="token boolean">true</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token number">163</span><span class="token operator">:</span> <span class="token punctuation">{</span> state<span class="token operator">:</span> <span class="token string">'contact'</span><span class="token punctuation">,</span> secondaryButton<span class="token operator">:</span> <span class="token boolean">true</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token number">192</span><span class="token operator">:</span> <span class="token punctuation">{</span> state<span class="token operator">:</span> <span class="token string">'none'</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token number">240</span><span class="token operator">:</span> <span class="token punctuation">{</span> state<span class="token operator">:</span> <span class="token string">'buttons'</span> <span class="token punctuation">}</span>  <span class="token comment">// Tablet button press</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">function</span> <span class="token function">decodeStatus</span><span class="token punctuation">(</span>byte<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">,</span> mappings<span class="token operator">:</span> StatusMapping<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> mappings<span class="token punctuation">.</span>values<span class="token punctuation">[</span>byte<span class="token punctuation">]</span> <span class="token operator">||</span> <span class="token punctuation">{</span> state<span class="token operator">:</span> <span class="token string">'unknown'</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<hr>
+<h2>Multi-Interface Reading</h2>
+<p>Some tablets send pen data and button data on separate HID interfaces:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">class</span> <span class="token class-name">MultiInterfaceReader</span> <span class="token punctuation">{</span>
+  <span class="token keyword">private</span> penInterface<span class="token operator">:</span> HIDDevice<span class="token punctuation">;</span>
+  <span class="token keyword">private</span> buttonInterface<span class="token operator">:</span> HIDDevice<span class="token punctuation">;</span>
+  
+  <span class="token keyword">async</span> <span class="token function">connect</span><span class="token punctuation">(</span>config<span class="token operator">:</span> Config<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Open digitizer interface (usage page 13)</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>penInterface <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">openInterface</span><span class="token punctuation">(</span><span class="token number">13</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+    <span class="token comment">// Open keyboard interface (usage page 1) for buttons</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>config<span class="token punctuation">.</span>buttonInterfaceReportId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">this</span><span class="token punctuation">.</span>buttonInterface <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">openInterface</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token keyword">private</span> <span class="token function">mergeEvents</span><span class="token punctuation">(</span>penEvent<span class="token operator">:</span> TabletEvent<span class="token punctuation">,</span> buttonEvent<span class="token operator">:</span> ButtonEvent<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span>
+      <span class="token operator">...</span>penEvent<span class="token punctuation">,</span>
+      tabletButtons<span class="token operator">:</span> buttonEvent<span class="token punctuation">.</span>buttons
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<hr>
+<h2>Byte Detection (Walkthrough)</h2>
+<p>The config generator detects byte mappings by analyzing changes:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">class</span> <span class="token class-name">ByteDetector</span> <span class="token punctuation">{</span>
+  <span class="token keyword">private</span> baseline<span class="token operator">:</span> Uint8Array<span class="token punctuation">;</span>
+  
+  <span class="token function">detectChanges</span><span class="token punctuation">(</span>current<span class="token operator">:</span> Uint8Array<span class="token punctuation">)</span><span class="token operator">:</span> ByteChange<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{</span>
+    <span class="token keyword">const</span> changes<span class="token operator">:</span> ByteChange<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">let</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> current<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>current<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">!==</span> <span class="token keyword">this</span><span class="token punctuation">.</span>baseline<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        changes<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+          index<span class="token operator">:</span> i<span class="token punctuation">,</span>
+          oldValue<span class="token operator">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>baseline<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span>
+          newValue<span class="token operator">:</span> current<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span>
+          delta<span class="token operator">:</span> current<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">-</span> <span class="token keyword">this</span><span class="token punctuation">.</span>baseline<span class="token punctuation">[</span>i<span class="token punctuation">]</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    
+    <span class="token keyword">return</span> changes<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token function">detectMultiByteRange</span><span class="token punctuation">(</span>samples<span class="token operator">:</span> Uint8Array<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token operator">:</span> MultiByteMapping <span class="token punctuation">{</span>
+    <span class="token comment">// Find bytes that change together in a pattern</span>
+    <span class="token comment">// indicating a multi-byte value</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<hr>
+<h2>Error Handling</h2>
+<h3>Device Disconnection</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript">device<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">'error'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>err<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>err<span class="token punctuation">.</span>message<span class="token punctuation">.</span><span class="token function">includes</span><span class="token punctuation">(</span><span class="token string">'disconnected'</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Attempt reconnection</span>
+    <span class="token function">reconnect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Invalid Data</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">function</span> <span class="token function">validatePacket</span><span class="token punctuation">(</span>data<span class="token operator">:</span> Uint8Array<span class="token punctuation">,</span> config<span class="token operator">:</span> Config<span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">boolean</span> <span class="token punctuation">{</span>
+  <span class="token comment">// Check packet length</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>data<span class="token punctuation">.</span>length <span class="token operator">&lt;</span> config<span class="token punctuation">.</span>expectedLength<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token comment">// Check report ID</span>
+  <span class="token keyword">const</span> reportId <span class="token operator">=</span> data<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>config<span class="token punctuation">.</span>modes<span class="token punctuation">.</span><span class="token function">some</span><span class="token punctuation">(</span>m <span class="token operator">=></span> m<span class="token punctuation">.</span>reportId <span class="token operator">===</span> reportId<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<hr>
+<h2>Performance Considerations</h2>
+<h3>Packet Rate</h3>
+<p>Tablets typically send 100-200 packets per second. For smooth visualization:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// Throttle UI updates</span>
+<span class="token keyword">let</span> lastUpdate <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token constant">UPDATE_INTERVAL</span> <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">;</span> <span class="token comment">// ~60fps</span>
+
+<span class="token keyword">function</span> <span class="token function">onData</span><span class="token punctuation">(</span>event<span class="token operator">:</span> TabletEvent<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">const</span> now <span class="token operator">=</span> performance<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>now <span class="token operator">-</span> lastUpdate <span class="token operator">>=</span> <span class="token constant">UPDATE_INTERVAL</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token function">updateUI</span><span class="token punctuation">(</span>event<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    lastUpdate <span class="token operator">=</span> now<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Memory Management</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// Reuse buffers instead of creating new ones</span>
+<span class="token keyword">const</span> eventBuffer <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">TabletEvent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">function</span> <span class="token function">processData</span><span class="token punctuation">(</span>data<span class="token operator">:</span> Uint8Array<span class="token punctuation">)</span><span class="token operator">:</span> TabletEvent <span class="token punctuation">{</span>
+  <span class="token comment">// Update existing object instead of creating new</span>
+  <span class="token class-name">eventBuffer</span><span class="token punctuation">.</span>x <span class="token operator">=</span> <span class="token function">parseX</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  eventBuffer<span class="token punctuation">.</span>y <span class="token operator">=</span> <span class="token function">parseY</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">// ...</span>
+  <span class="token keyword">return</span> eventBuffer<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

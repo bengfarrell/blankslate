@@ -1,0 +1,418 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/cli-python/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Python CLI">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/cli-python/">
+
+    <title>Blankslate: Python CLI</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href=".">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Command-line tools for Python</h2>
+        <h1>Python CLI Tools</h1>
+<p>Command-line tools for configuring and testing HID graphics tablets using Python.</p>
+<h2>Installation</h2>
+<p>Install the Python package:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token builtin class-name">cd</span> python
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token builtin class-name">.</span></code></pre>
+<p>This installs three CLI commands:</p>
+<ul>
+<li><code>tablet-config</code> → Interactive configuration generator</li>
+<li><code>tablet-events</code> → Real-time event viewer</li>
+<li><code>tablet-websocket</code> → WebSocket server for broadcasting tablet events</li>
+</ul>
+<p>For development with all extras:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token string">".[dev,websocket,keyboard]"</span></code></pre>
+<hr>
+<h2>Development Mode</h2>
+<p>For development, you can run the tools directly without installing the package. This is useful for testing changes and debugging in IDEs like WebStorm.</p>
+<h3>Running Without Installation</h3>
+<p><strong>Config Generator:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token builtin class-name">cd</span> python
+python generate_config.py              <span class="token comment"># Interactive mode</span>
+python generate_config.py <span class="token parameter variable">--mock</span>       <span class="token comment"># Mock mode</span>
+<span class="token comment"># or</span>
+./run_config_gen.sh                    <span class="token comment"># Shell script wrapper</span>
+<span class="token comment"># or</span>
+python run_config_generator.py         <span class="token comment"># Python wrapper</span></code></pre>
+<p><strong>Event Viewer:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token builtin class-name">cd</span> python
+python view_events.py <span class="token parameter variable">-c</span> <span class="token punctuation">..</span>/public/configs/xp-pen-deco640.json <span class="token parameter variable">--live</span>
+python view_events.py <span class="token parameter variable">-c</span> my-config.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span>
+<span class="token comment"># or</span>
+./run_viewer.sh                        <span class="token comment"># Shell script wrapper</span>
+<span class="token comment"># or</span>
+python run_event_viewer.py <span class="token parameter variable">-c</span> my-config.json <span class="token parameter variable">--live</span></code></pre>
+<p><strong>Why multiple scripts?</strong></p>
+<ul>
+<li><code>generate_config.py</code> / <code>view_events.py</code> - Standalone scripts that work well in IDEs (Ctrl+C works properly)</li>
+<li><code>run_config_generator.py</code> / <code>run_event_viewer.py</code> - Simple wrappers for the CLI modules</li>
+<li><code>run_config_gen.sh</code> / <code>run_viewer.sh</code> - Shell scripts with automatic venv activation</li>
+</ul>
+<h3>Running With Installation</h3>
+<p>After installing with <code>pip install -e .</code>:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Interactive configuration generator</span>
+python <span class="token parameter variable">-m</span> blankslate.cli.config_generator
+<span class="token comment"># or</span>
+tablet-config
+
+<span class="token comment"># View tablet events</span>
+python <span class="token parameter variable">-m</span> blankslate.cli.event_viewer <span class="token parameter variable">-c</span> path/to/config.json <span class="token parameter variable">--live</span>
+<span class="token comment"># or</span>
+tablet-events <span class="token parameter variable">-c</span> path/to/config.json <span class="token parameter variable">--live</span>
+
+<span class="token comment"># Start WebSocket server</span>
+python <span class="token parameter variable">-m</span> blankslate.cli.websocket_server <span class="token parameter variable">-c</span> path/to/config.json
+<span class="token comment"># or</span>
+tablet-websocket <span class="token parameter variable">-c</span> path/to/config.json</code></pre>
+<hr>
+<h2>Config Generator</h2>
+<p>Interactive step-by-step wizard to generate tablet configurations:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># With installation</span>
+tablet-config
+tablet-config <span class="token parameter variable">--mock</span>  <span class="token comment"># Use mock data for testing</span>
+
+<span class="token comment"># Without installation (development)</span>
+<span class="token builtin class-name">cd</span> python
+python generate_config.py
+python generate_config.py <span class="token parameter variable">--mock</span></code></pre>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Automatic device detection</li>
+<li>Interactive walkthrough for byte mapping detection</li>
+<li>Supports pen position, pressure, tilt, and buttons</li>
+<li>Multi-interface support (pen + keyboard interfaces)</li>
+<li>Mock mode for testing without physical hardware</li>
+<li>Generates JSON config files compatible with all tools</li>
+</ul>
+<hr>
+<h2>Event Viewer</h2>
+<p>View and visualize tablet events in real-time:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Live dashboard mode (recommended)</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span>
+
+<span class="token comment"># Compact single-line mode</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--compact</span>
+
+<span class="token comment"># Show raw bytes</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span> <span class="token parameter variable">--raw</span>
+
+<span class="token comment"># Use mock data</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span></code></pre>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Real-time event visualization</li>
+<li>Live mode with updating dashboard</li>
+<li>Compact mode for continuous logging</li>
+<li>Raw byte display for debugging</li>
+<li>Calibration warnings for max values</li>
+<li>Mock mode with automatic gesture cycling</li>
+<li>Color-coded output for easy reading</li>
+</ul>
+<p><strong>Display Modes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Live</td>
+<td><code>--live</code></td>
+<td>Interactive dashboard with live updates</td>
+</tr>
+<tr>
+<td>Compact</td>
+<td><code>--compact</code></td>
+<td>Single-line format for each event</td>
+</tr>
+<tr>
+<td>Raw</td>
+<td><code>--raw</code></td>
+<td>Show raw HID bytes alongside events</td>
+</tr>
+<tr>
+<td>Default</td>
+<td>(none)</td>
+<td>Detailed multi-line format</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>WebSocket Server</h2>
+<p>Broadcast tablet events over WebSocket for remote applications:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Start server on default port (8765)</span>
+tablet-websocket <span class="token parameter variable">-c</span> config.json
+
+<span class="token comment"># Specify custom port</span>
+tablet-websocket <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--port</span> <span class="token number">9000</span>
+
+<span class="token comment"># Send raw bytes instead of translated events</span>
+tablet-websocket <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--raw</span>
+
+<span class="token comment"># Use mock data for testing</span>
+tablet-websocket <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--mock</span></code></pre>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Reads HID tablet data using your config file</li>
+<li>Broadcasts high-level tablet events (position, pressure, buttons) over WebSocket</li>
+<li>Supports raw byte mode (<code>--raw</code>) for debugging and low-level analysis</li>
+<li>Supports multiple simultaneous client connections</li>
+<li>Automatic client connection/disconnection handling</li>
+<li>Device reconnection with exponential backoff</li>
+<li>Mock mode for testing without physical hardware</li>
+<li>Status broadcasts for connection state</li>
+<li>Web client auto-detects data format (raw vs translated)</li>
+</ul>
+<p><strong>Translated Event Format (default):</strong></p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"tablet-data"</span><span class="token punctuation">,</span>
+  <span class="token property">"timestamp"</span><span class="token operator">:</span> <span class="token number">1234567890.123</span><span class="token punctuation">,</span>
+  <span class="token property">"x"</span><span class="token operator">:</span> <span class="token number">0.5</span><span class="token punctuation">,</span>
+  <span class="token property">"y"</span><span class="token operator">:</span> <span class="token number">0.5</span><span class="token punctuation">,</span>
+  <span class="token property">"pressure"</span><span class="token operator">:</span> <span class="token number">0.8</span><span class="token punctuation">,</span>
+  <span class="token property">"tiltX"</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>
+  <span class="token property">"tiltY"</span><span class="token operator">:</span> <span class="token number">0.0</span><span class="token punctuation">,</span>
+  <span class="token property">"primaryButton"</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+  <span class="token property">"secondaryButton"</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+  <span class="token property">"tabletButtons"</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+  <span class="token property">"button1"</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+  <span class="token property">"button2"</span><span class="token operator">:</span> <span class="token boolean">false</span>
+<span class="token punctuation">}</span></code></pre>
+<p><strong>Raw Byte Format (<code>--raw</code> flag):</strong>
+Binary data sent directly over WebSocket. The web client will automatically detect this format and display the raw bytes viewer with config-based byte interpretation.</p>
+<p><strong>Status Messages:</strong></p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"status"</span><span class="token punctuation">,</span>
+  <span class="token property">"status"</span><span class="token operator">:</span> <span class="token string">"connected"</span><span class="token punctuation">,</span>
+  <span class="token property">"message"</span><span class="token operator">:</span> <span class="token string">"Device connected"</span>
+<span class="token punctuation">}</span></code></pre>
+<p><strong>Client Example:</strong></p>
+<pre class="language-python" tabindex="0"><code class="language-python"><span class="token keyword">import</span> asyncio
+<span class="token keyword">import</span> websockets
+<span class="token keyword">import</span> json
+
+<span class="token keyword">async</span> <span class="token keyword">def</span> <span class="token function">receive_events</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    uri <span class="token operator">=</span> <span class="token string">"ws://localhost:8765"</span>
+    <span class="token keyword">async</span> <span class="token keyword">with</span> websockets<span class="token punctuation">.</span>connect<span class="token punctuation">(</span>uri<span class="token punctuation">)</span> <span class="token keyword">as</span> websocket<span class="token punctuation">:</span>
+        <span class="token keyword">async</span> <span class="token keyword">for</span> message <span class="token keyword">in</span> websocket<span class="token punctuation">:</span>
+            data <span class="token operator">=</span> json<span class="token punctuation">.</span>loads<span class="token punctuation">(</span>message<span class="token punctuation">)</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Tablet event: </span><span class="token interpolation"><span class="token punctuation">{</span>data<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+asyncio<span class="token punctuation">.</span>run<span class="token punctuation">(</span>receive_events<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span></code></pre>
+<hr>
+<h2>Mock Mode</h2>
+<p>All tools support <code>--mock</code> flag for testing without physical hardware:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># With installation</span>
+tablet-config <span class="token parameter variable">--mock</span>
+tablet-events <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span>
+tablet-websocket <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--mock</span>
+
+<span class="token comment"># Without installation (development)</span>
+<span class="token builtin class-name">cd</span> python
+python generate_config.py <span class="token parameter variable">--mock</span>
+python view_events.py <span class="token parameter variable">-c</span> <span class="token punctuation">..</span>/public/configs/xp-pen-deco640.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span></code></pre>
+<p><strong>Mock Features:</strong></p>
+<ul>
+<li>Config-based packet generation (matches your device's byte structure)</li>
+<li>Automatic gesture cycling (horizontal, vertical, circle, pressure, tilt, buttons)</li>
+<li>Realistic timing and packet rates</li>
+<li>Perfect for development and testing</li>
+</ul>
+<hr>
+<h2>Development Scripts</h2>
+<p>Located in <code>python/</code> directory:</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Purpose</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>generate_config.py</code></td>
+<td>Generate tablet config</td>
+<td><code>python generate_config.py --mock</code></td>
+</tr>
+<tr>
+<td><code>view_events.py</code></td>
+<td>View tablet events</td>
+<td><code>python view_events.py -c config.json --live</code></td>
+</tr>
+<tr>
+<td><code>run_config_gen.sh</code></td>
+<td>Shell wrapper for config gen</td>
+<td><code>./run_config_gen.sh --mock</code></td>
+</tr>
+<tr>
+<td><code>run_viewer.sh</code></td>
+<td>Shell wrapper for event viewer</td>
+<td><code>./run_viewer.sh</code></td>
+</tr>
+<tr>
+<td><code>run_config_generator.py</code></td>
+<td>Python wrapper for config gen</td>
+<td><code>python run_config_generator.py</code></td>
+</tr>
+<tr>
+<td><code>run_event_viewer.py</code></td>
+<td>Python wrapper for event viewer</td>
+<td><code>python run_event_viewer.py -c config.json</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> The standalone scripts (<code>generate_config.py</code>, <code>view_events.py</code>) work best in IDEs like WebStorm/PyCharm because Ctrl+C signal handling works properly.</p>
+</blockquote>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Ctrl+C doesn't work in IDE</h3>
+<p>Use the direct script wrapper instead of the module:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Instead of: python -m blankslate.cli.event_viewer</span>
+<span class="token comment"># Use:</span>
+python view_events.py <span class="token parameter variable">-c</span> my-config.json</code></pre>
+<h3>Device won't open / &quot;open failed&quot; error</h3>
+<p>A stuck process or the tablet driver may be holding the device:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">./kill_tablet_processes.sh</code></pre>
+<p>This script will:</p>
+<ul>
+<li>Find all Python tablet processes</li>
+<li>Kill the XTouch driver if running</li>
+<li>Free the device for use</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

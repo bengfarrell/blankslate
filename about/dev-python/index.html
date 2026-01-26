@@ -1,0 +1,343 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/dev-python/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Python Development">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/dev-python/">
+
+    <title>Blankslate: Python Development</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href=".">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Setting up Python development environment</h2>
+        <h1>Python Development Setup</h1>
+<p>Complete guide for setting up the Python development environment.</p>
+<h2>Prerequisites</h2>
+<ul>
+<li>Python 3.8 or higher</li>
+<li>pip (comes with Python)</li>
+</ul>
+<p>Check your Python version:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">python3 <span class="token parameter variable">--version</span></code></pre>
+<h2>Initial Setup</h2>
+<h3>1. Create Virtual Environment</h3>
+<p>A virtual environment isolates Python dependencies for this project.</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Navigate to the python directory</span>
+<span class="token builtin class-name">cd</span> python
+
+<span class="token comment"># Create virtual environment</span>
+python3 <span class="token parameter variable">-m</span> venv venv
+
+<span class="token comment"># Activate the virtual environment</span>
+<span class="token comment"># On macOS/Linux:</span>
+<span class="token builtin class-name">source</span> venv/bin/activate
+
+<span class="token comment"># On Windows:</span>
+venv<span class="token punctuation">\</span>Scripts<span class="token punctuation">\</span>activate</code></pre>
+<p>You'll see <code>(venv)</code> in your terminal prompt when activated.</p>
+<h3>2. Install the Package</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Install in development mode with all dependencies</span>
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token string">".[dev,websocket,keyboard]"</span>
+
+<span class="token comment"># Or just the basics:</span>
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token builtin class-name">.</span></code></pre>
+<p><strong>What this does:</strong></p>
+<ul>
+<li><code>-e</code> = &quot;editable&quot; mode - changes to code are immediately available</li>
+<li><code>.[dev]</code> = installs the package + development tools (pytest, black, mypy, ruff)</li>
+<li><code>.[websocket]</code> = adds WebSocket server support</li>
+<li><code>.[keyboard]</code> = adds keyboard automation support</li>
+</ul>
+<h3>3. Verify Installation</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Check CLI tools are available</span>
+tablet-config <span class="token parameter variable">--help</span>
+tablet-events <span class="token parameter variable">--help</span>
+tablet-websocket <span class="token parameter variable">--help</span>
+
+<span class="token comment"># Test Python imports</span>
+python <span class="token parameter variable">-c</span> <span class="token string">"from blankslate import Config, HIDReader; print('✅ Import successful!')"</span></code></pre>
+<hr>
+<h2>Project Structure</h2>
+<pre><code>python/
+├── venv/                    # Virtual environment (gitignored)
+├── blankslate/              # Source code
+│   ├── __init__.py
+│   ├── models/              # Data models
+│   ├── core/                # Core functionality
+│   └── cli/                 # CLI tools
+├── tests/                   # Test suite
+│   ├── conftest.py
+│   ├── fixtures/
+│   └── unit/
+├── pyproject.toml           # Package configuration
+├── pytest.ini               # Test configuration
+└── run_tests.sh             # Test runner
+</code></pre>
+<hr>
+<h2>Daily Workflow</h2>
+<h3>Activating the Environment</h3>
+<p><strong>Every time</strong> you open a new terminal:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token builtin class-name">cd</span> python
+<span class="token builtin class-name">source</span> venv/bin/activate  <span class="token comment"># macOS/Linux</span>
+<span class="token comment"># or</span>
+venv<span class="token punctuation">\</span>Scripts<span class="token punctuation">\</span>activate     <span class="token comment"># Windows</span></code></pre>
+<h3>Deactivating</h3>
+<p>When you're done:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">deactivate</code></pre>
+<hr>
+<h2>Running Tests</h2>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Make sure venv is activated</span>
+<span class="token builtin class-name">source</span> venv/bin/activate
+
+<span class="token comment"># Run all tests</span>
+pytest
+
+<span class="token comment"># Run with coverage</span>
+pytest <span class="token parameter variable">--cov</span><span class="token operator">=</span>blankslate --cov-report<span class="token operator">=</span>html
+
+<span class="token comment"># Run specific test file</span>
+pytest tests/unit/test_config.py
+
+<span class="token comment"># Run with verbose output</span>
+pytest <span class="token parameter variable">-v</span>
+
+<span class="token comment"># Use the test runner script</span>
+./run_tests.sh</code></pre>
+<p>View coverage report:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">open</span> htmlcov/index.html  <span class="token comment"># macOS</span></code></pre>
+<hr>
+<h2>Development Tools</h2>
+<h3>Code Formatting</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Format code with black</span>
+black blankslate tests
+
+<span class="token comment"># Check formatting without changes</span>
+black <span class="token parameter variable">--check</span> blankslate tests</code></pre>
+<h3>Linting</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Run ruff linter</span>
+ruff check blankslate tests
+
+<span class="token comment"># Auto-fix issues</span>
+ruff check <span class="token parameter variable">--fix</span> blankslate tests</code></pre>
+<h3>Type Checking</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Run mypy type checker</span>
+mypy blankslate</code></pre>
+<h3>Run All Checks</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Format, lint, type check, and test</span>
+black blankslate tests <span class="token operator">&amp;&amp;</span> <span class="token punctuation">\</span>
+ruff check blankslate tests <span class="token operator">&amp;&amp;</span> <span class="token punctuation">\</span>
+mypy blankslate <span class="token operator">&amp;&amp;</span> <span class="token punctuation">\</span>
+pytest</code></pre>
+<hr>
+<h2>Using as a Library</h2>
+<h3>In Python Scripts</h3>
+<pre class="language-python" tabindex="0"><code class="language-python"><span class="token comment">#!/usr/bin/env python3</span>
+<span class="token keyword">from</span> blankslate <span class="token keyword">import</span> Config<span class="token punctuation">,</span> HIDReader<span class="token punctuation">,</span> parse_multi_byte_range_data
+
+<span class="token comment"># Load a tablet configuration</span>
+config <span class="token operator">=</span> Config<span class="token punctuation">.</span>load<span class="token punctuation">(</span><span class="token string">'../configs/wacom-intuos-s.json'</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Loaded config for </span><span class="token interpolation"><span class="token punctuation">{</span>config<span class="token punctuation">.</span>name<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+<span class="token comment"># Create HID reader</span>
+reader <span class="token operator">=</span> HIDReader<span class="token punctuation">(</span>config<span class="token punctuation">)</span>
+
+<span class="token comment"># Process HID data</span>
+<span class="token keyword">def</span> <span class="token function">on_event</span><span class="token punctuation">(</span>event<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"X: </span><span class="token interpolation"><span class="token punctuation">{</span>event<span class="token punctuation">.</span>x<span class="token punctuation">}</span></span><span class="token string">, Y: </span><span class="token interpolation"><span class="token punctuation">{</span>event<span class="token punctuation">.</span>y<span class="token punctuation">}</span></span><span class="token string">, Pressure: </span><span class="token interpolation"><span class="token punctuation">{</span>event<span class="token punctuation">.</span>pressure<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+reader<span class="token punctuation">.</span>on_event <span class="token operator">=</span> on_event
+reader<span class="token punctuation">.</span>start<span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
+<h3>In Other Python Projects</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Install from local directory</span>
+pip <span class="token function">install</span> /path/to/blankslate/python
+
+<span class="token comment"># Or install in editable mode</span>
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> /path/to/blankslate/python</code></pre>
+<hr>
+<h2>IDE Setup</h2>
+<h3>VS Code</h3>
+<p>Install the Python extension, then VS Code will automatically detect the venv.</p>
+<p>Create <code>.vscode/settings.json</code>:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"python.defaultInterpreterPath"</span><span class="token operator">:</span> <span class="token string">"${workspaceFolder}/python/venv/bin/python"</span><span class="token punctuation">,</span>
+  <span class="token property">"python.testing.pytestEnabled"</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  <span class="token property">"python.testing.pytestArgs"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"tests"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token property">"python.formatting.provider"</span><span class="token operator">:</span> <span class="token string">"black"</span><span class="token punctuation">,</span>
+  <span class="token property">"python.linting.enabled"</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  <span class="token property">"python.linting.ruffEnabled"</span><span class="token operator">:</span> <span class="token boolean">true</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>PyCharm / WebStorm</h3>
+<ol>
+<li>Open Settings → Project → Python Interpreter</li>
+<li>Click the gear icon → Add</li>
+<li>Select &quot;Existing environment&quot;</li>
+<li>Browse to <code>python/venv/bin/python</code></li>
+</ol>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>&quot;Command not found&quot; errors</h3>
+<p>Make sure the virtual environment is activated:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token builtin class-name">source</span> venv/bin/activate</code></pre>
+<h3>Import errors</h3>
+<p>Reinstall the package:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token string">".[dev]"</span></code></pre>
+<h3>Permission errors on macOS</h3>
+<p>The HID tools need permission to access USB devices. Grant permission when prompted.</p>
+<h3>Ctrl+C doesn't work in IDE</h3>
+<p>Use the direct script wrapper instead of the module:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Instead of: python -m blankslate.cli.event_viewer</span>
+<span class="token comment"># Use:</span>
+python view_events.py <span class="token parameter variable">-c</span> my-config.json</code></pre>
+<h3>Device won't open / &quot;open failed&quot; error</h3>
+<p>A stuck process or the tablet driver may be holding the device:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">./kill_tablet_processes.sh</code></pre>
+<hr>
+<h2>Quick Reference</h2>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Setup (once)</span>
+<span class="token builtin class-name">cd</span> python
+python3 <span class="token parameter variable">-m</span> venv venv
+<span class="token builtin class-name">source</span> venv/bin/activate
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token string">".[dev,websocket,keyboard]"</span>
+
+<span class="token comment"># Daily workflow</span>
+<span class="token builtin class-name">cd</span> python
+<span class="token builtin class-name">source</span> venv/bin/activate
+
+<span class="token comment"># Run tests</span>
+pytest
+
+<span class="token comment"># Run event viewer</span>
+python view_events.py <span class="token parameter variable">-c</span> my-config.json
+
+<span class="token comment"># When done</span>
+deactivate</code></pre>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

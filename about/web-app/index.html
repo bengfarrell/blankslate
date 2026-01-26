@@ -1,0 +1,420 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/web-app/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Web Application">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/web-app/">
+
+    <title>Blankslate: Web Application</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href=".">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Browser-based tablet viewer and configuration tool</h2>
+        <h1>Web Application</h1>
+<p>The Blankslate web application provides a browser-based interface for connecting to tablets, viewing real-time data, and generating configuration files.</p>
+<h2>Quick Start</h2>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Start the dev server</span>
+<span class="token function">npm</span> run dev</code></pre>
+<p>Open http://localhost:3000 in Chrome, Edge, or Brave.</p>
+<hr>
+<h2>Features</h2>
+<h3>Real-Time Dashboard</h3>
+<p>The dashboard displays live tablet data:</p>
+<ul>
+<li><strong>Pen Position</strong>: X/Y coordinates with visual indicator</li>
+<li><strong>Pressure</strong>: Current pressure level with bar graph</li>
+<li><strong>Tilt</strong>: X/Y tilt angles</li>
+<li><strong>Buttons</strong>: Pen and tablet button states</li>
+<li><strong>Raw Bytes</strong>: Live HID packet visualization</li>
+</ul>
+<h3>Configuration Walkthrough</h3>
+<p>Interactive step-by-step wizard to generate tablet configs:</p>
+<ol>
+<li><strong>Connect Device</strong>: Select your tablet from the WebHID dialog</li>
+<li><strong>Detect X Axis</strong>: Draw horizontal lines</li>
+<li><strong>Detect Y Axis</strong>: Draw vertical lines</li>
+<li><strong>Detect Pressure</strong>: Apply varying pressure</li>
+<li><strong>Detect Tilt</strong>: Tilt the stylus</li>
+<li><strong>Detect Buttons</strong>: Press tablet buttons</li>
+<li><strong>Enter Metadata</strong>: Name, manufacturer, model</li>
+<li><strong>Export Config</strong>: Download JSON file</li>
+</ol>
+<h3>Drawing Canvas</h3>
+<p>Test your tablet with a simple drawing surface:</p>
+<ul>
+<li>Pressure-sensitive brush</li>
+<li>Tilt-responsive angle</li>
+<li>Clear canvas button</li>
+</ul>
+<hr>
+<h2>Browser Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Browser</th>
+<th>Support</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chrome</td>
+<td>✅ Full</td>
+<td>Recommended</td>
+</tr>
+<tr>
+<td>Edge</td>
+<td>✅ Full</td>
+<td>Chromium-based</td>
+</tr>
+<tr>
+<td>Brave</td>
+<td>✅ Full</td>
+<td>Chromium-based</td>
+</tr>
+<tr>
+<td>Firefox</td>
+<td>❌ None</td>
+<td>No WebHID support</td>
+</tr>
+<tr>
+<td>Safari</td>
+<td>❌ None</td>
+<td>No WebHID support</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> WebHID requires HTTPS in production. Localhost works without HTTPS.</p>
+</blockquote>
+<hr>
+<h2>Connecting a Tablet</h2>
+<h3>First-Time Connection</h3>
+<ol>
+<li>Click the <strong>Connect</strong> button</li>
+<li>A browser dialog appears listing HID devices</li>
+<li>Select your tablet from the list</li>
+<li>Click <strong>Connect</strong> in the dialog</li>
+</ol>
+<h3>Permissions</h3>
+<ul>
+<li>Permission is granted per-device, per-origin</li>
+<li>The browser remembers your choice</li>
+<li>You can revoke permissions in browser settings</li>
+</ul>
+<h3>Troubleshooting Connection</h3>
+<p><strong>Device not appearing in list:</strong></p>
+<ul>
+<li>Ensure the tablet is connected via USB</li>
+<li>Try unplugging and reconnecting</li>
+<li>Check that no other application has exclusive access</li>
+</ul>
+<p><strong>&quot;Access denied&quot; error:</strong></p>
+<ul>
+<li>Close other applications using the tablet</li>
+<li>Quit the manufacturer's driver software</li>
+<li>Restart the browser</li>
+</ul>
+<hr>
+<h2>Using the Dashboard</h2>
+<h3>Pen Position</h3>
+<p>The position display shows:</p>
+<ul>
+<li><strong>X</strong>: Horizontal position (0.0 to 1.0)</li>
+<li><strong>Y</strong>: Vertical position (0.0 to 1.0)</li>
+<li><strong>Visual indicator</strong>: Dot showing pen location</li>
+</ul>
+<h3>Pressure</h3>
+<ul>
+<li><strong>Bar graph</strong>: Visual pressure level</li>
+<li><strong>Numeric value</strong>: 0.0 (no pressure) to 1.0 (max pressure)</li>
+<li><strong>Levels</strong>: Shows raw pressure value and max</li>
+</ul>
+<h3>Tilt</h3>
+<ul>
+<li><strong>X Tilt</strong>: Left/right angle (-1.0 to 1.0)</li>
+<li><strong>Y Tilt</strong>: Forward/back angle (-1.0 to 1.0)</li>
+<li><strong>Visual indicator</strong>: Shows tilt direction</li>
+</ul>
+<h3>Buttons</h3>
+<ul>
+<li><strong>Pen buttons</strong>: Primary and secondary barrel buttons</li>
+<li><strong>Tablet buttons</strong>: Express keys on the tablet</li>
+<li><strong>Visual indicators</strong>: Light up when pressed</li>
+</ul>
+<h3>Raw Bytes</h3>
+<ul>
+<li><strong>Hex display</strong>: Current packet in hexadecimal</li>
+<li><strong>Byte highlighting</strong>: Changed bytes highlighted</li>
+<li><strong>Report ID</strong>: Shown separately</li>
+</ul>
+<hr>
+<h2>Configuration Walkthrough</h2>
+<h3>Starting the Walkthrough</h3>
+<ol>
+<li>Connect your tablet</li>
+<li>Click <strong>Generate Config</strong> or <strong>Walkthrough</strong></li>
+<li>Follow the on-screen instructions</li>
+</ol>
+<h3>Step-by-Step Process</h3>
+<h4>1. Connect Device</h4>
+<p>Select your tablet from the WebHID dialog.</p>
+<h4>2. Detect X Axis</h4>
+<ul>
+<li>Draw horizontal lines across the tablet</li>
+<li>The walkthrough detects which bytes change</li>
+<li>Confirms the X coordinate mapping</li>
+</ul>
+<h4>3. Detect Y Axis</h4>
+<ul>
+<li>Draw vertical lines up and down</li>
+<li>Detects Y coordinate bytes</li>
+<li>Confirms the Y coordinate mapping</li>
+</ul>
+<h4>4. Detect Pressure</h4>
+<ul>
+<li>Press lightly, then firmly</li>
+<li>Detects pressure bytes</li>
+<li>Confirms pressure range</li>
+</ul>
+<h4>5. Detect Tilt (if supported)</h4>
+<ul>
+<li>Tilt the stylus left/right</li>
+<li>Tilt forward/back</li>
+<li>Detects tilt bytes and ranges</li>
+</ul>
+<h4>6. Detect Buttons</h4>
+<ul>
+<li>Press each tablet button</li>
+<li>Records button scan codes</li>
+<li>Maps buttons to indices</li>
+</ul>
+<h4>7. Enter Metadata</h4>
+<ul>
+<li>Device name</li>
+<li>Manufacturer</li>
+<li>Model number</li>
+<li>Description</li>
+</ul>
+<h4>8. Export Config</h4>
+<ul>
+<li>Review the generated config</li>
+<li>Download as JSON file</li>
+<li>Use with CLI tools or web app</li>
+</ul>
+<hr>
+<h2>Mock Mode</h2>
+<p>Test the web app without a physical tablet:</p>
+<ol>
+<li>Open the app</li>
+<li>Click <strong>Use Mock Device</strong> (or add <code>?mock=true</code> to URL)</li>
+<li>The mock generates realistic tablet data</li>
+</ol>
+<p>Mock patterns include:</p>
+<ul>
+<li>Circular movements</li>
+<li>Horizontal/vertical lines</li>
+<li>Pressure sweeps</li>
+<li>Tilt variations</li>
+<li>Button presses</li>
+</ul>
+<hr>
+<h2>Loading Existing Configs</h2>
+<h3>From File</h3>
+<ol>
+<li>Click <strong>Load Config</strong></li>
+<li>Select a JSON config file</li>
+<li>The app uses the config for data interpretation</li>
+</ol>
+<h3>From URL</h3>
+<p>Add the config URL as a query parameter:</p>
+<pre><code>http://localhost:3000?config=path/to/config.json
+</code></pre>
+<hr>
+<h2>Keyboard Shortcuts</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>C</code></td>
+<td>Connect device</td>
+</tr>
+<tr>
+<td><code>D</code></td>
+<td>Toggle dashboard</td>
+</tr>
+<tr>
+<td><code>W</code></td>
+<td>Start walkthrough</td>
+</tr>
+<tr>
+<td><code>M</code></td>
+<td>Toggle mock mode</td>
+</tr>
+<tr>
+<td><code>R</code></td>
+<td>Toggle raw bytes</td>
+</tr>
+<tr>
+<td><code>Esc</code></td>
+<td>Cancel current action</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>Tablet moves mouse cursor</h3>
+<p>This is expected behavior. WebHID cannot prevent the tablet from controlling the system cursor. See <a href="/blankslate/about/limitations/">Known Limitations</a> for workarounds.</p>
+<h3>Data looks wrong</h3>
+<ul>
+<li>Verify you're using the correct config file</li>
+<li>Check that the tablet is in the expected mode (driver vs. driverless)</li>
+<li>Try regenerating the config</li>
+</ul>
+<h3>High latency</h3>
+<ul>
+<li>Close other browser tabs</li>
+<li>Disable browser extensions</li>
+<li>Check CPU usage</li>
+</ul>
+<h3>Walkthrough detection fails</h3>
+<ul>
+<li>Move the pen more slowly</li>
+<li>Make larger movements</li>
+<li>Ensure good contact with the tablet surface</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

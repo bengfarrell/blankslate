@@ -1,0 +1,419 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/dev-web/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Web Development">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/dev-web/">
+
+    <title>Blankslate: Web Development</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href=".">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Setting up web development environment</h2>
+        <h1>Web Development Setup</h1>
+<p>Guide for developing the browser-based web application.</p>
+<h2>Prerequisites</h2>
+<ul>
+<li>Node.js 18+ and npm</li>
+<li>Chromium-based browser (Chrome, Edge, Brave)</li>
+</ul>
+<h2>Quick Start</h2>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Clone and install</span>
+<span class="token function">git</span> clone https://github.com/bengfarrell/blankslate.git
+<span class="token builtin class-name">cd</span> blankslate
+<span class="token function">npm</span> <span class="token function">install</span>
+
+<span class="token comment"># Start dev server</span>
+<span class="token function">npm</span> run dev</code></pre>
+<p>Open http://localhost:3000 in your browser.</p>
+<hr>
+<h2>Technology Stack</h2>
+<table>
+<thead>
+<tr>
+<th>Technology</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vite</strong></td>
+<td>Dev server, bundler, HMR</td>
+</tr>
+<tr>
+<td><strong>LitElement</strong></td>
+<td>Web components</td>
+</tr>
+<tr>
+<td><strong>TypeScript</strong></td>
+<td>Type safety</td>
+</tr>
+<tr>
+<td><strong>WebHID</strong></td>
+<td>Browser HID API</td>
+</tr>
+<tr>
+<td><strong>Spectrum Web Components</strong></td>
+<td>UI components</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Project Structure</h2>
+<pre><code>src/
+├── components/              # LitElement web components
+│   ├── hid-data-reader/     # Main HID reader component
+│   ├── hid-dashboard/       # Dashboard view
+│   ├── hid-walkthrough/     # Config walkthrough
+│   ├── bytes-display/       # Byte visualization
+│   ├── drawing-canvas/      # Drawing surface
+│   └── tablet-visualizer/   # Tablet visualization
+├── core/
+│   ├── hid/                 # HID interfaces
+│   └── walkthrough/         # Walkthrough engine
+├── utils/
+│   ├── finddevice.ts        # WebHID device discovery
+│   ├── data-helpers.ts      # Data processing
+│   └── byte-detector.ts     # Byte analysis
+├── mockbytes/               # Mock tablet simulation
+└── index.ts                 # Public API
+</code></pre>
+<hr>
+<h2>Component Architecture</h2>
+<h3>Main Components</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;hid-data-reader&gt;</code></td>
+<td>Main app shell, manages device connection</td>
+</tr>
+<tr>
+<td><code>&lt;hid-dashboard&gt;</code></td>
+<td>Real-time tablet data visualization</td>
+</tr>
+<tr>
+<td><code>&lt;hid-walkthrough&gt;</code></td>
+<td>Step-by-step config generator</td>
+</tr>
+<tr>
+<td><code>&lt;bytes-display&gt;</code></td>
+<td>Raw byte visualization</td>
+</tr>
+<tr>
+<td><code>&lt;tablet-visualizer&gt;</code></td>
+<td>SVG tablet representation</td>
+</tr>
+</tbody>
+</table>
+<h3>Component Pattern</h3>
+<p>Each component follows this structure:</p>
+<pre><code>src/components/component-name/
+├── component-name.ts        # Component logic
+└── component-name.styles.ts # Separated CSS styles
+</code></pre>
+<p>Example component:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> LitElement<span class="token punctuation">,</span> html <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'lit'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> customElement<span class="token punctuation">,</span> property <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'lit/decorators.js'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> styles <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'./my-component.styles.js'</span><span class="token punctuation">;</span>
+
+<span class="token decorator"><span class="token at operator">@</span><span class="token function">customElement</span></span><span class="token punctuation">(</span><span class="token string">'my-component'</span><span class="token punctuation">)</span>
+<span class="token keyword">export</span> <span class="token keyword">class</span> <span class="token class-name">MyComponent</span> <span class="token keyword">extends</span> <span class="token class-name">LitElement</span> <span class="token punctuation">{</span>
+  <span class="token keyword">static</span> styles <span class="token operator">=</span> styles<span class="token punctuation">;</span>
+
+  <span class="token decorator"><span class="token at operator">@</span><span class="token function">property</span></span><span class="token punctuation">(</span><span class="token punctuation">{</span> type<span class="token operator">:</span> String <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  name <span class="token operator">=</span> <span class="token string">'World'</span><span class="token punctuation">;</span>
+
+  <span class="token function">render</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> html<span class="token template-string"><span class="token template-punctuation string">`</span><span class="token string">&lt;p>Hello, </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span><span class="token keyword">this</span><span class="token punctuation">.</span>name<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">!&lt;/p></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<hr>
+<h2>WebHID Integration</h2>
+<h3>Device Discovery</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> findDevice<span class="token punctuation">,</span> openDevice <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'./utils/finddevice.js'</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Request device access</span>
+<span class="token keyword">const</span> device <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token function">findDevice</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Open the device</span>
+<span class="token keyword">await</span> <span class="token function">openDevice</span><span class="token punctuation">(</span>device<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Listen for input reports</span>
+device<span class="token punctuation">.</span><span class="token function">addEventListener</span><span class="token punctuation">(</span><span class="token string">'inputreport'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>event<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token keyword">const</span> bytes <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Uint8Array</span><span class="token punctuation">(</span>event<span class="token punctuation">.</span>data<span class="token punctuation">.</span>buffer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Received:'</span><span class="token punctuation">,</span> bytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Multi-Interface Support</h3>
+<p>Some tablets expose multiple HID interfaces:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> MultiInterfaceManager <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'./utils/finddevice.js'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> manager <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MultiInterfaceManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">await</span> manager<span class="token punctuation">.</span><span class="token function">connect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+manager<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">'data'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>bytes<span class="token punctuation">,</span> interfaceId<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">`</span><span class="token string">Interface </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>interfaceId<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">:</span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span> bytes<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<hr>
+<h2>Mock Mode</h2>
+<p>For development without a physical tablet:</p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> MockTabletDevice <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'./mockbytes/mock-tablet-device.js'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> mock <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MockTabletDevice</span><span class="token punctuation">(</span>config<span class="token punctuation">)</span><span class="token punctuation">;</span>
+mock<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+mock<span class="token punctuation">.</span><span class="token function">addEventListener</span><span class="token punctuation">(</span><span class="token string">'inputreport'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>event<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token comment">// Same API as real WebHID device</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<p>The mock generates realistic patterns:</p>
+<ul>
+<li>Circular movements</li>
+<li>Horizontal/vertical lines</li>
+<li>Pressure sweeps</li>
+<li>Tilt variations</li>
+<li>Button presses</li>
+</ul>
+<hr>
+<h2>Development Workflow</h2>
+<h3>Hot Module Replacement</h3>
+<p>Vite provides instant updates:</p>
+<ol>
+<li>Edit a component file</li>
+<li>Save</li>
+<li>Browser updates automatically (no refresh needed)</li>
+</ol>
+<h3>Debugging</h3>
+<ol>
+<li>Open Chrome DevTools (F12)</li>
+<li>Use the Elements panel to inspect web components</li>
+<li>Use the Console for logging</li>
+<li>Use the Network panel to monitor WebHID</li>
+</ol>
+<h3>Testing Components</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Unit tests</span>
+<span class="token function">npm</span> <span class="token builtin class-name">test</span>
+
+<span class="token comment"># Integration tests (requires Playwright)</span>
+<span class="token function">npm</span> run test:integration</code></pre>
+<hr>
+<h2>Building for Production</h2>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run build</code></pre>
+<p>Output goes to <code>dist/</code>:</p>
+<ul>
+<li><code>dist/index.js</code> - Bundled library</li>
+<li><code>dist/index.d.ts</code> - TypeScript definitions</li>
+</ul>
+<hr>
+<h2>Browser Compatibility</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Chrome</th>
+<th>Edge</th>
+<th>Brave</th>
+<th>Firefox</th>
+<th>Safari</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WebHID</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Web Components</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> WebHID requires HTTPS in production. Localhost works without HTTPS.</p>
+</blockquote>
+<hr>
+<h2>Common Tasks</h2>
+<h3>Adding a New Component</h3>
+<ol>
+<li>Create folder: <code>src/components/my-component/</code></li>
+<li>Create files:
+<ul>
+<li><code>my-component.ts</code> - Component logic</li>
+<li><code>my-component.styles.ts</code> - Styles</li>
+</ul>
+</li>
+<li>Export from <code>src/index.ts</code></li>
+<li>Add tests in <code>test/unit/</code></li>
+</ol>
+<h3>Modifying the Walkthrough</h3>
+<p>The walkthrough engine is in <code>src/core/walkthrough/</code>:</p>
+<ul>
+<li><code>walkthrough-engine.ts</code> - State machine</li>
+<li><code>walkthrough-controller.ts</code> - High-level API</li>
+<li><code>walkthrough-types.ts</code> - Type definitions</li>
+</ul>
+<p>UI strings are in <code>src/strings/walkthrough-strings.ts</code>.</p>
+<h3>Adding Mock Patterns</h3>
+<p>Edit <code>src/mockbytes/tablet-data-generator.ts</code> to add new gesture patterns.</p>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>WebHID not available</h3>
+<ul>
+<li>Use Chrome, Edge, or Brave</li>
+<li>Ensure HTTPS or localhost</li>
+<li>Check browser permissions</li>
+</ul>
+<h3>Component not rendering</h3>
+<ul>
+<li>Check for JavaScript errors in console</li>
+<li>Verify the component is registered (<code>@customElement</code>)</li>
+<li>Check that styles are imported</li>
+</ul>
+<h3>HMR not working</h3>
+<ul>
+<li>Check Vite console for errors</li>
+<li>Try hard refresh (Ctrl+Shift+R)</li>
+<li>Restart dev server</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

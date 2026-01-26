@@ -1,0 +1,295 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/config-modes/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Multi-Mode Configs">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/config-modes/">
+
+    <title>Blankslate: Multi-Mode Configs</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href=".">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+        <a href="../walkthrough/">Config Walkthrough</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">Supporting multiple tablet operating modes</h2>
+        <h1>Multi-Mode Configurations</h1>
+<p>Some tablets operate differently depending on whether the manufacturer's driver is installed. Blankslate supports multi-mode configurations that handle both scenarios.</p>
+<h2>Overview</h2>
+<p>The XP-Pen Deco 640, for example, can operate in two modes:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Report ID</th>
+<th>Resolution</th>
+<th>When Active</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Driver Mode</strong></td>
+<td>2</td>
+<td>31998 × 17998</td>
+<td>Driver software running</td>
+</tr>
+<tr>
+<td><strong>Driverless Mode</strong></td>
+<td>7</td>
+<td>15999 × 8999</td>
+<td>No driver installed</td>
+</tr>
+</tbody>
+</table>
+<p>A multi-mode config supports both, with automatic detection based on the Report ID.</p>
+<h2>Config File Format</h2>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"XP Pen Deco 640 (Multi-Mode)"</span><span class="token punctuation">,</span>
+  <span class="token property">"vendorId"</span><span class="token operator">:</span> <span class="token string">"0x28bd"</span><span class="token punctuation">,</span>
+  <span class="token property">"productId"</span><span class="token operator">:</span> <span class="token string">"0x2904"</span><span class="token punctuation">,</span>
+  <span class="token property">"deviceInfo"</span><span class="token operator">:</span> <span class="token punctuation">{</span> ... <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"modes"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span>
+      <span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"Driver Mode"</span><span class="token punctuation">,</span>
+      <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+      <span class="token property">"capabilities"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">"resolution"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"x"</span><span class="token operator">:</span> <span class="token number">31998</span><span class="token punctuation">,</span> <span class="token property">"y"</span><span class="token operator">:</span> <span class="token number">17998</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token property">"pressureLevels"</span><span class="token operator">:</span> <span class="token number">16384</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token property">"byteCodeMappings"</span><span class="token operator">:</span> <span class="token punctuation">{</span> ... <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span>
+      <span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"Driverless Mode"</span><span class="token punctuation">,</span>
+      <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">7</span><span class="token punctuation">,</span>
+      <span class="token property">"capabilities"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">"resolution"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"x"</span><span class="token operator">:</span> <span class="token number">15999</span><span class="token punctuation">,</span> <span class="token property">"y"</span><span class="token operator">:</span> <span class="token number">8999</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token property">"pressureLevels"</span><span class="token operator">:</span> <span class="token number">8192</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token property">"byteCodeMappings"</span><span class="token operator">:</span> <span class="token punctuation">{</span> ... <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>
+<span class="token punctuation">}</span></code></pre>
+<h2>Mode Detection</h2>
+<p>When reading tablet data, Blankslate:</p>
+<ol>
+<li>Reads the first HID packet</li>
+<li>Extracts the Report ID from byte 0</li>
+<li>Finds the matching mode in the config</li>
+<li>Uses that mode's mappings for all subsequent packets</li>
+</ol>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token comment">// Automatic mode selection</span>
+<span class="token keyword">const</span> reportId <span class="token operator">=</span> packet<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> mode <span class="token operator">=</span> config<span class="token punctuation">.</span>modes<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>m <span class="token operator">=></span> m<span class="token punctuation">.</span>reportId <span class="token operator">===</span> reportId<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h2>Mode-Specific Differences</h2>
+<h3>Resolution</h3>
+<p>Different modes may report different coordinate ranges:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token comment">// Driver mode</span>
+<span class="token property">"capabilities"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"resolution"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"x"</span><span class="token operator">:</span> <span class="token number">31998</span><span class="token punctuation">,</span> <span class="token property">"y"</span><span class="token operator">:</span> <span class="token number">17998</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Driverless mode</span>
+<span class="token property">"capabilities"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"resolution"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"x"</span><span class="token operator">:</span> <span class="token number">15999</span><span class="token punctuation">,</span> <span class="token property">"y"</span><span class="token operator">:</span> <span class="token number">8999</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Pressure Levels</h3>
+<p>Pressure sensitivity may vary:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token comment">// Driver mode: 16384 levels</span>
+<span class="token property">"pressure"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token property">"max"</span><span class="token operator">:</span> <span class="token number">16383</span><span class="token punctuation">,</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"multi-byte-range"</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Driverless mode: 8192 levels</span>
+<span class="token property">"pressure"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token property">"max"</span><span class="token operator">:</span> <span class="token number">8191</span><span class="token punctuation">,</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"multi-byte-range"</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Button Handling</h3>
+<p>Button data may come from different interfaces or use different scan codes:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token comment">// Driver mode: Buttons on separate interface</span>
+<span class="token punctuation">{</span>
+  <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+  <span class="token property">"buttonInterfaceReportId"</span><span class="token operator">:</span> <span class="token number">6</span><span class="token punctuation">,</span>
+  <span class="token property">"byteCodeMappings"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"tabletButtons"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"bit-flags"</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Driverless mode: Buttons as scan codes</span>
+<span class="token punctuation">{</span>
+  <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">7</span><span class="token punctuation">,</span>
+  <span class="token property">"byteCodeMappings"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"tabletButtons"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"code"</span><span class="token punctuation">,</span>
+      <span class="token property">"values"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">"1"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">1</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token property">"2"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">2</span> <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<h2>Creating Multi-Mode Configs</h2>
+<h3>Option 1: Run Walkthrough Twice</h3>
+<ol>
+<li>Run the config generator with the driver installed</li>
+<li>Save the config</li>
+<li>Uninstall/disable the driver</li>
+<li>Run the config generator again</li>
+<li>Manually merge the two configs into a <code>modes</code> array</li>
+</ol>
+<h3>Option 2: Manual Editing</h3>
+<p>If you understand the HID protocol:</p>
+<ol>
+<li>Generate a single-mode config</li>
+<li>Convert to multi-mode format</li>
+<li>Add the second mode with appropriate mappings</li>
+</ol>
+<h2>Best Practices</h2>
+<ol>
+<li><strong>Test both modes</strong> - Verify the config works with and without the driver</li>
+<li><strong>Document mode names</strong> - Use descriptive names like &quot;Driver Mode&quot; and &quot;Driverless Mode&quot;</li>
+<li><strong>Include all capabilities</strong> - Each mode should have complete capability information</li>
+<li><strong>Match byte mappings</strong> - Ensure each mode's mappings are accurate for that mode</li>
+</ol>
+<h2>Fallback Behavior</h2>
+<p>If no mode matches the incoming Report ID:</p>
+<ul>
+<li>The viewer will use the first mode as a fallback</li>
+<li>A warning will be logged</li>
+<li>Data may be incorrectly interpreted</li>
+</ul>
+<p>Always ensure your config includes modes for all Report IDs your tablet might send.</p>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+
