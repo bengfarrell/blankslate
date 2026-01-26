@@ -13,19 +13,6 @@ export const styles = css`
     background: var(--spectrum-gray-100);
   }
 
-  .theme-switcher {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 1000;
-  }
-
-  .theme-switcher sp-action-button {
-    --spectrum-actionbutton-background-color-default: var(--spectrum-gray-200);
-    --spectrum-actionbutton-background-color-hover: var(--spectrum-gray-300);
-    border-radius: 50%;
-  }
-
   .nav-bar {
     padding: 16px 24px;
     background: var(--spectrum-gray-50);

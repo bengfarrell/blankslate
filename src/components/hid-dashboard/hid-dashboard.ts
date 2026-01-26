@@ -23,6 +23,8 @@ import '@spectrum-web-components/icons-workflow/icons/sp-icon-stop.js';
 import '@spectrum-web-components/icons-workflow/icons/sp-icon-play.js';
 import '@spectrum-web-components/icons-workflow/icons/sp-icon-link.js';
 import '@spectrum-web-components/icons-workflow/icons/sp-icon-data.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-light.js';
+import '@spectrum-web-components/icons-workflow/icons/sp-icon-moon.js';
 
 /**
  * Tablet event structure received from WebSocket server
@@ -155,6 +157,9 @@ export class HidDashboard extends LitElement {
 
   @property({ type: Object })
   config: Config | null = null;
+
+  @property({ type: String })
+  themeColor: 'light' | 'dark' = 'light';
 
   // WebHID state
   @state()
@@ -329,6 +334,13 @@ export class HidDashboard extends LitElement {
   private _handleGoToGenerator() {
     // Dispatch event to navigate to generator
     this.dispatchEvent(new CustomEvent('go-to-generator', {
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private _handleThemeToggle() {
+    this.dispatchEvent(new CustomEvent('theme-toggle', {
       bubbles: true,
       composed: true
     }));
@@ -1144,6 +1156,16 @@ export class HidDashboard extends LitElement {
                 </sp-menu-item>
               </sp-menu>
             </sp-action-menu>
+
+            <!-- Theme Switcher -->
+            <sp-action-button
+              quiet
+              @click=${this._handleThemeToggle}
+              aria-label=${this.themeColor === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+              ${this.themeColor === 'light'
+                ? html`<sp-icon-moon slot="icon"></sp-icon-moon>`
+                : html`<sp-icon-light slot="icon"></sp-icon-light>`}
+            </sp-action-button>
           </div>
         </div>
 
