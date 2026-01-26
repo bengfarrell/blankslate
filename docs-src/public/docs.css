@@ -126,8 +126,26 @@ header > .logo-container svg {
   height: 70px;
 }
 
-header > .logo-container.github {
+header > .launch-app-button {
   margin-left: auto;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95em;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+header > .launch-app-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+header > .logo-container.github {
+  margin-left: 20px;
   padding: 0 30px;
 }
 
@@ -430,6 +448,12 @@ hr {
 
   header .title h4 {
     display: none;
+  }
+
+  header > .launch-app-button {
+    padding: 8px 14px;
+    font-size: 0.85em;
+    margin-right: 10px;
   }
 
   .mobile-header {

@@ -5,6 +5,11 @@ description: Universal HID tablet configuration toolkit for Node.js, Python, and
 ---
 
 # Welcome to Blankslate
+
+<p style="margin: 20px 0;">
+  <a href="app/" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1.1em; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">🚀 Launch the Web App</a>
+</p>
+
 Hi, welcome to Blankslate! Much of this project and documentation were done with AI coding tools, but I wanted to
 write this introduction myself.
 
