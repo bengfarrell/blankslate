@@ -37,6 +37,14 @@ export class HidApp extends LitElement {
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       this.themeColor = 'dark';
     }
+    this._updateDocumentBackground();
+  }
+
+  private _updateDocumentBackground() {
+    // Update document background to match theme for overscroll areas
+    const bgColor = this.themeColor === 'dark' ? '#1a1a1a' : '#f5f7fa';
+    document.documentElement.style.backgroundColor = bgColor;
+    document.body.style.backgroundColor = bgColor;
   }
 
   private _handleGoToGenerator() {
@@ -56,6 +64,7 @@ export class HidApp extends LitElement {
   private _toggleTheme() {
     this.themeColor = this.themeColor === 'light' ? 'dark' : 'light';
     localStorage.setItem('blankslate-theme', this.themeColor);
+    this._updateDocumentBackground();
   }
 
   render() {

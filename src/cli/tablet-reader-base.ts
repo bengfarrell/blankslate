@@ -490,7 +490,10 @@ export abstract class TabletReaderBase {
     let mappings;
     let buttonInterfaceReportId;
 
-    if (this.configData.isMultiMode()) {
+    // Check if this is a multi-mode config (more than one mode)
+    const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
+
+    if (isMultiMode) {
       // Use provided reportId, or extract from first byte if not provided
       const rid = reportId !== undefined ? reportId : (data.length > 0 ? data[0] : undefined);
 
@@ -528,9 +531,10 @@ export abstract class TabletReaderBase {
         return {};
       }
     } else {
-      // Single-mode config
-      mappings = this.configData.byteCodeMappings;
-      buttonInterfaceReportId = this.configData.buttonInterfaceReportId;
+      // Single-mode config - use first mode
+      const mode = this.configData.modes[0];
+      mappings = mode?.byteCodeMappings;
+      buttonInterfaceReportId = mode?.buttonInterfaceReportId;
     }
 
     return processDeviceData(data, mappings, 0, {

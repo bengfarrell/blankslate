@@ -13,5 +13,5 @@
     "types": ["w3c-web-hid"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "*.config.ts", "src/cli/**/*"]
+  "exclude": ["node_modules", "dist", "test", "*.config.ts", "src/cli/**/*", "src/examples/**/*"]
 }

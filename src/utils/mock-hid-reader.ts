@@ -13,7 +13,7 @@ import type { Config } from '../models/index.js';
  * Configuration for the mock HID reader
  */
 export interface HIDConfig {
-    mappings: Record<string, any> | Config['byteCodeMappings'];
+    mappings: Record<string, any>;
     reportId?: number;
 }
 

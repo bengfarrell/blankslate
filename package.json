@@ -47,6 +47,26 @@
     "./cli/node-hid-reader.js": {
       "types": "./dist/cli/node-hid-reader.d.ts",
       "import": "./dist/cli/node-hid-reader.js"
+    },
+    "./components/hid-dashboard/hid-dashboard.js": {
+      "types": "./dist/components/hid-dashboard/hid-dashboard.d.ts",
+      "import": "./dist/components/hid-dashboard/hid-dashboard.js"
+    },
+    "./components/hid-data-reader/hid-data-reader.js": {
+      "types": "./dist/components/hid-data-reader/hid-data-reader.d.ts",
+      "import": "./dist/components/hid-data-reader/hid-data-reader.js"
+    },
+    "./components/tablet-visualizer/tablet-visualizer.js": {
+      "types": "./dist/components/tablet-visualizer/tablet-visualizer.d.ts",
+      "import": "./dist/components/tablet-visualizer/tablet-visualizer.js"
+    },
+    "./components/events-display/events-display.js": {
+      "types": "./dist/components/events-display/events-display.d.ts",
+      "import": "./dist/components/events-display/events-display.js"
+    },
+    "./cli/tablet-reader-base.js": {
+      "types": "./dist/cli/tablet-reader-base.d.ts",
+      "import": "./dist/cli/tablet-reader-base.js"
     }
   },
   "bin": {

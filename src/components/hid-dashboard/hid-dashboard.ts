@@ -148,12 +148,26 @@ const DEFAULT_MOCK_BYTE_MAPPINGS = {
 };
 
 /**
+ * Dashboard mode determines which features are available
+ * - 'full': All features (WebHID, WebSocket, Mock) - default
+ * - 'webhid': WebHID + Mock only, no WebSocket
+ * - 'websocket': WebSocket only, no WebHID, no config loading needed
+ */
+type DashboardMode = 'full' | 'webhid' | 'websocket';
+
+/**
  * Dashboard component for visualizing tablet data
  * Unified dashboard that supports WebHID, WebSocket, and Mock data simultaneously
  */
 @customElement('hid-dashboard')
 export class HidDashboard extends LitElement {
   static styles = styles;
+
+  @property({ type: String })
+  mode: DashboardMode = 'full';
+
+  @property({ type: String, attribute: 'app-title' })
+  appTitle = 'BlankSlate Event Viewer';
 
   @property({ type: Object })
   config: Config | null = null;
@@ -1108,54 +1122,60 @@ export class HidDashboard extends LitElement {
   }
 
   render() {
-    const configName = this.config?.name || 'No Config Loaded';
+    const configName = this.config?.name || (this.mode === 'websocket' ? 'WebSocket Mode' : 'No Config Loaded');
     const hasActiveConnection = this.hidConnected || this.websocketConnected || this.isSimulating;
+    const showConfigMenu = this.mode !== 'websocket';
+    const showWebHID = this.mode === 'full' || this.mode === 'webhid';
+    const showWebSocket = this.mode === 'full' || this.mode === 'websocket';
+    const showMock = this.mode !== 'websocket';
 
     return html`
       <div class="dashboard">
         <div class="dashboard-header">
           <div class="header-info">
-            <h1>BlankSlate Event Viewer</h1>
+            <h1>${this.appTitle}</h1>
             <span class="config-name">${configName}</span>
           </div>
 
           <div class="header-controls">
-            <!-- Config Menu -->
-            <sp-action-menu
-              label="Config menu"
-              data-spectrum-pattern="action-menu"
-              placement="bottom-start"
-              @change=${(e: Event) => {
-                const menu = e.target as any;
-                const selectedItem = menu.selectedItem;
-                if (selectedItem) {
-                  const action = selectedItem.value;
-                  if (action === 'load-file') {
-                    this._handleLoadLocalConfig();
-                  } else if (action === 'load-sample') {
-                    this._loadSampleConfig();
-                  } else if (action === 'generate') {
-                    this._handleGoToGenerator();
+            <!-- Config Menu (hidden in websocket mode) -->
+            ${showConfigMenu ? html`
+              <sp-action-menu
+                label="Config menu"
+                data-spectrum-pattern="action-menu"
+                placement="bottom-start"
+                @change=${(e: Event) => {
+                  const menu = e.target as any;
+                  const selectedItem = menu.selectedItem;
+                  if (selectedItem) {
+                    const action = selectedItem.value;
+                    if (action === 'load-file') {
+                      this._handleLoadLocalConfig();
+                    } else if (action === 'load-sample') {
+                      this._loadSampleConfig();
+                    } else if (action === 'generate') {
+                      this._handleGoToGenerator();
+                    }
                   }
-                }
-              }}>
-              <sp-icon-settings slot="icon"></sp-icon-settings>
-              <span slot="label">Config</span>
-              <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
-                <sp-menu-item value="load-file" data-spectrum-pattern="menu-item">
-                  <sp-icon-folder-open slot="icon"></sp-icon-folder-open>
-                  Load from File
-                </sp-menu-item>
-                <sp-menu-item value="load-sample" data-spectrum-pattern="menu-item">
-                  <sp-icon-document slot="icon"></sp-icon-document>
-                  Load Sample Config
-                </sp-menu-item>
-                <sp-menu-item value="generate" data-spectrum-pattern="menu-item">
-                  <sp-icon-magic-wand slot="icon"></sp-icon-magic-wand>
-                  Generate New Config
-                </sp-menu-item>
-              </sp-menu>
-            </sp-action-menu>
+                }}>
+                <sp-icon-settings slot="icon"></sp-icon-settings>
+                <span slot="label">Config</span>
+                <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
+                  <sp-menu-item value="load-file" data-spectrum-pattern="menu-item">
+                    <sp-icon-folder-open slot="icon"></sp-icon-folder-open>
+                    Load from File
+                  </sp-menu-item>
+                  <sp-menu-item value="load-sample" data-spectrum-pattern="menu-item">
+                    <sp-icon-document slot="icon"></sp-icon-document>
+                    Load Sample Config
+                  </sp-menu-item>
+                  <sp-menu-item value="generate" data-spectrum-pattern="menu-item">
+                    <sp-icon-magic-wand slot="icon"></sp-icon-magic-wand>
+                    Generate New Config
+                  </sp-menu-item>
+                </sp-menu>
+              </sp-action-menu>
+            ` : ''}
 
             <!-- Theme Switcher -->
             <sp-action-button
@@ -1171,138 +1191,144 @@ export class HidDashboard extends LitElement {
 
         <!-- Connection Controls Bar -->
         <div class="connection-bar">
-          <!-- WebHID Connection -->
-          <div class="connection-section">
-            <div class="connection-label">WebHID</div>
-            ${this.hidConnected ? html`
-              <div class="connection-group">
-                <div class="status-badge connected">
-                  <span class="status-dot"></span>
-                  ${this.hidDeviceName}
+          <!-- WebHID Connection (hidden in websocket mode) -->
+          ${showWebHID ? html`
+            <div class="connection-section">
+              <div class="connection-label">WebHID</div>
+              ${this.hidConnected ? html`
+                <div class="connection-group">
+                  <div class="status-badge connected">
+                    <span class="status-dot"></span>
+                    ${this.hidDeviceName}
+                  </div>
+                  <sp-button
+                    variant="negative"
+                    size="s"
+                    data-spectrum-pattern="button-negative"
+                    @click=${this._disconnectHid}>
+                    Disconnect
+                  </sp-button>
                 </div>
-                <sp-button
-                  variant="negative"
-                  size="s"
-                  data-spectrum-pattern="button-negative"
-                  @click=${this._disconnectHid}>
-                  Disconnect
-                </sp-button>
-              </div>
-            ` : html`
-              <sp-button
-                variant="accent"
-                size="s"
-                data-spectrum-pattern=${!this.config ? 'button-disabled' : 'button-accent'}
-                @click=${this._handleConnectHid}
-                ?disabled=${!this.config}
-                title=${!this.config ? 'Load a config first' : 'Connect to tablet via WebHID'}>
-                <sp-icon-link slot="icon"></sp-icon-link>
-                Connect WebHID
-              </sp-button>
-            `}
-          </div>
-
-          <!-- WebSocket Connection -->
-          <div class="connection-section">
-            <div class="connection-label">WebSocket</div>
-            ${this.websocketConnected ? html`
-              <div class="connection-group">
-                <div class="status-badge connected">
-                  <span class="status-dot"></span>
-                  ${this.websocketServerInfo || this.websocketUrl}
-                </div>
-                <sp-button
-                  variant="negative"
-                  size="s"
-                  data-spectrum-pattern="button-negative"
-                  @click=${this._disconnectWebSocket}>
-                  Disconnect
-                </sp-button>
-              </div>
-            ` : html`
-              <div class="websocket-controls-inline">
-                <sp-textfield
-                  class="websocket-url-input"
-                  data-spectrum-pattern="textfield"
-                  size="s"
-                  .value=${this.websocketUrl}
-                  @input=${this._handleWebSocketUrlChange}
-                  @keydown=${(e: KeyboardEvent) => {
-                    if (e.key === 'Enter') this._connectWebSocket();
-                  }}
-                  placeholder="ws://localhost:8765">
-                </sp-textfield>
-                <sp-button
-                  variant="secondary"
-                  size="s"
-                  data-spectrum-pattern="button-secondary"
-                  @click=${this._connectWebSocket}>
-                  <sp-icon-data slot="icon"></sp-icon-data>
-                  Connect
-                </sp-button>
-              </div>
-            `}
-          </div>
-
-          <!-- Mock Data -->
-          <div class="connection-section">
-            <div class="connection-label">Mock Data</div>
-            <div class="mock-controls">
-              <div class="data-mode-toggle" data-spectrum-pattern="button-group">
-                <button 
-                  class="mode-btn ${this.simulationDataMode === 'raw' ? 'active' : ''}"
-                  data-spectrum-pattern="toggle-button"
-                  @click=${() => this._setSimulationDataMode('raw')}
-                  title="Simulate raw byte input">
-                  Raw
-                </button>
-                <button 
-                  class="mode-btn ${this.simulationDataMode === 'translated' ? 'active' : ''}"
-                  data-spectrum-pattern="toggle-button"
-                  @click=${() => this._setSimulationDataMode('translated')}
-                  title="Simulate translated event input">
-                  Events
-                </button>
-              </div>
-              ${this.isSimulating ? html`
-                <sp-button
-                  variant="negative"
-                  size="s"
-                  data-spectrum-pattern="button-negative"
-                  @click=${this._stopSimulation}>
-                  <sp-icon-stop slot="icon"></sp-icon-stop>
-                  Stop ${this.currentSimulation}
-                </sp-button>
               ` : html`
-                <sp-action-menu
-                  label="Simulate menu"
-                  data-spectrum-pattern="action-menu"
-                  placement="bottom-start"
+                <sp-button
+                  variant="accent"
                   size="s"
-                  @change=${(e: Event) => {
-                    const menu = e.target as any;
-                    const selectedItem = menu.selectedItem;
-                    if (selectedItem) {
-                      const optionLabel = selectedItem.value;
-                      const option = this.mockDataOptions.find(o => o.label === optionLabel);
-                      if (option) {
-                        this._runSimulation(option);
-                      }
-                    }
-                  }}>
-                  <sp-icon-play slot="icon"></sp-icon-play>
-                  <span slot="label">Simulate</span>
-                  <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
-                    ${this.mockDataOptions.map(option => html`
-                      <sp-menu-item value="${option.label}" data-spectrum-pattern="menu-item">
-                        ${option.label}
-                      </sp-menu-item>
-                    `)}
-                  </sp-menu>
-                </sp-action-menu>
+                  data-spectrum-pattern=${!this.config ? 'button-disabled' : 'button-accent'}
+                  @click=${this._handleConnectHid}
+                  ?disabled=${!this.config}
+                  title=${!this.config ? 'Load a config first' : 'Connect to tablet via WebHID'}>
+                  <sp-icon-link slot="icon"></sp-icon-link>
+                  Connect WebHID
+                </sp-button>
               `}
             </div>
-          </div>
+          ` : ''}
+
+          <!-- WebSocket Connection (hidden in webhid mode) -->
+          ${showWebSocket ? html`
+            <div class="connection-section">
+              <div class="connection-label">WebSocket</div>
+              ${this.websocketConnected ? html`
+                <div class="connection-group">
+                  <div class="status-badge connected">
+                    <span class="status-dot"></span>
+                    ${this.websocketServerInfo || this.websocketUrl}
+                  </div>
+                  <sp-button
+                    variant="negative"
+                    size="s"
+                    data-spectrum-pattern="button-negative"
+                    @click=${this._disconnectWebSocket}>
+                    Disconnect
+                  </sp-button>
+                </div>
+              ` : html`
+                <div class="websocket-controls-inline">
+                  <sp-textfield
+                    class="websocket-url-input"
+                    data-spectrum-pattern="textfield"
+                    size="s"
+                    .value=${this.websocketUrl}
+                    @input=${this._handleWebSocketUrlChange}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === 'Enter') this._connectWebSocket();
+                    }}
+                    placeholder="ws://localhost:8765">
+                  </sp-textfield>
+                  <sp-button
+                    variant="secondary"
+                    size="s"
+                    data-spectrum-pattern="button-secondary"
+                    @click=${this._connectWebSocket}>
+                    <sp-icon-data slot="icon"></sp-icon-data>
+                    Connect
+                  </sp-button>
+                </div>
+              `}
+            </div>
+          ` : ''}
+
+          <!-- Mock Data (hidden in websocket mode) -->
+          ${showMock ? html`
+            <div class="connection-section">
+              <div class="connection-label">Mock Data</div>
+              <div class="mock-controls">
+                <div class="data-mode-toggle" data-spectrum-pattern="button-group">
+                  <button
+                    class="mode-btn ${this.simulationDataMode === 'raw' ? 'active' : ''}"
+                    data-spectrum-pattern="toggle-button"
+                    @click=${() => this._setSimulationDataMode('raw')}
+                    title="Simulate raw byte input">
+                    Raw
+                  </button>
+                  <button
+                    class="mode-btn ${this.simulationDataMode === 'translated' ? 'active' : ''}"
+                    data-spectrum-pattern="toggle-button"
+                    @click=${() => this._setSimulationDataMode('translated')}
+                    title="Simulate translated event input">
+                    Events
+                  </button>
+                </div>
+                ${this.isSimulating ? html`
+                  <sp-button
+                    variant="negative"
+                    size="s"
+                    data-spectrum-pattern="button-negative"
+                    @click=${this._stopSimulation}>
+                    <sp-icon-stop slot="icon"></sp-icon-stop>
+                    Stop ${this.currentSimulation}
+                  </sp-button>
+                ` : html`
+                  <sp-action-menu
+                    label="Simulate menu"
+                    data-spectrum-pattern="action-menu"
+                    placement="bottom-start"
+                    size="s"
+                    @change=${(e: Event) => {
+                      const menu = e.target as any;
+                      const selectedItem = menu.selectedItem;
+                      if (selectedItem) {
+                        const optionLabel = selectedItem.value;
+                        const option = this.mockDataOptions.find(o => o.label === optionLabel);
+                        if (option) {
+                          this._runSimulation(option);
+                        }
+                      }
+                    }}>
+                    <sp-icon-play slot="icon"></sp-icon-play>
+                    <span slot="label">Simulate</span>
+                    <sp-menu data-spectrum-pattern="menu" style="min-width: 200px;">
+                      ${this.mockDataOptions.map(option => html`
+                        <sp-menu-item value="${option.label}" data-spectrum-pattern="menu-item">
+                          ${option.label}
+                        </sp-menu-item>
+                      `)}
+                    </sp-menu>
+                  </sp-action-menu>
+                `}
+              </div>
+            </div>
+          ` : ''}
         </div>
 
         <div class="visualizers-grid">

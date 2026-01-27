@@ -22,7 +22,6 @@ export { HidWalkthroughProgress } from './hid-walkthrough-progress/hid-walkthrou
 
 // Visualization components
 export { TabletVisualizer } from './tablet-visualizer/tablet-visualizer.js';
-export { CurveVisualizer } from './curve-visualizer/curve-visualizer.js';
 export { BytesDisplay } from './bytes-display/bytes-display.js';
 export { ByteDisplayBlock } from './byte-display-block/byte-display-block.js';
 export { EventsDisplay } from './events-display/events-display.js';

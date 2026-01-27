@@ -6,7 +6,7 @@
  */
 
 import type { DeviceByteCodeMappings } from './byte-detector.js';
-import type { ConfigData } from '../models/config.js';
+import type { ConfigData, ConfigMode } from '../models/config.js';
 import type { DetectedButton } from '../core/walkthrough/walkthrough-controller.js';
 import { keyCodeArrayToHidUsages } from './keyboard-hid-codes.js';
 
@@ -36,7 +36,7 @@ export interface UserProvidedMetadata {
  */
 export function inferCapabilities(
   byteCodeMappings: DeviceByteCodeMappings
-): NonNullable<ConfigData['capabilities']> {
+): ConfigMode['capabilities'] {
   const hasPressure = !!byteCodeMappings.pressure;
   const hasTilt = !!(byteCodeMappings.tiltX || byteCodeMappings.tiltY);
   

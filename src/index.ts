@@ -14,3 +14,6 @@ export * from './mockbytes/index.js';
 
 // Strings (for UI integration)
 export * from './strings/walkthrough-strings.js';
+
+// Core managers for tablet data handling
+export * from './core/managers/index.js';

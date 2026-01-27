@@ -45,12 +45,12 @@ export class EventsDisplay extends LitElement {
   @property({ type: Object })
   deviceInfo?: EventsDeviceInfo;
 
-  private _formatValue(value: number | undefined, decimals: number = 3): string {
+  protected _formatValue(value: number | undefined, decimals: number = 3): string {
     if (value === undefined) return '—';
     return value.toFixed(decimals);
   }
 
-  private _getPressedTabletButton(event: TabletEvent): number | null {
+  protected _getPressedTabletButton(event: TabletEvent): number | null {
     if (event.button1) return 1;
     if (event.button2) return 2;
     if (event.button3) return 3;

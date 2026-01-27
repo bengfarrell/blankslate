@@ -1,7 +1,6 @@
 import { html, LitElement, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styles } from './tablet-visualizer.css.js';
-import '../curve-visualizer/curve-visualizer.js';
 import { TabletExpressionConfig } from '../../types/config-types.js';
 import { sharedTabletInteraction } from '../../controllers/index.js';
 
@@ -39,9 +38,6 @@ export class TabletVisualizer extends LitElement {
     @state()
     private secondaryButtonPressed: boolean = false;
 
-    @state()
-    private lastHoveredString: number | null = null;
-
     // Dummy hardware config - will be replaced with actual config later
     private hardwareConfig = {
         buttonCount: 8
@@ -71,9 +67,6 @@ export class TabletVisualizer extends LitElement {
     @property({ type: String })
     mode: 'both' | 'tablet' | 'tilt' = 'both';
 
-    @property({ type: Number })
-    stringCount: number = 6;
-
     @property({ type: Boolean })
     socketMode: boolean = false;
 
@@ -89,16 +82,7 @@ export class TabletVisualizer extends LitElement {
     })
     tabletDeviceInfo: any = null;
 
-    @property({ 
-        type: Array,
-        hasChanged: () => true // Always update when notes array changes
-    })
-    notes: any[] = [];
-
-    @property({ type: Number })
-    externalLastPluckedString: number | null = null;
-
-    @property({ 
+    @property({
         type: Object,
         hasChanged: () => true // Always update when Set changes
     })
@@ -365,64 +349,7 @@ export class TabletVisualizer extends LitElement {
         }
     }
 
-    private renderStrings(activeAreaWidth: number, activeAreaHeight: number, activeAreaX: number, activeAreaY: number) {
-        if (this.stringCount === 0) return svg``;
-        
-        const stringSpacing = activeAreaWidth / (this.stringCount + 1);
-        
-        // Button area dimensions (from renderButtons)
-        const buttonRadius = 8;
-        const verticalPadding = 20;
-        const buttonCenterY = activeAreaY + verticalPadding + buttonRadius;
-        const buttonMargin = 5; // Extra margin around buttons
-        const stringStartY = buttonCenterY + buttonRadius + buttonMargin;
-        
-        // Use external last plucked string when in socket mode, otherwise use internal hover state
-        const lastPluckedString = this.socketMode ? this.externalLastPluckedString : this.lastHoveredString;
-        
-        return svg`
-            ${Array.from({ length: this.stringCount }, (_, i) => {
-                const stringX = activeAreaX + stringSpacing * (i + 1);
-                
-                // Get note label for this string
-                const note = this.notes[i];
-                const noteLabel = note ? `${note.notation}${note.octave}` : '';
-                
-                // Check if this string is the one that was just plucked
-                const isPlucked = lastPluckedString === i;
-                
-                return svg`
-                    <!-- Visible string - non-interactive -->
-                    <line 
-                        x1="${stringX}" 
-                        y1="${stringStartY}" 
-                        x2="${stringX}"
-                        y2="${activeAreaY + activeAreaHeight}"
-                        stroke="var(--svg-gray-700)"
-                        stroke-width="1"
-                        opacity="0.5"
-                        class="${isPlucked ? 'string-plucked' : ''}"
-                        pointer-events="none" />
-                    
-                    <!-- Note label at bottom of string -->
-                    ${noteLabel ? svg`
-                        <text 
-                            x="${stringX}" 
-                            y="${activeAreaY + activeAreaHeight - 5}"
-                            text-anchor="middle"
-                            font-size="10"
-                            fill="var(--svg-gray-500)"
-                            font-weight="500"
-                            pointer-events="none">
-                            ${noteLabel}
-                        </text>
-                    ` : ''}
-                `;
-            })}
-        `;
-    }
-
-    private renderButtons(activeAreaWidth: number, activeAreaX: number, activeAreaY: number) {
+    protected renderButtons(activeAreaWidth: number, activeAreaX: number, activeAreaY: number) {
         const buttonCount = this.hardwareConfig.buttonCount;
         if (buttonCount === 0) return svg``;
         
@@ -477,7 +404,7 @@ export class TabletVisualizer extends LitElement {
         `;
     }
 
-    private renderTablet() {
+    protected renderTablet() {
         const tabletWidth = 240;
         const tabletHeight = 200;
         const tabletX = 20;
@@ -505,14 +432,11 @@ export class TabletVisualizer extends LitElement {
                     @mouseup=${this.handleTabletMouseUp} />
                 
                 <!-- Active area (darker rectangle) -->
-                <rect x="${activeAreaX}" y="${activeAreaY}" width="${activeAreaWidth}" height="${activeAreaHeight}" 
+                <rect x="${activeAreaX}" y="${activeAreaY}" width="${activeAreaWidth}" height="${activeAreaHeight}"
                     class="tablet-surface" rx="8"
                     pointer-events="none" />
-                
-                <!-- Strings (vertical lines) -->
-                ${this.renderStrings(activeAreaWidth, activeAreaHeight, activeAreaX, activeAreaY)}
-                
-                <!-- Buttons rendered AFTER strings to appear on top -->
+
+                <!-- Buttons -->
                 ${this.renderButtons(activeAreaWidth, activeAreaX, activeAreaY)}
                 
                 ${(() => {
