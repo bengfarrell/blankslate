@@ -36,13 +36,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-midi = [
-    "python-rtmidi>=1.5.0",
-    "JACK-Client>=0.5.0",
-]
-keyboard = [
-    "pynput>=1.7.0",
-]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
