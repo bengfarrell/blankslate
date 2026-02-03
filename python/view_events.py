@@ -10,11 +10,46 @@ Usage:
     python view_events.py -c my-tablet-config.json --compact
 """
 import sys
+import os
 import argparse
+import signal
 
 from blankslate.cli.event_viewer import EventViewer
 
+# Global state for signal handler
+_viewer = None
+_cleanup_in_progress = False
+
+
+def signal_handler(signum, frame):
+    """Handle Ctrl+C gracefully"""
+    global _viewer, _cleanup_in_progress
+
+    # Prevent re-entry if cleanup is already in progress
+    if _cleanup_in_progress:
+        # Force exit on repeated Ctrl+C
+        print("\n\n🛑 Force exit...")
+        os._exit(1)
+
+    _cleanup_in_progress = True
+    print('\n\n🛑 Interrupted by user. Cleaning up...')
+
+    if _viewer:
+        try:
+            _viewer.stop_sync()
+        except Exception:
+            pass
+
+    print('Done!')
+    os._exit(0)
+
+
 def main():
+    global _viewer
+
+    # Set up signal handler for Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+
     parser = argparse.ArgumentParser(description='View tablet events')
     parser.add_argument('-c', '--config', required=True, help='Path to tablet config JSON file')
     parser.add_argument('-m', '--mock', action='store_true', help='Use mock data instead of real device')
@@ -24,7 +59,7 @@ def main():
 
     args = parser.parse_args()
 
-    viewer = EventViewer(
+    _viewer = EventViewer(
         args.config,
         mock=args.mock,
         raw=args.raw,
@@ -33,10 +68,11 @@ def main():
     )
 
     try:
-        viewer.start()
+        _viewer.start()
     except KeyboardInterrupt:
-        print('\n\nCtrl+C received!')
-        viewer.stop_sync()
+        # This may not be reached if signal handler runs first, but keep as fallback
+        print('\n\n🛑 Interrupted by user. Cleaning up...')
+        _viewer.stop_sync()
         print('Done!')
 
 if __name__ == '__main__':

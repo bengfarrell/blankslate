@@ -9,6 +9,7 @@ Usage:
     python generate_config.py --output my-config.json
 """
 import sys
+import os
 import argparse
 import asyncio
 import signal
@@ -19,11 +20,20 @@ from blankslate.cli.cli_walkthrough_view import CLIWalkthroughView
 
 # Global controller reference for signal handler
 _controller = None
+_cleanup_in_progress = False
 
 
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully"""
-    global _controller
+    global _controller, _cleanup_in_progress
+
+    # Prevent re-entry if cleanup is already in progress
+    if _cleanup_in_progress:
+        # Force exit on repeated Ctrl+C
+        print("\n\n🛑 Force exit...")
+        os._exit(1)
+
+    _cleanup_in_progress = True
     print("\n\n🛑 Interrupted by user. Cleaning up...")
 
     # Stop the reader if it exists
@@ -34,7 +44,8 @@ def signal_handler(signum, frame):
         except Exception:
             pass
 
-    sys.exit(1)
+    # Use os._exit to avoid atexit handlers that can hang on thread joins
+    os._exit(1)
 
 
 async def run_walkthrough(use_mock: bool = False) -> int:
