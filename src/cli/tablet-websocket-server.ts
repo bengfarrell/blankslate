@@ -95,6 +95,7 @@ export class TabletWebSocketServer extends TabletReaderBase {
       // If sending raw bytes, include the full config so client can interpret them
       if (this.sendRaw) {
         // Convert Config instance to plain object for JSON serialization
+        // Use the new multi-mode config format
         connectionMessage.fullConfig = {
           name: this.configData.name,
           manufacturer: this.configData.manufacturer,
@@ -103,13 +104,8 @@ export class TabletWebSocketServer extends TabletReaderBase {
           vendorId: this.configData.vendorId,
           productId: this.configData.productId,
           deviceInfo: this.configData.deviceInfo,
-          reportId: this.configData.reportId,
-          digitizerUsagePage: this.configData.digitizerUsagePage,
-          buttonInterfaceReportId: this.configData.buttonInterfaceReportId,
-          stylusModeStatusByte: this.configData.stylusModeStatusByte,
-          excludedUsagePages: this.configData.excludedUsagePages,
-          capabilities: this.configData.capabilities,
-          byteCodeMappings: this.configData.byteCodeMappings,
+          modes: this.configData.modes,
+          keyboardMappings: this.configData.keyboardMappings,
         };
       }
 

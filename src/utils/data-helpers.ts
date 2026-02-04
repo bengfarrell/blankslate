@@ -31,29 +31,49 @@ export interface KeyboardButtonsConfig {
 /**
  * Process keyboard HID interface data for tablet buttons (Huion-style tablets).
  *
- * Keyboard HID packet formats:
+ * Keyboard HID packet formats (when reportId is included in data):
  * - Report ID 3: Keyboard shortcuts [03, modifier, keycode, 0, 0, 0, 0, 0]
  * - Report ID 4: Consumer Control [04, consumer_code, 0]
  * - Report ID 5: Relative scroll [05, 0, 0, 0, 0, 0, scroll_delta]
  *
+ * When reportId is passed separately (WebHID mode), data starts after report ID:
+ * - Report ID 3: [modifier, keycode, 0, 0, 0, 0, 0]
+ * - Report ID 4: [consumer_code, 0]
+ * - Report ID 5: [0, 0, 0, 0, 0, scroll_delta]
+ *
  * @param data - Raw bytes from keyboard HID interface
  * @param keyboardButtonsConfig - The keyboardButtons config section
+ * @param reportId - Optional report ID (for WebHID where report ID is separate from data)
  * @returns Object with button state (tabletButtons, button1, button2, etc.)
  */
 export function processKeyboardButtonData(
   data: Uint8Array,
-  keyboardButtonsConfig: KeyboardButtonsConfig
+  keyboardButtonsConfig: KeyboardButtonsConfig,
+  reportId?: number
 ): Record<string, string | number | boolean> {
   const result: Record<string, string | number | boolean> = {};
 
-  if (data.length < 2) {
+  if (data.length < 1) {
     return result;
   }
 
   const dataList = Array.from(data);
-  const reportId = dataList[0];
   const buttonsList = keyboardButtonsConfig.buttons || [];
   const buttonCount = keyboardButtonsConfig.buttonCount ?? buttonsList.length;
+
+  // Determine report ID and data offset
+  // If reportId is provided (WebHID mode), data doesn't include report ID
+  // Otherwise, report ID is first byte of data
+  let actualReportId: number;
+  let dataOffset: number;
+
+  if (reportId !== undefined) {
+    actualReportId = reportId;
+    dataOffset = 0;  // Data starts at index 0
+  } else {
+    actualReportId = dataList[0];
+    dataOffset = 1;  // Data starts at index 1 (after report ID)
+  }
 
   // Initialize all buttons to false
   for (let i = 1; i <= buttonCount; i++) {
@@ -64,11 +84,11 @@ export function processKeyboardButtonData(
 
   let matchedButton: number | undefined;
 
-  if (reportId === 3) {
-    // Keyboard shortcut format: [03, modifier, keycode, ...]
-    if (dataList.length >= 3) {
-      const modifier = dataList[1];
-      const keycode = dataList[2];
+  if (actualReportId === 3) {
+    // Keyboard shortcut format: [modifier, keycode, ...]
+    if (dataList.length >= dataOffset + 2) {
+      const modifier = dataList[dataOffset];
+      const keycode = dataList[dataOffset + 1];
 
       // Skip idle packets (no key pressed)
       if (keycode === 0) {
@@ -86,10 +106,10 @@ export function processKeyboardButtonData(
         }
       }
     }
-  } else if (reportId === 4) {
-    // Consumer Control format: [04, consumer_code, ...]
-    if (dataList.length >= 2) {
-      const consumerCode = dataList[1];
+  } else if (actualReportId === 4) {
+    // Consumer Control format: [consumer_code, ...]
+    if (dataList.length >= dataOffset + 1) {
+      const consumerCode = dataList[dataOffset];
 
       // Skip idle packets
       if (consumerCode === 0) {
@@ -106,10 +126,11 @@ export function processKeyboardButtonData(
         }
       }
     }
-  } else if (reportId === 5) {
-    // Scroll wheel format: [05, 0, 0, 0, 0, 0, scroll_delta]
+  } else if (actualReportId === 5) {
+    // Scroll wheel format: [0, 0, 0, 0, 0, scroll_delta] or shorter
     // Scroll delta is typically in the last byte
-    const scrollDelta = dataList.length > 6 ? dataList[6] : (dataList.length > 1 ? dataList[dataList.length - 1] : 0);
+    const scrollDataLength = dataList.length - dataOffset;
+    const scrollDelta = scrollDataLength > 5 ? dataList[dataOffset + 5] : (scrollDataLength > 0 ? dataList[dataList.length - 1] : 0);
 
     // Skip idle packets
     if (scrollDelta === 0) {
@@ -136,6 +157,88 @@ export function processKeyboardButtonData(
   }
 
   return result;
+}
+
+/**
+ * Convert keyboardButtons config (Huion-style) to keyboardMappings format
+ * for browser keyboard event matching.
+ *
+ * This allows the web app to match browser keydown events to button numbers
+ * using the HID keycode/modifier information from the config.
+ *
+ * @param keyboardButtonsConfig - The keyboardButtons config section
+ * @returns KeyboardMappings format compatible with _checkButtonMapping
+ */
+export function convertKeyboardButtonsToMappings(
+  keyboardButtonsConfig: KeyboardButtonsConfig
+): { description?: string; note?: string; buttons: Array<{ button: number; usageIds: number[]; keys: string[] }> } | null {
+  // Import dynamically to avoid circular dependencies
+  // We need the HID code mappings
+  const buttons = keyboardButtonsConfig.buttons || [];
+
+  // Only convert keyboard-type buttons (Report ID 3)
+  // Consumer and scroll buttons don't map to keyboard events
+  const keyboardButtons = buttons.filter(b => b.type === 'keyboard' && b.reportId === 3);
+
+  if (keyboardButtons.length === 0) {
+    return null;
+  }
+
+  // We need to import the HID code mappings
+  // Since this is a sync function, we'll use a lazy import pattern
+  // For now, we'll build the mapping inline using the known HID codes
+  const HID_USAGE_TO_KEY_CODE: Record<number, string> = {
+    0x04: 'KeyA', 0x05: 'KeyB', 0x06: 'KeyC', 0x07: 'KeyD', 0x08: 'KeyE',
+    0x09: 'KeyF', 0x0A: 'KeyG', 0x0B: 'KeyH', 0x0C: 'KeyI', 0x0D: 'KeyJ',
+    0x0E: 'KeyK', 0x0F: 'KeyL', 0x10: 'KeyM', 0x11: 'KeyN', 0x12: 'KeyO',
+    0x13: 'KeyP', 0x14: 'KeyQ', 0x15: 'KeyR', 0x16: 'KeyS', 0x17: 'KeyT',
+    0x18: 'KeyU', 0x19: 'KeyV', 0x1A: 'KeyW', 0x1B: 'KeyX', 0x1C: 'KeyY',
+    0x1D: 'KeyZ', 0x1E: 'Digit1', 0x1F: 'Digit2', 0x20: 'Digit3', 0x21: 'Digit4',
+    0x22: 'Digit5', 0x23: 'Digit6', 0x24: 'Digit7', 0x25: 'Digit8', 0x26: 'Digit9',
+    0x27: 'Digit0', 0x28: 'Enter', 0x29: 'Escape', 0x2A: 'Backspace', 0x2B: 'Tab',
+    0x2C: 'Space', 0x2D: 'Minus', 0x2E: 'Equal', 0x2F: 'BracketLeft', 0x30: 'BracketRight',
+    0x31: 'Backslash', 0x33: 'Semicolon', 0x34: 'Quote', 0x35: 'Backquote',
+    0x36: 'Comma', 0x37: 'Period', 0x38: 'Slash', 0x39: 'CapsLock',
+    0x3A: 'F1', 0x3B: 'F2', 0x3C: 'F3', 0x3D: 'F4', 0x3E: 'F5', 0x3F: 'F6',
+    0x40: 'F7', 0x41: 'F8', 0x42: 'F9', 0x43: 'F10', 0x44: 'F11', 0x45: 'F12',
+    0x46: 'PrintScreen', 0x47: 'ScrollLock', 0x48: 'Pause', 0x49: 'Insert',
+    0x4A: 'Home', 0x4B: 'PageUp', 0x4C: 'Delete', 0x4D: 'End', 0x4E: 'PageDown',
+    0x4F: 'ArrowRight', 0x50: 'ArrowLeft', 0x51: 'ArrowDown', 0x52: 'ArrowUp',
+  };
+
+  const mappedButtons = keyboardButtons.map(btn => {
+    const keys: string[] = [];
+    const usageIds: number[] = [];
+
+    // Add modifier keys
+    const modifier = btn.modifier ?? 0;
+    if (modifier & 0x01) { keys.push('ControlLeft'); usageIds.push(0xE0); }
+    if (modifier & 0x02) { keys.push('ShiftLeft'); usageIds.push(0xE1); }
+    if (modifier & 0x04) { keys.push('AltLeft'); usageIds.push(0xE2); }
+    if (modifier & 0x08) { keys.push('MetaLeft'); usageIds.push(0xE3); }
+
+    // Add the main key
+    const keycode = btn.keycode ?? 0;
+    if (keycode > 0) {
+      usageIds.push(keycode);
+      const keyCode = HID_USAGE_TO_KEY_CODE[keycode];
+      if (keyCode) {
+        keys.push(keyCode);
+      }
+    }
+
+    return {
+      button: btn.button,
+      usageIds,
+      keys,
+    };
+  });
+
+  return {
+    description: keyboardButtonsConfig.description,
+    note: 'Auto-converted from keyboardButtons config',
+    buttons: mappedButtons,
+  };
 }
 
 /**

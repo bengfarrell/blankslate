@@ -150,3 +150,49 @@ export function formatHidUsage(usageId: number): string {
   return `0x${usageId.toString(16).toUpperCase().padStart(2, '0')}`;
 }
 
+/**
+ * Reverse mapping: USB HID Usage ID to JavaScript KeyboardEvent.code
+ * Generated from KEY_CODE_TO_HID_USAGE
+ */
+export const HID_USAGE_TO_KEY_CODE: Record<number, string> = Object.fromEntries(
+  Object.entries(KEY_CODE_TO_HID_USAGE).map(([code, usage]) => [usage, code])
+);
+
+/**
+ * Convert USB HID Usage ID to JavaScript KeyboardEvent.code
+ */
+export function hidUsageToKeyCode(usageId: number): string | undefined {
+  return HID_USAGE_TO_KEY_CODE[usageId];
+}
+
+/**
+ * HID modifier byte bit flags
+ * Modifier byte format: [CtrlL, ShiftL, AltL, MetaL, CtrlR, ShiftR, AltR, MetaR]
+ */
+export const HID_MODIFIER_BITS = {
+  CTRL_LEFT: 0x01,
+  SHIFT_LEFT: 0x02,
+  ALT_LEFT: 0x04,
+  META_LEFT: 0x08,
+  CTRL_RIGHT: 0x10,
+  SHIFT_RIGHT: 0x20,
+  ALT_RIGHT: 0x40,
+  META_RIGHT: 0x80,
+};
+
+/**
+ * Convert HID modifier byte to array of JavaScript KeyboardEvent.code values
+ */
+export function hidModifierToKeyCodes(modifier: number): string[] {
+  const codes: string[] = [];
+  if (modifier & HID_MODIFIER_BITS.CTRL_LEFT) codes.push('ControlLeft');
+  if (modifier & HID_MODIFIER_BITS.SHIFT_LEFT) codes.push('ShiftLeft');
+  if (modifier & HID_MODIFIER_BITS.ALT_LEFT) codes.push('AltLeft');
+  if (modifier & HID_MODIFIER_BITS.META_LEFT) codes.push('MetaLeft');
+  if (modifier & HID_MODIFIER_BITS.CTRL_RIGHT) codes.push('ControlRight');
+  if (modifier & HID_MODIFIER_BITS.SHIFT_RIGHT) codes.push('ShiftRight');
+  if (modifier & HID_MODIFIER_BITS.ALT_RIGHT) codes.push('AltRight');
+  if (modifier & HID_MODIFIER_BITS.META_RIGHT) codes.push('MetaRight');
+  return codes;
+}
+

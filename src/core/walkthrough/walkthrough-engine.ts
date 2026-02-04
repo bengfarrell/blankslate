@@ -63,6 +63,14 @@ export interface WalkthroughEngineOptions {
 }
 
 /**
+ * Packet with associated report ID for button detection
+ */
+export interface PacketWithReportId {
+  packet: Uint8Array;
+  reportId?: number;
+}
+
+/**
  * Platform-agnostic walkthrough engine
  * Manages state, packet collection, and byte detection
  */
@@ -71,6 +79,7 @@ export class WalkthroughEngine {
   private eventHandlers: Set<WalkthroughEventHandler> = new Set();
   private options: Required<WalkthroughEngineOptions>;
   private captureBuffer: Uint8Array[] = [];
+  private captureBufferWithReportId: PacketWithReportId[] = [];  // For button detection
   private statusByteValues: Map<number, StatusValue> = new Map();
   private allPackets: Uint8Array[] = [];
   private lastPacket: Uint8Array | null = null;
@@ -165,6 +174,14 @@ export class WalkthroughEngine {
   }
 
   /**
+   * Get all captured packets with their report IDs for current step
+   * Used for button detection where we need to know which report ID each packet came from
+   */
+  getCapturedPacketsWithReportId(): PacketWithReportId[] {
+    return [...this.captureBufferWithReportId];
+  }
+
+  /**
    * Set device information
    */
   setDeviceInfo(info: DeviceInfo): void {
@@ -220,8 +237,9 @@ export class WalkthroughEngine {
     if (this.state.currentStep === 'step10-metadata' || this.state.currentStep === 'complete') {
       return;
     }
-    
+
     this.captureBuffer = [];
+    this.captureBufferWithReportId = [];
     this.lastPacket = null;
     this.duplicateCount = 0;
     this.idlePacketCount = 0;
@@ -333,13 +351,14 @@ export class WalkthroughEngine {
     // Store this packet
     const packetCopy = new Uint8Array(packet);
     this.captureBuffer.push(packetCopy);
+    this.captureBufferWithReportId.push({ packet: packetCopy, reportId });
     this.allPackets.push(packetCopy);
     this.lastPacket = packetCopy;
 
-    this.emit({ 
-      type: 'packet-received', 
-      packet, 
-      count: this.captureBuffer.length 
+    this.emit({
+      type: 'packet-received',
+      packet,
+      count: this.captureBuffer.length
     });
 
     // Track status byte values for button detection

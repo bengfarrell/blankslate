@@ -32,44 +32,19 @@ This workaround is necessary for practical use of WebHID with drawing tablets.
 
 ## Tablet Button Capture
 
-### Without a Driver (Driverless Mode)
+Tablet buttons work differently depending on whether the manufacturer's driver is active and which HID interface the tablet uses for buttons.
 
-- WebHID **cannot** capture the raw byte codes for tablet buttons
-- The tablet sends default keyboard events (scan codes) for button presses
-- These keyboard scan codes are what get recorded in the configuration
-- This is specific to WebHID and is used only in that context
+For detailed information about button handling, including the different configuration formats (`tabletButtons`, `keyboardButtons`, `keyboardMappings`), see [Keyboard Input Handling](/about/keyboard-input/).
 
-### With a Driver (Driver Mode)
-
-- Button mappings are controlled by the driver software
-- Users can customize buttons to perform any action
-- Capturing key codes in driver mode doesn't make sense for a global configuration because:
-  - The mappings are user-specific and customizable
-  - They don't represent the tablet's inherent button behavior
-  - Different users will have different driver configurations
-
-### Implications for Configuration Files
-
-The `modes` array in configuration files reflects these differences:
-
-- **Mode 1 (Driver)**: Uses bit-flag button values, doesn't include keyboard scan codes
-- **Mode 2 (Driverless)**: Includes `statusOverrides` with keyboard scan codes for button detection
+**Key points:**
+- Some tablets (XP-Pen) send buttons via the digitizer interface
+- Some tablets (Huion) send buttons via a keyboard HID interface
+- WebHID cannot read keyboard HID interfaces due to the security blocklist
+- For best compatibility, generate configs using Node.js/Python in driverless mode
 
 ---
 
 ## Platform-Specific Limitations
-
-### Keyboard Event Capture
-
-| Platform | Can Capture Keyboard Events |
-|----------|----------------------------|
-| WebHID (Browser) | ✅ Yes, via `keydown` API |
-| Node.js | ❌ No, only raw HID packets |
-| Python | ❌ No, only raw HID packets |
-
-When the tablet driver is active, it often converts button presses to keyboard shortcuts. WebHID can capture these via the browser's keyboard API, but Node.js and Python cannot intercept OS-level keyboard events.
-
-**Recommendation:** For best cross-platform compatibility, generate configs in **driverless mode** to capture HID scan codes that work everywhere.
 
 ### Multi-Interface Devices
 
@@ -87,87 +62,25 @@ Some tablets expose multiple HID interfaces:
 
 ---
 
-## Keyboard HID Interface Buttons (Huion-style)
+## Keyboard HID Interface Buttons
 
-Some tablets (notably Huion) send tablet button presses through a **Keyboard HID interface** (usage page 1, usage 6) rather than through the digitizer interface. This has important implications:
+Some tablets (notably Huion) send button presses through a **Keyboard HID interface** (usage page 1, usage 6) rather than through the digitizer interface. This requires special handling:
 
-### How It Works
+- **macOS**: Requires `sudo` to read keyboard HID interfaces
+- **WebHID**: Cannot read keyboard HID interfaces (security blocklist)
+- **Config format**: Uses `keyboardButtons` instead of `tabletButtons`
 
-Instead of sending button data as part of the pen packet, these tablets send button presses as keyboard shortcuts:
+See [Keyboard Input Handling](/about/keyboard-input/) for full details on how this works and the different configuration formats.
 
-| Report ID | Type | Data Format |
-|-----------|------|-------------|
-| 3 | Keyboard | `[modifier, 0, keycode, 0, 0, 0, 0, 0]` |
-| 4 | Consumer Control | `[consumerCode_lo, consumerCode_hi]` (media keys) |
-| 5 | Relative Scroll | `[scrollDelta]` (scroll wheel) |
+---
 
-For example, pressing button 1 might send `modifier=0, keycode=5` (the "B" key), while button 2 sends `modifier=7, keycode=17` (Ctrl+Shift+Alt+N).
+## WebHID Security Blocklist
 
-### macOS Sudo Requirement
+WebHID maintains a [security blocklist](https://github.com/WICG/webhid/blob/main/blocklist.txt) that blocks access to keyboard and mouse HID interfaces. This prevents malicious websites from creating keyloggers.
 
-**On macOS, the Keyboard HID interface (usage page 1) is protected by the operating system.** Applications cannot read from this interface without elevated privileges.
+**Impact on tablets:** Huion-style tablets that send buttons via keyboard HID cannot have their button data read by WebHID. The workaround is to generate configs using Node.js or Python with `sudo` on macOS.
 
-```bash
-# This will NOT detect button presses on Huion-style tablets:
-npx tsx src/cli/event-viewer.ts my-config.json --live
-
-# This WILL detect button presses:
-sudo npx tsx src/cli/event-viewer.ts my-config.json --live
-```
-
-The same applies to Python:
-```bash
-# Without sudo - pen works, buttons don't
-python view_events.py -c my-config.json --live
-
-# With sudo - everything works
-sudo python view_events.py -c my-config.json --live
-```
-
-### Config File Format
-
-Tablets with keyboard HID buttons use a different config format. Instead of `tabletButtons` with byte indices, they use `keyboardButtons`:
-
-```json
-"keyboardButtons": {
-  "description": "Buttons from keyboard HID interface (requires sudo on macOS)",
-  "usagePage": 1,
-  "usage": 6,
-  "buttonCount": 30,
-  "buttons": [
-    { "button": 1, "reportId": 3, "type": "keyboard", "modifier": 0, "keycode": 5 },
-    { "button": 2, "reportId": 3, "type": "keyboard", "modifier": 7, "keycode": 17 },
-    { "button": 21, "reportId": 4, "type": "consumer", "consumerCode": 182 },
-    { "button": 25, "reportId": 5, "type": "scroll", "scrollDelta": 1 }
-  ]
-}
-```
-
-See [Configuration Schema](/about/config-schema/) for full details on the `keyboardButtons` format.
-
-### Comparison: XP-Pen vs Huion Button Handling
-
-| Aspect | XP-Pen Style | Huion Style |
-|--------|--------------|-------------|
-| **Button interface** | Digitizer (usage page 13) | Keyboard (usage page 1) |
-| **Data location** | Same packet as pen data | Separate HID interface |
-| **Config format** | `tabletButtons` with `byteIndex` | `keyboardButtons` with button array |
-| **macOS permissions** | No sudo needed | **Sudo required** |
-| **Button types** | Bit flags or scan codes | Keyboard shortcuts, media keys, scroll |
-
-### Detecting Your Tablet Type
-
-Run the config generator to see which interface your tablet uses:
-
-```bash
-# Node.js
-sudo npx tsx src/cli/config-generator.ts
-
-# Python
-sudo python generate_config.py
-```
-
-If the walkthrough detects buttons on usage page 1, your tablet uses the keyboard HID interface.
+See [Keyboard Input Handling](/about/keyboard-input/) for details and workarounds.
 
 ---
 
@@ -236,4 +149,4 @@ Drawing tablets typically send packets at 100-200 Hz. All platforms handle this 
 - Requires appropriate OS permissions to access USB devices
 - On macOS, may need to grant terminal/IDE access to USB
 - On Linux, may need udev rules for non-root access
-- **macOS + Keyboard HID buttons**: Tablets that send buttons via the keyboard HID interface (usage page 1) require `sudo` to read button data. See [Keyboard HID Interface Buttons](#keyboard-hid-interface-buttons-huion-style) above.
+- **macOS + Keyboard HID buttons**: Tablets that send buttons via the keyboard HID interface require `sudo`. See [Keyboard Input Handling](/about/keyboard-input/) for details.

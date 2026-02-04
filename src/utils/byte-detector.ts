@@ -69,6 +69,7 @@ export interface ButtonMapping {
   metaKey?: boolean;
   // Keyboard HID interface properties (Huion-style tablets)
   interfaceType?: 'digitizer' | 'keyboard';
+  reportId?: number;      // HID report ID (3=keyboard, 4=consumer, 5=scroll)
   modifier?: number;      // Keyboard modifier byte (for Report ID 3)
   keycode?: number;       // Keyboard keycode (for Report ID 3)
   consumerCode?: number;  // Consumer control code (for Report ID 4)
@@ -678,7 +679,20 @@ export function generateDeviceConfig(
       const keyboardButtonMappings: KeyboardButtonsConfig['buttons'] = [];
 
       for (const mapping of keyboardInterfaceButtons) {
-        const reportId = mapping.statusByte ?? 3; // Default to Report ID 3 (keyboard)
+        // Use the detected reportId, or infer from the data type
+        let reportId = mapping.reportId;
+        if (reportId === undefined) {
+          // Infer report ID from the type of data detected
+          if (mapping.consumerCode !== undefined) {
+            reportId = 4;
+          } else if (mapping.scrollDelta !== undefined) {
+            reportId = 5;
+          } else if (mapping.modifier !== undefined || mapping.keycode !== undefined) {
+            reportId = 3;
+          } else {
+            reportId = 3; // Default to keyboard
+          }
+        }
 
         // Determine button type based on report ID
         let buttonType: 'keyboard' | 'consumer' | 'scroll';

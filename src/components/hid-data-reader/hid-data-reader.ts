@@ -16,11 +16,14 @@ import {
   type DeviceConnectionInfo,
   type ByteAnalysis,
   type WalkthroughStep,
+  type PacketWithReportId,
   MockHIDReader,
   createMockHIDReader,
   WebHIDReader,
   createWebHIDReader,
 } from '../../core/index.js';
+
+import { KEY_CODE_TO_HID_USAGE, HID_MODIFIER_BITS } from '../../utils/keyboard-hid-codes.js';
 
 import { DeviceFinder, type DeviceConnectionResult } from '../../utils/finddevice.js';
 import '../hid-devices/hid-devices.js';
@@ -524,6 +527,9 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
    * Processes packets as they arrive and looks for 3 matching patterns
    * that differ from "idle" state
    * Also listens for keyboard events (for when driver is active)
+   *
+   * PRIORITY: HID packets are prioritized over keyboard events.
+   * Keyboard events are only used as fallback if no HID packets are detected.
    */
   private async _detectSingleButton(
     buttonNumber: number,
@@ -537,14 +543,18 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
     return new Promise((resolve) => {
       // Track ONLY button packet patterns (status 0xF0 etc), ignoring pen data
-      const buttonPatterns = new Map<string, { packet: Uint8Array; count: number }>();
-      // Track keyboard events
+      const buttonPatterns = new Map<string, { packet: Uint8Array; count: number; reportId?: number; detectionType: string }>();
+      // Track keyboard events (fallback only)
       const keyboardPatterns = new Map<string, { event: KeyboardEvent; count: number }>();
       let lastProcessedIndex = 0;
       let resolved = false;
       let logCounter = 0;
 
-      // Keyboard event handler
+      // Track the best keyboard event candidate (for fallback)
+      let bestKeyboardCandidate: { signature: string; event: KeyboardEvent; count: number } | null = null;
+
+      // Keyboard event handler - only tracks, doesn't resolve immediately
+      // HID packets take priority
       const handleKeyDown = (e: KeyboardEvent) => {
         if (resolved) return;
 
@@ -561,28 +571,19 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
         const existing = keyboardPatterns.get(keySignature);
         if (existing) {
           existing.count++;
-
-          // Check if we have enough confirmations
-          if (existing.count >= minConfirmations) {
-            console.log(`[ButtonDetect] Button ${buttonNumber} DETECTED via keyboard: ${keySignature}, count=${existing.count}`);
-            resolved = true;
-            clearInterval(interval);
-            window.removeEventListener('keydown', handleKeyDown);
-
-            resolve({
-              buttonNumber,
-              key: e.key,
-              code: e.code,
-              ctrlKey: e.ctrlKey || undefined,
-              shiftKey: e.shiftKey || undefined,
-              altKey: e.altKey || undefined,
-              metaKey: e.metaKey || undefined,
-            });
-            return;
+          // Track the best candidate for fallback
+          if (!bestKeyboardCandidate || existing.count > bestKeyboardCandidate.count) {
+            bestKeyboardCandidate = { signature: keySignature, event: e, count: existing.count };
           }
         } else {
           keyboardPatterns.set(keySignature, { event: e, count: 1 });
+          if (!bestKeyboardCandidate) {
+            bestKeyboardCandidate = { signature: keySignature, event: e, count: 1 };
+          }
         }
+
+        // Don't resolve here - let HID packets take priority
+        // The interval handler will check if we should fall back to keyboard events
       };
 
       // Add keyboard listener
@@ -601,8 +602,8 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
       const processNewPackets = () => {
         if (resolved) return;
 
-        // Get packets directly from the engine's capture buffer
-        const enginePackets = engine.getCapturedPackets();
+        // Get packets with report IDs from the engine's capture buffer
+        const enginePacketsWithReportId = engine.getCapturedPacketsWithReportId();
 
         // Log status every second
         logCounter++;
@@ -611,35 +612,99 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
             .map(([k, d]) => `${k.substring(0, 20)}...(${d.count})`);
           const keyPatterns = Array.from(keyboardPatterns.entries())
             .map(([k, d]) => `${k}(${d.count})`);
-          console.log(`[ButtonDetect] Button ${buttonNumber}: ${enginePackets.length} HID packets, ${buttonPatterns.size} HID patterns, ${keyboardPatterns.size} key patterns`);
+          console.log(`[ButtonDetect] Button ${buttonNumber}: ${enginePacketsWithReportId.length} HID packets, ${buttonPatterns.size} HID patterns, ${keyboardPatterns.size} key patterns`);
           if (keyPatterns.length > 0) {
             console.log(`  Key patterns: [${keyPatterns.join(', ')}]`);
           }
+          // Log unique report IDs seen
+          const reportIds = new Set(enginePacketsWithReportId.map(p => p.reportId));
+          console.log(`  Report IDs seen: [${[...reportIds].join(', ')}]`);
         }
 
         // Only process packets we haven't seen yet
-        const newPackets = enginePackets.slice(lastProcessedIndex);
-        lastProcessedIndex = enginePackets.length;
+        const newPackets = enginePacketsWithReportId.slice(lastProcessedIndex);
+        lastProcessedIndex = enginePacketsWithReportId.length;
 
-        for (const packet of newPackets) {
-          if (packet.length < 2) continue;
+        // Debug: Log each new packet with its report ID
+        for (const { packet, reportId } of newPackets) {
+          const hexBytes = Array.from(packet).map(b => b.toString(16).padStart(2, '0')).join(' ');
+          console.log(`[ButtonDetect] New packet: reportId=${reportId}, len=${packet.length}, bytes=[${hexBytes}]`);
+        }
 
-          const statusByte = packet[0];
-          const scanCode = packet[1];
+        for (const { packet, reportId } of newPackets) {
+          if (packet.length < 1) continue;
 
-          // Only track button packets (status 0xF0, 0x02, 0x03, etc)
-          // Skip pen data (0xA0, 0xA1, 0xC0, etc) and "no button" state (scanCode 0)
-          if (!BUTTON_STATUS_BYTES.includes(statusByte)) {
+          const byte0 = packet[0];
+          const byte1 = packet.length > 1 ? packet[1] : 0;
+
+          // Determine if this is a valid button packet
+          // There are several formats we need to handle:
+          // 1. Keyboard HID packets (Report ID 3): [modifier, keycode, 0, 0, 0, 0, 0] - Huion-style
+          // 2. Consumer control packets (Report ID 4): [consumerCode, 0]
+          // 3. Scroll packets (Report ID 5): [0, 0, 0, 0, 0, scrollDelta] or [0, scrollDelta]
+          // 4. Traditional button packets: [statusByte, scanCode, ...] where statusByte is 0xF0, 0x02, or 0x03
+
+          let isButtonPacket = false;
+          let detectionType: 'keyboard' | 'consumer' | 'scroll' | 'traditional' = 'traditional';
+
+          // Check for keyboard HID packets (Report ID 3) - Huion-style keyboard shortcuts
+          // Format: [modifier, keycode, 0, 0, 0, 0, 0]
+          if (reportId === 3 && packet.length >= 2) {
+            const modifier = byte0;
+            const keycode = byte1;
+            // Skip idle packets (no key pressed)
+            if (keycode !== 0) {
+              isButtonPacket = true;
+              detectionType = 'keyboard';
+            }
+          }
+          // Check for consumer control packets (Report ID 4)
+          // Format: [consumerCode, 0]
+          else if (reportId === 4 && packet.length === 2 && byte0 !== 0 && byte1 === 0) {
+            isButtonPacket = true;
+            detectionType = 'consumer';
+          }
+          // Check for scroll packets (Report ID 5)
+          // Format: [0, 0, 0, 0, 0, scrollDelta] or [0, scrollDelta]
+          else if (reportId === 5 && packet.length >= 2) {
+            // Check last byte for scroll delta
+            const scrollDelta = packet[packet.length - 1];
+            if (scrollDelta !== 0) {
+              isButtonPacket = true;
+              detectionType = 'scroll';
+            }
+          }
+          // Check for traditional button status bytes (XP-Pen style)
+          else if (BUTTON_STATUS_BYTES.includes(byte0)) {
+            // Traditional button packet - skip if scanCode is 0 (no button pressed)
+            if (byte1 === 0) {
+              continue;
+            }
+            isButtonPacket = true;
+            detectionType = 'traditional';
+          }
+          // Fallback: Check for consumer control packets without report ID
+          // (2 bytes, byte0 is non-zero consumer code, byte1 is 0)
+          else if (packet.length === 2 && byte0 !== 0 && byte1 === 0) {
+            // Exclude common pen status bytes that might have this pattern
+            const PEN_STATUS_BYTES = [0xA0, 0xA1, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0x80, 0x81];
+            if (!PEN_STATUS_BYTES.includes(byte0)) {
+              isButtonPacket = true;
+              detectionType = 'consumer';
+            }
+          }
+          // Fallback: Check for scroll packets without report ID
+          else if (packet.length === 2 && byte0 === 0 && byte1 !== 0) {
+            isButtonPacket = true;
+            detectionType = 'scroll';
+          }
+
+          if (!isButtonPacket) {
             continue;
           }
 
-          // Skip "no button pressed" state (scanCode 0 with button status)
-          if (scanCode === 0) {
-            continue;
-          }
-
-          // Create a key from the packet bytes
-          const key = Array.from(packet).join('-');
+          // Create a key from the packet bytes and report ID
+          const key = `${reportId ?? 'none'}-${Array.from(packet).join('-')}`;
 
           const existing = buttonPatterns.get(key);
           if (existing) {
@@ -647,21 +712,74 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
             // Check if we have enough confirmations
             if (existing.count >= minConfirmations) {
-              console.log(`[ButtonDetect] Button ${buttonNumber} DETECTED via HID: scanCode=${scanCode}, status=${statusByte}, count=${existing.count}`);
+              console.log(`[ButtonDetect] Button ${buttonNumber} DETECTED via HID (${detectionType}, reportId=${reportId}): bytes=[${Array.from(packet).join(',')}], count=${existing.count}`);
               resolved = true;
               clearInterval(interval);
               window.removeEventListener('keydown', handleKeyDown);
 
-              resolve({
-                buttonNumber,
-                scanCode,
-                statusByte,
-              });
+              // Return appropriate detection result based on type
+              if (detectionType === 'keyboard') {
+                // Keyboard HID packet - extract modifier and keycode
+                resolve({
+                  buttonNumber,
+                  modifier: byte0,
+                  keycode: byte1,
+                  reportId: reportId,
+                  interfaceType: 'keyboard',
+                });
+              } else if (detectionType === 'consumer') {
+                resolve({
+                  buttonNumber,
+                  consumerCode: byte0,
+                  reportId: reportId,
+                  interfaceType: 'keyboard',
+                });
+              } else if (detectionType === 'scroll') {
+                const scrollDelta = packet[packet.length - 1];
+                resolve({
+                  buttonNumber,
+                  scrollDelta: scrollDelta,
+                  reportId: reportId,
+                  interfaceType: 'keyboard',
+                });
+              } else {
+                resolve({
+                  buttonNumber,
+                  scanCode: byte1,
+                  statusByte: byte0,
+                });
+              }
               return;
             }
           } else {
-            buttonPatterns.set(key, { packet: new Uint8Array(packet), count: 1 });
+            buttonPatterns.set(key, { packet: new Uint8Array(packet), count: 1, reportId, detectionType });
           }
+        }
+
+        // Check if we should fall back to keyboard events
+        // Only fall back if:
+        // 1. We have keyboard events with enough confirmations
+        // 2. We haven't detected any HID button packets
+        // 3. We've been waiting for a while (give HID packets time to arrive)
+        if (bestKeyboardCandidate &&
+            bestKeyboardCandidate.count >= minConfirmations &&
+            buttonPatterns.size === 0 &&
+            logCounter > 40) { // Wait ~2 seconds before falling back
+          console.log(`[ButtonDetect] Button ${buttonNumber} DETECTED via keyboard (fallback): ${bestKeyboardCandidate.signature}, count=${bestKeyboardCandidate.count}`);
+          resolved = true;
+          clearInterval(interval);
+          window.removeEventListener('keydown', handleKeyDown);
+
+          const e = bestKeyboardCandidate.event;
+          resolve({
+            buttonNumber,
+            key: e.key,
+            code: e.code,
+            ctrlKey: e.ctrlKey || undefined,
+            shiftKey: e.shiftKey || undefined,
+            altKey: e.altKey || undefined,
+            metaKey: e.metaKey || undefined,
+          });
         }
       };
 
@@ -1088,8 +1206,14 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
             <h4>Detected Buttons:</h4>
             ${this.detectedButtons.map(btn => html`
               <div class="detected-button">
-                ${btn.key ? html`
+                ${btn.modifier !== undefined && btn.keycode !== undefined ? html`
+                  ✓ Button ${btn.buttonNumber}: modifier=${btn.modifier}, keycode=${btn.keycode} (Report ID ${btn.reportId ?? 3})
+                ` : btn.key ? html`
                   ✓ Button ${btn.buttonNumber}: ${btn.ctrlKey ? 'Ctrl+' : ''}${btn.shiftKey ? 'Shift+' : ''}${btn.altKey ? 'Alt+' : ''}${btn.metaKey ? 'Meta+' : ''}${btn.key} (${btn.code})
+                ` : btn.consumerCode !== undefined ? html`
+                  ✓ Button ${btn.buttonNumber}: consumerCode=${btn.consumerCode} (Report ID ${btn.reportId ?? 4})
+                ` : btn.scrollDelta !== undefined ? html`
+                  ✓ Button ${btn.buttonNumber}: scrollDelta=${btn.scrollDelta} (Report ID ${btn.reportId ?? 5})
                 ` : html`
                   ✓ Button ${btn.buttonNumber}: scanCode=${btn.scanCode}, status=${btn.statusByte}
                 `}
@@ -1344,6 +1468,12 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     this.isRealDevice = true;
     this.isMockMode = false;
 
+    console.log(`[HIDDataReader] Received ${result.allDevices.length} devices from DeviceFinder`);
+    result.allDevices.forEach((d, i) => {
+      const collections = d.collections.map(c => `usagePage=${c.usagePage}, usage=${c.usage}`).join('; ');
+      console.log(`  Device ${i}: opened=${d.opened}, [${collections}]`);
+    });
+
     this.webReaders = result.allDevices.map(device => createWebHIDReader(device));
 
     // Build collections from ALL devices, not just primaryDevice
@@ -1381,28 +1511,38 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
 
     this.requestUpdate();
 
+    // Open ALL devices (not just the primary one)
+    // This is important for tablets like Huion that send button data through a separate
+    // keyboard HID interface (Usage Page 1, Usage 6)
+    for (let index = 0; index < this.webReaders.length; index++) {
+      const reader = this.webReaders[index];
+      if (!reader.isOpen) {
+        try {
+          await reader.open();
+          console.log(`[HIDDataReader] Opened device ${index}: usagePage=${reader.deviceInfo.usagePage}, usage=${reader.deviceInfo.usage}`);
+        } catch (error) {
+          console.error(`[HIDDataReader] Error opening device ${index}:`, error);
+          // Continue with other devices even if one fails
+        }
+      }
+    }
+
     // Start reading from all devices
     this.webReaders.forEach((reader, index) => {
+      console.log(`[HIDDataReader] Starting reading on device ${index}: isOpen=${reader.isOpen}, usagePage=${reader.deviceInfo.usagePage}`);
       reader.startReading((data, reportId) => {
         this._handleDeviceData(index, data, reportId);
       });
     });
 
-    // Find and open the primary device (the digitizer interface)
-    // Don't assume it's at index 0 - find it by matching against result.primaryDevice
+    // Find the primary device (the digitizer interface) for the controller
     const primaryReaderIndex = result.allDevices.findIndex(d => d === result.primaryDevice);
     const primaryReader = primaryReaderIndex >= 0 ? this.webReaders[primaryReaderIndex] : this.webReaders[0];
-    
-    if (primaryReader && !primaryReader.isOpen) {
-      try {
-        await primaryReader.open();
-        this.controller.setReader(primaryReader);
-        this.controller.setDeviceInfo(this.deviceMetadata);
-        this.requestUpdate();
-      } catch (error) {
-        console.error('[HIDDataReader] Error opening device:', error);
-        this.showError(`Failed to open device: ${error instanceof Error ? error.message : String(error)}`);
-      }
+
+    if (primaryReader) {
+      this.controller.setReader(primaryReader);
+      this.controller.setDeviceInfo(this.deviceMetadata);
+      this.requestUpdate();
     }
   }
 
@@ -1429,6 +1569,20 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     const hexString = Array.from(data)
       .map(byte => byte.toString(16).padStart(2, '0').toUpperCase())
       .join(' ');
+
+    // Debug: Log packets from ALL devices to diagnose data flow
+    // Uncomment the line below to see all packets (very verbose!)
+    // console.log(`[HID] Device ${deviceIndex}, reportId=${reportId}, len=${data.length}, bytes=[${hexString}]`);
+
+    // Log packets from non-digitizer interfaces (keyboard, vendor-specific)
+    // These are the interfaces that might carry button data
+    if (deviceIndex >= 0 && this.webReaders[deviceIndex]) {
+      const reader = this.webReaders[deviceIndex];
+      // Log packets from keyboard (usagePage=1) or vendor-specific (usagePage=65280) interfaces
+      if (reader.deviceInfo.usagePage === 1 || reader.deviceInfo.usagePage === 65280) {
+        console.log(`[NonDigitizer] Device ${deviceIndex} (usagePage=${reader.deviceInfo.usagePage}), reportId=${reportId}, len=${data.length}, bytes=[${hexString}]`);
+      }
+    }
 
     const stream = this.deviceDataStreams.get(deviceIndex);
     if (stream) {

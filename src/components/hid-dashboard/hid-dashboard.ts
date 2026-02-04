@@ -8,7 +8,7 @@ import type { ByteData, DeviceInfo } from '../bytes-display/bytes-display.js';
 import type { TabletEvent, EventsDeviceInfo } from '../events-display/events-display.js';
 import { Config, type ConfigData } from '../../models/config.js';
 import { MockTabletDevice } from '../../mockbytes/mock-tablet-device.js';
-import { processDeviceData } from '../../utils/data-helpers.js';
+import { processDeviceData, processKeyboardButtonData, convertKeyboardButtonsToMappings, type KeyboardButtonsConfig } from '../../utils/data-helpers.js';
 import '@spectrum-web-components/button/sp-button.js';
 import '@spectrum-web-components/action-button/sp-action-button.js';
 import '@spectrum-web-components/action-menu/sp-action-menu.js';
@@ -254,6 +254,10 @@ export class HidDashboard extends LitElement {
   private keyboardListenerBound = this._handleKeyDown.bind(this);
   private keyupListenerBound = this._handleKeyUp.bind(this);
 
+  // Cached keyboard button config and converted mappings for Huion-style tablets
+  private cachedKeyboardButtonsConfig: KeyboardButtonsConfig | null = null;
+  private cachedConvertedKeyboardMappings: ReturnType<typeof convertKeyboardButtonsToMappings> = null;
+
   private readonly mockDataOptions: MockDataOption[] = [
     { id: 'circle', label: 'Draw Circle', action: (d) => d.playCircle() },
     { id: 'line', label: 'Draw Line', action: (d) => d.playLine() },
@@ -274,8 +278,9 @@ export class HidDashboard extends LitElement {
     // Initialize mock device so it's ready for simulations
     this._initMockDevice();
     // Add keyboard listeners for button mappings
-    window.addEventListener('keydown', this.keyboardListenerBound);
-    window.addEventListener('keyup', this.keyupListenerBound);
+    // Use capture phase to intercept events before they trigger default browser behavior
+    window.addEventListener('keydown', this.keyboardListenerBound, { capture: true });
+    window.addEventListener('keyup', this.keyupListenerBound, { capture: true });
   }
 
   disconnectedCallback() {
@@ -284,11 +289,34 @@ export class HidDashboard extends LitElement {
     this._disconnectWebSocket();
     this._stopSimulation();
     // Remove keyboard listeners
-    window.removeEventListener('keydown', this.keyboardListenerBound);
-    window.removeEventListener('keyup', this.keyupListenerBound);
+    window.removeEventListener('keydown', this.keyboardListenerBound, { capture: true });
+    window.removeEventListener('keyup', this.keyupListenerBound, { capture: true });
   }
 
+  /**
+   * Cache keyboardButtons config and convert to keyboardMappings format
+   * for Huion-style tablets that send buttons via keyboard HID interface
+   */
+  private _cacheKeyboardButtonsConfig() {
+    this.cachedKeyboardButtonsConfig = null;
+    this.cachedConvertedKeyboardMappings = null;
 
+    if (!this.config?.modes) return;
+
+    // Look for keyboardButtons in any mode's byteCodeMappings
+    for (const mode of this.config.modes) {
+      const keyboardButtons = mode.byteCodeMappings?.keyboardButtons as KeyboardButtonsConfig | undefined;
+      if (keyboardButtons?.buttons?.length) {
+        this.cachedKeyboardButtonsConfig = keyboardButtons;
+        this.cachedConvertedKeyboardMappings = convertKeyboardButtonsToMappings(keyboardButtons);
+        console.log('[HIDDashboard] Cached keyboardButtons config:', {
+          buttonCount: keyboardButtons.buttons.length,
+          convertedMappings: this.cachedConvertedKeyboardMappings?.buttons.length ?? 0
+        });
+        break;
+      }
+    }
+  }
 
   private async _loadSampleConfig() {
     try {
@@ -299,6 +327,7 @@ export class HidDashboard extends LitElement {
       const text = await response.text();
       const config = Config.fromJSON(text);
       this.config = config;
+      this._cacheKeyboardButtonsConfig();
 
       // Dispatch event to notify parent
       this.dispatchEvent(new CustomEvent('config-loaded', {
@@ -329,6 +358,7 @@ export class HidDashboard extends LitElement {
         const text = await file.text();
         const config = Config.fromJSON(text);
         this.config = config;
+        this._cacheKeyboardButtonsConfig();
 
         // Dispatch event to notify parent
         this.dispatchEvent(new CustomEvent('config-loaded', {
@@ -659,6 +689,17 @@ export class HidDashboard extends LitElement {
         this.isRawBytesTranslated = false;
         this._updateRawBytes(bytes, 'webhid');
 
+        // Check if this is a keyboard HID button packet (Report ID 3, 4, or 5)
+        // These are used by Huion-style tablets for button presses
+        if ((reportId === 3 || reportId === 4 || reportId === 5) && this.cachedKeyboardButtonsConfig) {
+          // Pass reportId separately since WebHID strips it from the data bytes
+          const processed = processKeyboardButtonData(bytes, this.cachedKeyboardButtonsConfig, reportId);
+          if (processed && Object.keys(processed).length > 0) {
+            this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
+          }
+          return;
+        }
+
         // Process through config mappings using shared processDeviceData
         // Events are translated from raw bytes
         // Use offset -1 for WebHID since browser API strips report ID from packets
@@ -698,6 +739,15 @@ export class HidDashboard extends LitElement {
             this.isRawBytesTranslated = false;
             this._updateRawBytes(bytes, 'webhid');
 
+            // Check if this is a keyboard HID button packet (Report ID 3, 4, or 5)
+            if ((reportId === 3 || reportId === 4 || reportId === 5) && this.cachedKeyboardButtonsConfig) {
+              const processed = processKeyboardButtonData(bytes, this.cachedKeyboardButtonsConfig, reportId);
+              if (processed && Object.keys(processed).length > 0) {
+                this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
+              }
+              return;
+            }
+
             const mappings = this.config!.getByteCodeMappings(reportId);
             if (!mappings) {
               return;
@@ -723,6 +773,15 @@ export class HidDashboard extends LitElement {
 
             this.isRawBytesTranslated = false;
             this._updateRawBytes(bytes, 'webhid');
+
+            // Check if this is a keyboard HID button packet (Report ID 3, 4, or 5)
+            if ((reportId === 3 || reportId === 4 || reportId === 5) && this.cachedKeyboardButtonsConfig) {
+              const processed = processKeyboardButtonData(bytes, this.cachedKeyboardButtonsConfig, reportId);
+              if (processed && Object.keys(processed).length > 0) {
+                this._handleTabletData(processed as TabletDataEvent, 'webhid', true);
+              }
+              return;
+            }
 
             const mappings = this.config!.getByteCodeMappings(reportId);
             if (!mappings) {
@@ -833,6 +892,13 @@ export class HidDashboard extends LitElement {
       return;
     }
 
+    // If we have keyboard button mappings, prevent default browser behavior
+    // This stops things like Space scrolling the page, etc.
+    if (this.cachedConvertedKeyboardMappings || this.config?.keyboardMappings) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     // Track pressed keys
     this.pressedKeys.add(e.code);
 
@@ -841,6 +907,17 @@ export class HidDashboard extends LitElement {
   }
 
   private _handleKeyUp(e: KeyboardEvent) {
+    // Don't process if typing in an input field
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    // If we have keyboard button mappings, prevent default browser behavior
+    if (this.cachedConvertedKeyboardMappings || this.config?.keyboardMappings) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     // Remove from pressed keys
     this.pressedKeys.delete(e.code);
 
@@ -856,6 +933,7 @@ export class HidDashboard extends LitElement {
     }
 
     // Get keyboard mappings from current mode or fallback to config-level
+    // Also check for converted keyboardButtons mappings (Huion-style)
     let keyboardMappings = this.config.keyboardMappings;
 
     if (this.currentReportId !== null) {
@@ -873,6 +951,11 @@ export class HidDashboard extends LitElement {
           }
         }
       }
+    }
+
+    // Fall back to converted keyboardButtons mappings if no keyboardMappings found
+    if (!keyboardMappings && this.cachedConvertedKeyboardMappings) {
+      keyboardMappings = this.cachedConvertedKeyboardMappings;
     }
 
     if (!keyboardMappings) {
@@ -1004,6 +1087,7 @@ export class HidDashboard extends LitElement {
         // If raw mode, load the config from server
         if (data.dataFormat === 'raw' && data.fullConfig) {
           this.config = new Config(data.fullConfig);
+          this._cacheKeyboardButtonsConfig();
         }
       }
       return;

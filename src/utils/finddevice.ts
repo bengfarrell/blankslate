@@ -111,22 +111,29 @@ export class DeviceFinder {
             }
 
             console.log(`[DeviceFinder] Found ${devices.length} previously authorized device interface(s)`);
-            
+
+            // Debug: Log all authorized devices
+            devices.forEach((d, i) => {
+                const collections = d.collections.map(c => `usagePage=${c.usagePage}, usage=${c.usage}`).join('; ');
+                console.log(`  Device ${i}: ${d.productName} (vendor=${d.vendorId}, product=${d.productId}) - [${collections}]`);
+            });
+
             // Find the digitizer interface
             const digitizerDevice = devices.find(device => {
-                return device.collections.some(collection => 
+                return device.collections.some(collection =>
                     collection.usagePage === this.digitizerUsagePage
                 );
             });
 
             const selectedDevice = digitizerDevice || devices[0];
-            
+
             // Find all interfaces from the same tablet (same vendor/product ID)
-            const sameTabletDevices = devices.filter(d => 
-                d.vendorId === selectedDevice.vendorId && 
+            const sameTabletDevices = devices.filter(d =>
+                d.vendorId === selectedDevice.vendorId &&
                 d.productId === selectedDevice.productId
             );
-            
+
+            console.log(`[DeviceFinder] Same tablet devices: ${sameTabletDevices.length}`);
             console.log(`[DeviceFinder] Auto-connecting to ${selectedDevice.productName}`);
             
             // Open all interfaces from this tablet
@@ -181,12 +188,25 @@ export class DeviceFinder {
                 throw new Error('WebHID not supported');
             }
             const allDevices = await navigator.hid.getDevices();
-            
+
+            // Debug: Log all authorized devices
+            console.log(`[DeviceFinder] All authorized devices (${allDevices.length}):`);
+            allDevices.forEach((d, i) => {
+                const collections = d.collections.map(c => `usagePage=${c.usagePage}, usage=${c.usage}`).join('; ');
+                console.log(`  Device ${i}: ${d.productName} (vendor=${d.vendorId}, product=${d.productId}) - [${collections}]`);
+            });
+
             // Find all interfaces from the same tablet (same vendor/product ID)
-            const sameTabletDevices = allDevices.filter(d => 
-                d.vendorId === selectedDevice.vendorId && 
+            const sameTabletDevices = allDevices.filter(d =>
+                d.vendorId === selectedDevice.vendorId &&
                 d.productId === selectedDevice.productId
             );
+
+            console.log(`[DeviceFinder] Same tablet devices (${sameTabletDevices.length}):`);
+            sameTabletDevices.forEach((d, i) => {
+                const collections = d.collections.map(c => `usagePage=${c.usagePage}, usage=${c.usage}`).join('; ');
+                console.log(`  Device ${i}: [${collections}]`);
+            });
             
             // CLAIM ALL INTERFACES from this tablet for exclusive access
             const result = await this.openDeviceGroup(sameTabletDevices, selectedDevice);

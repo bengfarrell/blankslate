@@ -40,6 +40,7 @@ export interface DetectedButton {
   metaKey?: boolean;
   // Keyboard HID interface properties (Huion-style tablets)
   interfaceType?: 'digitizer' | 'keyboard';
+  reportId?: number;      // HID report ID (3=keyboard, 4=consumer, 5=scroll)
   modifier?: number;      // Keyboard modifier byte (for Report ID 3)
   keycode?: number;       // Keyboard keycode (for Report ID 3)
   consumerCode?: number;  // Consumer control code (for Report ID 4)
