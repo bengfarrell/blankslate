@@ -99,8 +99,14 @@ class CaptureStatus:
 class DetectedButton:
     """Information about a detected button"""
     button_number: int
-    byte_index: int  # Status byte value
-    bit_position: int  # Scan code value
+    byte_index: int  # Status byte value (or report ID for keyboard interface)
+    bit_position: int  # Scan code value (combined code for keyboard interface)
+    interface_type: str = 'digitizer'  # 'digitizer' or 'keyboard'
+    # Additional metadata for keyboard interface buttons
+    modifier: Optional[int] = None  # Keyboard modifier byte (for Report ID 3)
+    keycode: Optional[int] = None  # Keyboard keycode (for Report ID 3)
+    consumer_code: Optional[int] = None  # Consumer control code (for Report ID 4)
+    scroll_delta: Optional[int] = None  # Scroll delta (for Report ID 5)
 
 
 @dataclass

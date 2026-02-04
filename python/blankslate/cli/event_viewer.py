@@ -20,10 +20,12 @@ from dataclasses import dataclass
 
 try:
     from .tablet_reader_base import TabletReaderBase, Colors, colored, normalize_tablet_event
+    from ..core.hid_reader import process_keyboard_button_data
 except ImportError:
     import os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
     from blankslate.cli.tablet_reader_base import TabletReaderBase, Colors, colored, normalize_tablet_event
+    from blankslate.core.hid_reader import process_keyboard_button_data
 
 
 @dataclass
@@ -73,8 +75,8 @@ class EventViewer(TabletReaderBase):
         # Start reading
         print(colored('Setting up data callback...', Colors.GRAY))
         if hasattr(self.reader, 'start_reading'):
-            # Accept both old (data only) and new (data, report_id) signatures
-            self.reader.start_reading(lambda data, report_id=None: self.handle_packet(data))
+            # Accept old (data only), new (data, report_id), and newest (data, report_id, interface_type) signatures
+            self.reader.start_reading(lambda data, report_id=None, interface_type=None: self.handle_packet(data, interface_type))
 
         print(colored('✓ Started reading data', Colors.GREEN))
         print(colored('Press Ctrl+C to stop\n', Colors.GRAY))
@@ -95,8 +97,13 @@ class EventViewer(TabletReaderBase):
         finally:
             self.stop_sync()
     
-    def handle_packet(self, data: bytes):
-        """Handle incoming packet"""
+    def handle_packet(self, data: bytes, interface_type: Optional[str] = None):
+        """Handle incoming packet
+
+        Args:
+            data: Raw HID packet bytes
+            interface_type: Type of interface ('keyboard', 'digitizer', 'other', or None)
+        """
         try:
             self.packet_count += 1
 
@@ -105,15 +112,20 @@ class EventViewer(TabletReaderBase):
             self.last_report_id = report_id
 
             # Process the data using the config
-            events = self.process_packet(data)
+            # For keyboard interface, use keyboard button processing
+            if interface_type == 'keyboard':
+                events = self._process_keyboard_packet(data)
+            else:
+                events = self.process_packet(data)
 
-            # Track raw values for calibration warnings
-            self._track_raw_values(data)
+            # Track raw values for calibration warnings (only for digitizer data)
+            if interface_type != 'keyboard':
+                self._track_raw_values(data)
 
             # Store for live mode
             self.last_events = events
             self.last_raw_data = data
-            
+
             # Format output
             if self.live_mode:
                 self._print_live(events, data)
@@ -128,6 +140,30 @@ class EventViewer(TabletReaderBase):
             sys.stderr.write(f"\n[ERROR] Failed to process packet: {e}\n")
             traceback.print_exc(file=sys.stderr)
             sys.stderr.flush()
+
+    def _process_keyboard_packet(self, data: bytes) -> Dict[str, Any]:
+        """Process a keyboard HID interface packet for button data
+
+        Args:
+            data: Raw keyboard HID packet bytes
+
+        Returns:
+            Dictionary with button state events
+        """
+        # Get keyboardButtons config from the current mode's byteCodeMappings
+        keyboard_buttons_config = None
+
+        if self.current_mode:
+            keyboard_buttons_config = self.current_mode.byteCodeMappings.get('keyboardButtons')
+        elif self.config_data.modes:
+            # Try first mode if current mode not detected yet
+            keyboard_buttons_config = self.config_data.modes[0].byteCodeMappings.get('keyboardButtons')
+
+        if keyboard_buttons_config:
+            return process_keyboard_button_data(data, keyboard_buttons_config)
+        else:
+            # No keyboard buttons config - return empty events
+            return {}
     
     def _track_raw_values(self, data: bytes):
         """Extract raw multi-byte values and track max values seen"""
@@ -139,7 +175,7 @@ class EventViewer(TabletReaderBase):
                 return  # Mode not detected yet
             mappings = self.current_mode.byteCodeMappings
         else:
-            mappings = self.config_data.byteCodeMappings
+            mappings = self.config_data.get_byte_code_mappings()
 
         if not mappings:
             return
@@ -202,7 +238,7 @@ class EventViewer(TabletReaderBase):
                 return  # Mode not detected yet
             mappings = self.current_mode.byteCodeMappings
         else:
-            mappings = self.config_data.byteCodeMappings
+            mappings = self.config_data.get_byte_code_mappings()
 
         if not mappings:
             return
@@ -379,7 +415,7 @@ class EventViewer(TabletReaderBase):
                 return  # Mode not detected yet
             mappings = self.current_mode.byteCodeMappings
         else:
-            mappings = self.config_data.byteCodeMappings
+            mappings = self.config_data.get_byte_code_mappings()
 
         if not mappings:
             return

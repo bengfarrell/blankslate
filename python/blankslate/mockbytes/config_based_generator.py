@@ -26,13 +26,21 @@ class ConfigBasedGenerator:
         with open(config_path, 'r') as f:
             self.config = json.load(f)
 
-        self.mappings = self.config.get('byteCodeMappings', {})
+        # Support both multi-mode format (modes array) and legacy single-mode format
+        if 'modes' in self.config and isinstance(self.config['modes'], list) and len(self.config['modes']) > 0:
+            # Multi-mode format: extract from first mode
+            first_mode = self.config['modes'][0]
+            self.mappings = first_mode.get('byteCodeMappings', {})
+            self.report_id = first_mode.get('reportId', 2)
+        else:
+            # Legacy single-mode format
+            self.mappings = self.config.get('byteCodeMappings', {})
+            self.report_id = self.config.get('reportId', 2)
 
         # Extract device parameters from config
         self.max_x = self._get_max_value('x')
         self.max_y = self._get_max_value('y')
         self.max_pressure = self._get_max_value('pressure')
-        self.report_id = self.config.get('reportId', 2)
 
         # Get button configuration
         self.button_config = self.mappings.get('tabletButtons', {})

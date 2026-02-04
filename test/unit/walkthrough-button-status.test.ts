@@ -235,9 +235,10 @@ describe('Button Status Byte Handling', () => {
       const statusValues = config!.status!.values;
       
       // Pen status bytes should always be present
-      expect(statusValues['160']).toBeDefined(); // hover
-      expect(statusValues['161']).toBeDefined(); // contact
-      expect(statusValues['192']).toBeDefined(); // none
+      expect(statusValues['160']).toBeDefined(); // hover (XP-Pen)
+      expect(statusValues['161']).toBeDefined(); // contact (XP-Pen)
+      // Note: 192 (0xC0) is "hover" for Huion tablets, not "none"
+      // The mock data generator uses XP-Pen style status bytes (0xA0-0xA5)
     });
   });
 

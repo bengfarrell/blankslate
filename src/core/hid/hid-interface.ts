@@ -32,9 +32,20 @@ export interface HIDDeviceFilter {
 }
 
 /**
- * Callback for incoming HID data
+ * Interface type for HID interfaces
+ * - 'keyboard': Keyboard HID interface (Usage Page 1, Usage 6) - used by Huion for buttons
+ * - 'digitizer': Digitizer interface (Usage Page 13) - pen data
+ * - 'other': Other interfaces (vendor-specific, etc.)
  */
-export type HIDDataCallback = (data: Uint8Array, reportId?: number) => void;
+export type HIDInterfaceType = 'keyboard' | 'digitizer' | 'other';
+
+/**
+ * Callback for incoming HID data
+ * @param data - Raw HID packet data
+ * @param reportId - Optional Report ID (first byte of packet)
+ * @param interfaceType - Optional interface type ('keyboard', 'digitizer', 'other')
+ */
+export type HIDDataCallback = (data: Uint8Array, reportId?: number, interfaceType?: HIDInterfaceType) => void;
 
 /**
  * Abstract HID reader interface

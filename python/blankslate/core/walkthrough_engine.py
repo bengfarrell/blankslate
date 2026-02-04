@@ -162,13 +162,16 @@ class WalkthroughEngine:
 
         # Auto-detect report ID from parameter (passed by HID reader)
         if report_id is not None:
-            # Track all report IDs we see with pen data
-            # Status byte is at index 1 (matching stable config byteIndex: [1])
-            if len(packet) > 1:
-                status_byte = packet[1]
-                is_pen_packet = status_byte in (0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5)
+            # Tablet-agnostic pen packet detection:
+            # Instead of checking for specific status bytes, detect pen packets by content:
+            # - Pen packets have non-zero data in coordinate bytes (typically bytes 2-7)
+            # - Idle/empty packets are all zeros or have no meaningful variance
+            if len(packet) > 2:
+                # Check for non-zero data in the data portion (skip status byte at index 1)
+                data_bytes = packet[2:min(len(packet), 8)]  # Check bytes 2-7 (coordinates/pressure)
+                has_meaningful_data = any(b != 0 for b in data_bytes)
 
-                if is_pen_packet:
+                if has_meaningful_data:
                     self.candidate_report_ids.add(report_id)
 
             # Lock onto the first report ID that sends valid pen data
@@ -195,8 +198,9 @@ class WalkthroughEngine:
             # Status byte is at index 1 (matching stable config byteIndex: [1])
             status_byte = packet[1]
 
-            # Check for common "out of range" or "idle" status bytes
-            if status_byte in (0xC0, 0x00):
+            # Check for true "idle" status byte (0x00 only)
+            # Note: 0xC0 is NOT idle - it's "hover" on Huion tablets
+            if status_byte == 0x00:
                 self.idle_packet_count += 1
                 self._track_status_byte(status_byte)
                 return
@@ -241,24 +245,41 @@ class WalkthroughEngine:
         """Track status byte values - records ALL pen-related status codes whenever seen"""
         # Map ALL known status byte values to their states
         # This ensures we capture stylus button states regardless of which step we're on
+        # Supports multiple tablet manufacturers with different status byte encodings
         status_map = {
+            # === Standard/XP-Pen tablets (0xA0-0xA5 range) ===
             # Basic pen states
             0xa0: {'state': 'hover'},           # 160 - pen hovering
             0xa1: {'state': 'contact'},         # 161 - pen touching
-            0xc0: {'state': 'none'},            # 192 - pen out of range
-            
+
             # Stylus secondary button (barrel button closer to tip)
             0xa2: {'state': 'hover', 'secondaryButtonPressed': True},    # 162
             0xa3: {'state': 'contact', 'secondaryButtonPressed': True},  # 163
-            
+
             # Stylus primary button (barrel button further from tip)
             0xa4: {'state': 'hover', 'primaryButtonPressed': True},      # 164
             0xa5: {'state': 'contact', 'primaryButtonPressed': True},    # 165
-            
+
+            # === Huion tablets (0xC0-0xC5 range) ===
+            # Basic pen states
+            0xc0: {'state': 'hover'},           # 192 - pen hovering (NOT "none"!)
+            0xc1: {'state': 'contact'},         # 193 - pen touching
+
+            # Stylus secondary button (barrel button closer to tip)
+            0xc2: {'state': 'hover', 'secondaryButtonPressed': True},    # 194
+            0xc3: {'state': 'contact', 'secondaryButtonPressed': True},  # 195
+
+            # Stylus primary button (barrel button further from tip)
+            0xc4: {'state': 'hover', 'primaryButtonPressed': True},      # 196
+            0xc5: {'state': 'contact', 'primaryButtonPressed': True},    # 197
+
+            # === Common status codes ===
+            0x00: {'state': 'none'},            # 0 - pen out of range / idle
+
             # Tablet button mode indicator
             0xf0: {'state': 'buttons'},         # 240
         }
-        
+
         if byte_value in status_map:
             self.status_byte_values[byte_value] = status_map[byte_value]
     
@@ -522,54 +543,85 @@ class WalkthroughEngine:
         
         # Tablet Buttons
         if self.button_mappings:
-            # HID scan code detection
-            values = {}
+            # Separate buttons by interface type
+            digitizer_buttons = [m for m in self.button_mappings if m.get('interfaceType', 'digitizer') == 'digitizer']
+            keyboard_buttons = [m for m in self.button_mappings if m.get('interfaceType') == 'keyboard']
 
-            # Check for scan code conflicts and track status byte overrides
-            scan_code_groups = {}
-            for mapping in self.button_mappings:
-                scan_code = mapping.get('scanCode')
-                if scan_code is not None:
-                    if scan_code not in scan_code_groups:
-                        scan_code_groups[scan_code] = []
-                    scan_code_groups[scan_code].append(mapping)
+            # Handle digitizer interface buttons (XP-Pen style)
+            if digitizer_buttons:
+                values = {}
+                scan_code_groups = {}
+                for mapping in digitizer_buttons:
+                    scan_code = mapping.get('scanCode')
+                    if scan_code is not None:
+                        if scan_code not in scan_code_groups:
+                            scan_code_groups[scan_code] = []
+                        scan_code_groups[scan_code].append(mapping)
 
-            # Track conflicting buttons (share same scan code, differentiated by status byte)
-            conflicting_buttons = []
+                conflicting_buttons = []
+                for scan_code, mappings_list in scan_code_groups.items():
+                    if len(mappings_list) > 1:
+                        sorted_mappings = sorted(mappings_list, key=lambda m: m['buttonNumber'])
+                        values[str(scan_code)] = {'button': sorted_mappings[0]['buttonNumber']}
+                        for i in range(1, len(sorted_mappings)):
+                            status_byte = sorted_mappings[i].get('statusByte')
+                            if status_byte is not None:
+                                conflicting_buttons.append({
+                                    'scanCode': scan_code,
+                                    'statusByte': status_byte,
+                                    'buttonNumber': sorted_mappings[i]['buttonNumber']
+                                })
+                    else:
+                        values[str(scan_code)] = {'button': mappings_list[0]['buttonNumber']}
 
-            # Build value mappings - for conflicts, use the lower button number as default
-            for scan_code, mappings_list in scan_code_groups.items():
-                if len(mappings_list) > 1:
-                    # Multiple buttons share this scan code
-                    # Use the lowest button number as the default mapping
-                    # Store the others as conflicts for status-byte-based override
-                    sorted_mappings = sorted(mappings_list, key=lambda m: m['buttonNumber'])
-                    values[str(scan_code)] = {'button': sorted_mappings[0]['buttonNumber']}
+                tablet_buttons_config = {
+                    'byteIndex': [2],
+                    'buttonCount': len(digitizer_buttons),
+                    'type': 'code',
+                    'values': values
+                }
+                if conflicting_buttons:
+                    tablet_buttons_config['statusOverrides'] = conflicting_buttons
+                mappings['tabletButtons'] = tablet_buttons_config
 
-                    # Record conflicts for runtime status byte checking
-                    for i in range(1, len(sorted_mappings)):
-                        status_byte = sorted_mappings[i].get('statusByte')
-                        if status_byte is not None:
-                            conflicting_buttons.append({
-                                'scanCode': scan_code,
-                                'statusByte': status_byte,
-                                'buttonNumber': sorted_mappings[i]['buttonNumber']
-                            })
-                else:
-                    values[str(scan_code)] = {'button': mappings_list[0]['buttonNumber']}
+            # Handle keyboard interface buttons (Huion style)
+            if keyboard_buttons:
+                keyboard_button_mappings = []
+                for mapping in keyboard_buttons:
+                    btn_config = {
+                        'button': mapping['buttonNumber'],
+                        'reportId': mapping.get('statusByte'),  # Report ID stored in statusByte
+                    }
 
-            tablet_buttons_config = {
-                'byteIndex': [2],  # Button scan codes at byte index 2 (after report ID and status byte)
-                'buttonCount': len(self.button_mappings),
-                'type': 'code',
-                'values': values
-            }
+                    # Add keyboard-specific data based on report ID
+                    report_id = mapping.get('statusByte')
+                    if report_id == 3:
+                        # Keyboard shortcut: modifier + keycode
+                        btn_config['type'] = 'keyboard'
+                        if mapping.get('modifier') is not None:
+                            btn_config['modifier'] = mapping['modifier']
+                        if mapping.get('keycode') is not None:
+                            btn_config['keycode'] = mapping['keycode']
+                    elif report_id == 4:
+                        # Consumer control
+                        btn_config['type'] = 'consumer'
+                        if mapping.get('consumerCode') is not None:
+                            btn_config['consumerCode'] = mapping['consumerCode']
+                    elif report_id == 5:
+                        # Scroll wheel
+                        btn_config['type'] = 'scroll'
+                        if mapping.get('scrollDelta') is not None:
+                            btn_config['scrollDelta'] = mapping['scrollDelta']
 
-            # Add conflict overrides if any buttons share scan codes
-            if conflicting_buttons:
-                tablet_buttons_config['statusOverrides'] = conflicting_buttons
+                    keyboard_button_mappings.append(btn_config)
 
-            mappings['tabletButtons'] = tablet_buttons_config
+                mappings['keyboardButtons'] = {
+                    'description': 'Buttons from keyboard HID interface (requires sudo on macOS)',
+                    'usagePage': 1,
+                    'usage': 6,
+                    'buttonCount': len(keyboard_buttons),
+                    'buttons': keyboard_button_mappings
+                }
 
         # Fallback: auto-detected button bytes (if no interactive mappings)
         else:

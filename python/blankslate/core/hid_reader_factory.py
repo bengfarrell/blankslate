@@ -55,9 +55,35 @@ class MultiInterfaceHIDReader:
             thread.start()
             self.read_threads.append(thread)
 
+    def _get_interface_type(self, device_index: int) -> str:
+        """
+        Determine the interface type based on usage page and usage.
+
+        Returns:
+            'keyboard' for keyboard HID interface (Usage Page 1, Usage 6)
+            'digitizer' for digitizer interface (Usage Page 13)
+            'other' for other interfaces
+        """
+        if device_index >= len(self.device_infos):
+            return 'other'
+
+        info = self.device_infos[device_index]
+        usage_page = info.get('usage_page', 0)
+        usage = info.get('usage', 0)
+
+        if usage_page == 1 and usage == 6:
+            return 'keyboard'
+        elif usage_page == 13:
+            return 'digitizer'
+        else:
+            return 'other'
+
     def _read_loop(self, device, device_index):
         """Background thread that continuously reads from a single device"""
         import time
+
+        interface_type = self._get_interface_type(device_index)
+
         while self.is_reading:
             try:
                 data = device.read(64, timeout_ms=10)
@@ -78,12 +104,16 @@ class MultiInterfaceHIDReader:
                     # Pass FULL data (including report ID at byte 0) to match stable config byte indices
                     # The stable config has: status at [1], x at [2,3], y at [4,5], etc.
                     # This requires report ID at byte 0
+                    # Also pass interface_type so button detection knows how to parse the packet
                     for callback in self.callbacks:
                         try:
-                            callback(bytes(data), report_id)
+                            callback(bytes(data), report_id, interface_type)
                         except TypeError:
-                            # Fall back to old signature for backwards compatibility
-                            callback(bytes(data))
+                            # Fall back to old signatures for backwards compatibility
+                            try:
+                                callback(bytes(data), report_id)
+                            except TypeError:
+                                callback(bytes(data))
             except Exception:
                 # Device might have been disconnected
                 break

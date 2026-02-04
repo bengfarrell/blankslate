@@ -55,6 +55,11 @@ npx tsx src/cli/config-generator.ts --output my-config.json
 npx tsx src/cli/config-generator.ts --mock  # Use mock data for testing
 ```
 
+> **macOS + Huion tablets:** If your tablet sends buttons via the Keyboard HID interface, you'll need `sudo` to detect buttons during the walkthrough:
+> ```bash
+> sudo npx tsx src/cli/config-generator.ts
+> ```
+
 **Features:**
 - Automatic device detection
 - Interactive walkthrough for byte mapping detection
@@ -82,6 +87,11 @@ npx tsx src/cli/event-viewer.ts -c config.json --live --raw
 # Use mock data
 npx tsx src/cli/event-viewer.ts -c config.json --mock --live
 ```
+
+> **macOS + Keyboard HID buttons:** If your config has `keyboardButtons` (Huion-style tablets), use `sudo` to read button events:
+> ```bash
+> sudo npx tsx src/cli/event-viewer.ts -c config.json --live
+> ```
 
 **Display Modes:**
 

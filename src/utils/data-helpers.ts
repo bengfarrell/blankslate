@@ -5,6 +5,140 @@
 import { MappingType } from '../models/index.js';
 
 /**
+ * Interface for keyboard button configuration
+ */
+export interface KeyboardButtonConfig {
+  button: number;
+  reportId: number;
+  type: 'keyboard' | 'consumer' | 'scroll';
+  modifier?: number;
+  keycode?: number;
+  consumerCode?: number;
+  scrollDelta?: number;
+}
+
+/**
+ * Interface for keyboardButtons config section
+ */
+export interface KeyboardButtonsConfig {
+  description?: string;
+  usagePage?: number;
+  usage?: number;
+  buttonCount?: number;
+  buttons: KeyboardButtonConfig[];
+}
+
+/**
+ * Process keyboard HID interface data for tablet buttons (Huion-style tablets).
+ *
+ * Keyboard HID packet formats:
+ * - Report ID 3: Keyboard shortcuts [03, modifier, keycode, 0, 0, 0, 0, 0]
+ * - Report ID 4: Consumer Control [04, consumer_code, 0]
+ * - Report ID 5: Relative scroll [05, 0, 0, 0, 0, 0, scroll_delta]
+ *
+ * @param data - Raw bytes from keyboard HID interface
+ * @param keyboardButtonsConfig - The keyboardButtons config section
+ * @returns Object with button state (tabletButtons, button1, button2, etc.)
+ */
+export function processKeyboardButtonData(
+  data: Uint8Array,
+  keyboardButtonsConfig: KeyboardButtonsConfig
+): Record<string, string | number | boolean> {
+  const result: Record<string, string | number | boolean> = {};
+
+  if (data.length < 2) {
+    return result;
+  }
+
+  const dataList = Array.from(data);
+  const reportId = dataList[0];
+  const buttonsList = keyboardButtonsConfig.buttons || [];
+  const buttonCount = keyboardButtonsConfig.buttonCount ?? buttonsList.length;
+
+  // Initialize all buttons to false
+  for (let i = 1; i <= buttonCount; i++) {
+    result[`button${i}`] = false;
+  }
+  result.tabletButtons = 0;
+  result.button = 0;
+
+  let matchedButton: number | undefined;
+
+  if (reportId === 3) {
+    // Keyboard shortcut format: [03, modifier, keycode, ...]
+    if (dataList.length >= 3) {
+      const modifier = dataList[1];
+      const keycode = dataList[2];
+
+      // Skip idle packets (no key pressed)
+      if (keycode === 0) {
+        return result;
+      }
+
+      // Find matching button in config
+      for (const btnConfig of buttonsList) {
+        if (btnConfig.reportId === 3 &&
+            btnConfig.type === 'keyboard' &&
+            btnConfig.modifier === modifier &&
+            btnConfig.keycode === keycode) {
+          matchedButton = btnConfig.button;
+          break;
+        }
+      }
+    }
+  } else if (reportId === 4) {
+    // Consumer Control format: [04, consumer_code, ...]
+    if (dataList.length >= 2) {
+      const consumerCode = dataList[1];
+
+      // Skip idle packets
+      if (consumerCode === 0) {
+        return result;
+      }
+
+      // Find matching button in config
+      for (const btnConfig of buttonsList) {
+        if (btnConfig.reportId === 4 &&
+            btnConfig.type === 'consumer' &&
+            btnConfig.consumerCode === consumerCode) {
+          matchedButton = btnConfig.button;
+          break;
+        }
+      }
+    }
+  } else if (reportId === 5) {
+    // Scroll wheel format: [05, 0, 0, 0, 0, 0, scroll_delta]
+    // Scroll delta is typically in the last byte
+    const scrollDelta = dataList.length > 6 ? dataList[6] : (dataList.length > 1 ? dataList[dataList.length - 1] : 0);
+
+    // Skip idle packets
+    if (scrollDelta === 0) {
+      return result;
+    }
+
+    // Find matching button in config
+    for (const btnConfig of buttonsList) {
+      if (btnConfig.reportId === 5 &&
+          btnConfig.type === 'scroll' &&
+          btnConfig.scrollDelta === scrollDelta) {
+        matchedButton = btnConfig.button;
+        break;
+      }
+    }
+  }
+
+  // Set the matched button state
+  if (matchedButton !== undefined) {
+    result.tabletButtons = matchedButton;
+    result.button = matchedButton;
+    result[`button${matchedButton}`] = true;
+    result.state = 'buttons';  // Indicate we're in button mode
+  }
+
+  return result;
+}
+
+/**
  * Parse a code value from a specific byte index and return the corresponding value
  */
 export function parseCode(

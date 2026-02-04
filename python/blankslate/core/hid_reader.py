@@ -7,12 +7,107 @@ and processing the raw data according to configuration byte code mappings.
 
 import time
 import struct
-from typing import Dict, Any, Union, Callable, Optional, TYPE_CHECKING
+from typing import Dict, Any, Union, Callable, Optional, List, TYPE_CHECKING
 
 from .data_helpers import parse_code, parse_range_data, parse_bipolar_range_data, parse_multi_byte_range_data, parse_bit_flags
 
 if TYPE_CHECKING:
     from config import Config
+
+
+def process_keyboard_button_data(data: bytes, keyboard_buttons_config: Dict) -> Dict[str, Union[str, int, float, bool]]:
+    """
+    Process keyboard HID interface data for tablet buttons (Huion-style tablets).
+
+    Keyboard HID packet formats:
+    - Report ID 3: Keyboard shortcuts [03, modifier, keycode, 0, 0, 0, 0, 0]
+    - Report ID 4: Consumer Control [04, consumer_code, 0]
+    - Report ID 5: Relative scroll [05, 0, 0, 0, 0, 0, scroll_delta]
+
+    Args:
+        data: Raw bytes from keyboard HID interface
+        keyboard_buttons_config: The keyboardButtons config section
+
+    Returns:
+        Dictionary with button state (tabletButtons, button1, button2, etc.)
+    """
+    result: Dict[str, Union[str, int, float, bool]] = {}
+
+    if len(data) < 2:
+        return result
+
+    data_list = list(data)
+    report_id = data_list[0]
+    buttons_list: List[Dict] = keyboard_buttons_config.get('buttons', [])
+    button_count = keyboard_buttons_config.get('buttonCount', len(buttons_list))
+
+    # Initialize all buttons to False
+    for i in range(1, button_count + 1):
+        result[f'button{i}'] = False
+    result['tabletButtons'] = 0
+
+    matched_button = None
+
+    if report_id == 3:
+        # Keyboard shortcut format: [03, modifier, keycode, ...]
+        if len(data_list) >= 3:
+            modifier = data_list[1]
+            keycode = data_list[2]
+
+            # Skip idle packets (no key pressed)
+            if keycode == 0:
+                return result
+
+            # Find matching button in config
+            for btn_config in buttons_list:
+                if (btn_config.get('reportId') == 3 and
+                    btn_config.get('type') == 'keyboard' and
+                    btn_config.get('modifier') == modifier and
+                    btn_config.get('keycode') == keycode):
+                    matched_button = btn_config.get('button')
+                    break
+
+    elif report_id == 4:
+        # Consumer Control format: [04, consumer_code, ...]
+        if len(data_list) >= 2:
+            consumer_code = data_list[1]
+
+            # Skip idle packets
+            if consumer_code == 0:
+                return result
+
+            # Find matching button in config
+            for btn_config in buttons_list:
+                if (btn_config.get('reportId') == 4 and
+                    btn_config.get('type') == 'consumer' and
+                    btn_config.get('consumerCode') == consumer_code):
+                    matched_button = btn_config.get('button')
+                    break
+
+    elif report_id == 5:
+        # Scroll wheel format: [05, 0, 0, 0, 0, 0, scroll_delta]
+        # Scroll delta is typically in the last byte
+        scroll_delta = data_list[6] if len(data_list) > 6 else (data_list[-1] if len(data_list) > 1 else 0)
+
+        # Skip idle packets
+        if scroll_delta == 0:
+            return result
+
+        # Find matching button in config
+        for btn_config in buttons_list:
+            if (btn_config.get('reportId') == 5 and
+                btn_config.get('type') == 'scroll' and
+                btn_config.get('scrollDelta') == scroll_delta):
+                matched_button = btn_config.get('button')
+                break
+
+    # Set the matched button state
+    if matched_button is not None:
+        result['tabletButtons'] = matched_button
+        result[f'button{matched_button}'] = True
+        result['state'] = 'buttons'  # Indicate we're in button mode
+
+    return result
 
 
 class HIDReader:

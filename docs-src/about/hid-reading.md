@@ -202,17 +202,17 @@ Some tablets send pen data and button data on separate HID interfaces:
 class MultiInterfaceReader {
   private penInterface: HIDDevice;
   private buttonInterface: HIDDevice;
-  
+
   async connect(config: Config) {
     // Open digitizer interface (usage page 13)
     this.penInterface = await this.openInterface(13);
-    
+
     // Open keyboard interface (usage page 1) for buttons
     if (config.buttonInterfaceReportId) {
       this.buttonInterface = await this.openInterface(1);
     }
   }
-  
+
   private mergeEvents(penEvent: TabletEvent, buttonEvent: ButtonEvent) {
     return {
       ...penEvent,
@@ -221,6 +221,34 @@ class MultiInterfaceReader {
   }
 }
 ```
+
+### HID Usage Pages
+
+Tablets expose different interfaces identified by their **usage page**:
+
+| Usage Page | Name | Purpose | macOS Access |
+|------------|------|---------|--------------|
+| 1 | Generic Desktop | Keyboard/mouse input, tablet buttons (Huion) | **Requires sudo** |
+| 12 | Consumer Control | Media keys (volume, playback) | Requires sudo |
+| 13 | Digitizer | Pen position, pressure, tilt | ✅ No sudo needed |
+| 65280 | Vendor-Specific | Pen data on some tablets (Huion) | ✅ No sudo needed |
+
+### Tablet Button Interface Styles
+
+Different tablet manufacturers use different approaches for button data:
+
+**XP-Pen style** - Buttons in digitizer interface:
+- Buttons sent as part of pen packets (same interface)
+- Uses `tabletButtons` mapping with `byteIndex`
+- No special permissions needed
+
+**Huion style** - Buttons via keyboard HID:
+- Buttons sent through separate Keyboard HID interface (usage page 1)
+- Uses `keyboardButtons` mapping with button array
+- **Requires `sudo` on macOS** to read button data
+- Supports multiple button types: keyboard shortcuts, media keys, scroll
+
+See [Configuration Schema](/about/config-schema/#keyboard-hid-buttons-keyboardbuttons) for config format details.
 
 ---
 

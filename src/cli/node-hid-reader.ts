@@ -5,7 +5,7 @@
  */
 
 import HID from 'node-hid';
-import type { IHIDReader, IHIDDeviceManager, HIDDeviceInfo, HIDDeviceFilter, HIDDataCallback } from '../core/hid/hid-interface.js';
+import type { IHIDReader, IHIDDeviceManager, HIDDeviceInfo, HIDDeviceFilter, HIDDataCallback, HIDInterfaceType } from '../core/hid/hid-interface.js';
 
 /**
  * Convert node-hid device to our HIDDeviceInfo format
@@ -127,24 +127,37 @@ export class NodeHIDReader implements IHIDReader {
   }
 
   async close(): Promise<void> {
+    this.closeSync();
+  }
+
+  /**
+   * Synchronous close - needed for signal handlers
+   */
+  closeSync(): void {
     this.stopReading();
-    
+
     if (this.device) {
       try {
+        // Pause the device first to stop the native read loop
+        this.device.pause();
+      } catch {
+        // Ignore pause errors
+      }
+      try {
         this.device.close();
-      } catch (error) {
+      } catch {
         // Ignore close errors
       }
       this.device = null;
     }
-    
+
     this._isOpen = false;
   }
 
   startReading(callback: HIDDataCallback, reportId?: number): void {
     this.dataCallback = callback;
     this.reportIdFilter = reportId;
-    
+
     // node-hid starts reading automatically when opened
     // Data comes through the 'data' event handler set up in open()
   }
@@ -332,44 +345,75 @@ export class MultiInterfaceReader implements IHIDReader {
   }
 
   async close(): Promise<void> {
+    this.closeSync();
+  }
+
+  /**
+   * Synchronous close - needed for signal handlers
+   */
+  closeSync(): void {
     this.stopReading();
-    
+
     for (const reader of this.readers) {
       try {
-        await reader.close();
-      } catch (error) {
+        reader.closeSync();
+      } catch {
         // Ignore close errors
       }
     }
-    
+
     this.readers = [];
     this._isOpen = false;
   }
 
+  /**
+   * Determine the interface type based on usage page and usage
+   * @param iface - The HID device info for the interface
+   * @returns 'keyboard' for keyboard HID, 'digitizer' for digitizer, 'other' otherwise
+   */
+  private getInterfaceType(iface: HIDDeviceInfo | undefined): HIDInterfaceType {
+    if (!iface) return 'other';
+
+    const usagePage = iface.usagePage ?? 0;
+    const usage = iface.usage ?? 0;
+
+    // Keyboard HID interface (Usage Page 1 = Generic Desktop, Usage 6 = Keyboard)
+    if (usagePage === 1 && usage === 6) {
+      return 'keyboard';
+    }
+    // Digitizer interface (Usage Page 13 = Digitizers)
+    if (usagePage === 13) {
+      return 'digitizer';
+    }
+    return 'other';
+  }
+
   startReading(callback: HIDDataCallback, reportId?: number): void {
     this.dataCallback = callback;
-    
+
     // Start reading from all interfaces
     for (const reader of this.readers) {
       const iface = this.readerToInterface.get(reader);
-      
+      const interfaceType = this.getInterfaceType(iface);
+
       reader.startReading((data, rid) => {
         // Track which interfaces send data (for saving to config)
         if (iface && iface.usagePage !== undefined) {
           const isNew = !this._dataReceivedFrom.has(iface.usagePage);
           this._dataReceivedFrom.add(iface.usagePage);
-          
+
           // Set first active interface and log new interfaces
           if (!this._activeInterface) {
             this._activeInterface = iface;
           }
           if (isNew) {
-            console.log(`  📡 Data received from usagePage:${iface.usagePage} usage:${iface.usage}`);
+            console.log(`  📡 Data received from usagePage:${iface.usagePage} usage:${iface.usage} (${interfaceType})`);
           }
         }
-        
+
         if (this.dataCallback) {
-          this.dataCallback(data, rid);
+          // Pass interface type to callback so it knows how to parse the data
+          this.dataCallback(data, rid, interfaceType);
         }
       }, reportId);
     }

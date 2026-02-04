@@ -2,7 +2,7 @@
 /**
  * CLI Tool: Stream Events
  * Converts raw HID byte data into tablet events using a config file
- * 
+ *
  * Usage:
  *   npx tsx src/cli/stream-events.ts --config path/to/config.json
  *   npx tsx src/cli/stream-events.ts --config path/to/config.json --mock
@@ -13,6 +13,8 @@ import chalk from 'chalk';
 import * as path from 'path';
 
 import { TabletReaderBase, normalizeTabletEvent, resolveConfigPath } from './tablet-reader-base.js';
+import { processKeyboardButtonData, type KeyboardButtonsConfig } from '../utils/data-helpers.js';
+import type { HIDInterfaceType } from '../core/hid/hid-interface.js';
 
 // Default config directory (relative to project root)
 const DEFAULT_CONFIG_DIR = path.resolve(process.cwd(), 'public', 'configs');
@@ -78,8 +80,8 @@ export class EventStreamer extends TabletReaderBase {
 
     // Start reading - set up callback BEFORE any data comes in
     console.log(chalk.gray('Setting up data callback...'));
-    this.reader.startReading((data, reportId) => {
-      this.handlePacket(data, reportId);
+    this.reader.startReading((data, reportId, interfaceType) => {
+      this.handlePacket(data, reportId, interfaceType);
     });
 
     console.log(chalk.green('✓ Started reading data'));
@@ -98,16 +100,24 @@ export class EventStreamer extends TabletReaderBase {
 
   protected lastReportId: number | undefined;
 
-  protected handlePacket(data: Uint8Array, reportId?: number): void {
+  protected handlePacket(data: Uint8Array, reportId?: number, interfaceType?: HIDInterfaceType): void {
     try {
       this.packetCount++;
       this.lastReportId = reportId;
 
       // Process the data using the config
-      const events = this.processPacket(data, reportId);
+      // For keyboard interface, use keyboard button processing
+      let events: Record<string, string | number | boolean>;
+      if (interfaceType === 'keyboard') {
+        events = this.processKeyboardPacket(data);
+      } else {
+        events = this.processPacket(data, reportId);
+      }
 
-      // Track raw values for calibration warnings
-      this.trackRawValues(data);
+      // Track raw values for calibration warnings (only for digitizer data)
+      if (interfaceType !== 'keyboard') {
+        this.trackRawValues(data);
+      }
 
       // Store for live mode
       this.lastEvents = events;
@@ -121,9 +131,40 @@ export class EventStreamer extends TabletReaderBase {
       } else {
         this.printDetailed(events, data);
       }
-    } catch {
-      // Silently ignore unexpected packet formats (e.g., tablet buttons on different interface)
+    } catch (error) {
+      // Log errors for debugging
+      console.error('Error processing packet:', error);
     }
+  }
+
+  /**
+   * Process keyboard HID interface packets (Huion-style tablet buttons)
+   * @param data - Raw keyboard HID packet
+   * @returns Processed button events
+   */
+  protected processKeyboardPacket(data: Uint8Array): Record<string, string | number | boolean> {
+    // Get keyboardButtons config from current mode
+    let keyboardButtonsConfig: KeyboardButtonsConfig | undefined;
+
+    // Check if this is a multi-mode config (more than one mode)
+    const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
+
+    if (isMultiMode) {
+      // For multi-mode configs, use current mode or first mode
+      const mode = this.currentMode ?? this.configData.modes[0];
+      keyboardButtonsConfig = mode?.byteCodeMappings?.keyboardButtons as KeyboardButtonsConfig | undefined;
+    } else {
+      // Single-mode config
+      const mode = this.configData.modes[0];
+      keyboardButtonsConfig = mode?.byteCodeMappings?.keyboardButtons as KeyboardButtonsConfig | undefined;
+    }
+
+    if (!keyboardButtonsConfig) {
+      // No keyboard buttons configured, return empty result
+      return {};
+    }
+
+    return processKeyboardButtonData(data, keyboardButtonsConfig);
   }
 
   /**
@@ -134,7 +175,10 @@ export class EventStreamer extends TabletReaderBase {
 
     // Get mappings from current mode (for multi-mode configs) or from config directly
     let mappings;
-    if (this.configData.isMultiMode()) {
+    // Check if this is a multi-mode config (more than one mode)
+    const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
+
+    if (isMultiMode) {
       if (!this.currentMode) {
         // Mode not detected yet, try to detect it
         // Use the lastReportId that was passed to handlePacket
@@ -161,7 +205,9 @@ export class EventStreamer extends TabletReaderBase {
       }
       mappings = this.currentMode.byteCodeMappings;
     } else {
-      mappings = this.configData.byteCodeMappings;
+      // Single-mode config - use first mode
+      const mode = this.configData.modes[0];
+      mappings = mode?.byteCodeMappings;
     }
 
     if (!mappings) {
@@ -227,9 +273,10 @@ export class EventStreamer extends TabletReaderBase {
     this.calibrationWarnings = [];
 
     // Get mappings from current mode (for multi-mode configs) or from config directly
-    const mappings = this.configData.isMultiMode()
+    const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
+    const mappings = isMultiMode
       ? this.currentMode?.byteCodeMappings
-      : this.configData.byteCodeMappings;
+      : this.configData.modes[0]?.byteCodeMappings;
 
     if (!mappings) {
       return;
@@ -401,9 +448,10 @@ export class EventStreamer extends TabletReaderBase {
 
     // Get config max values for calibration warnings
     // Get mappings from current mode (for multi-mode configs) or from config directly
-    const mappings = this.configData.isMultiMode()
+    const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
+    const mappings = isMultiMode
       ? this.currentMode?.byteCodeMappings
-      : this.configData.byteCodeMappings;
+      : this.configData.modes[0]?.byteCodeMappings;
 
     if (!mappings) {
       return;

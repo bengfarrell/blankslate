@@ -18,6 +18,31 @@ from blankslate.mockbytes import (
 from blankslate.core.data_helpers import process_device_data
 
 
+def get_mode_data(config: dict) -> dict:
+    """
+    Helper to extract mode data from either multi-mode or legacy single-mode config format.
+
+    Args:
+        config: Raw config dict loaded from JSON
+
+    Returns:
+        Dict with 'reportId' and 'byteCodeMappings' keys
+    """
+    if 'modes' in config and isinstance(config['modes'], list) and len(config['modes']) > 0:
+        # Multi-mode format
+        mode = config['modes'][0]
+        return {
+            'reportId': mode.get('reportId', 1),
+            'byteCodeMappings': mode.get('byteCodeMappings', {})
+        }
+    else:
+        # Legacy single-mode format
+        return {
+            'reportId': config.get('reportId', 1),
+            'byteCodeMappings': config.get('byteCodeMappings', {})
+        }
+
+
 @pytest.fixture
 def test_config_path():
     """Path to test config file"""
@@ -75,15 +100,17 @@ class TestConfigBasedGenerator:
         with open(test_config_path) as f:
             config = json.load(f)
 
+        mode_data = get_mode_data(config)
+
         # Generate a stylus packet
         packet = test_generator.generate_stylus_packet(0.5, 0.5, 0.5)
 
         # Prepend report ID (config byte indices assume report ID at byte 0)
-        report_id = config.get('reportId', 1)
+        report_id = mode_data['reportId']
         packet_with_report_id = bytes([report_id]) + packet
 
         # Process it through the config
-        result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+        result = process_device_data(packet_with_report_id, mode_data['byteCodeMappings'])
 
         # Verify the data is processed correctly
         assert 'x' in result
@@ -131,15 +158,17 @@ class TestXPPenButtonGeneration:
         with open(xp_pen_config_path) as f:
             config = json.load(f)
 
+        mode_data = get_mode_data(config)
+
         # Generate button 1 packet
         packet = xp_pen_generator.generate_button_packet(1)
 
         # Prepend report ID (config byte indices assume report ID at byte 0)
-        report_id = config.get('reportId', 7)
+        report_id = mode_data['reportId']
         packet_with_report_id = bytes([report_id]) + packet
 
         # Process it
-        result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+        result = process_device_data(packet_with_report_id, mode_data['byteCodeMappings'])
 
         # Should detect button 1
         assert result.get('tabletButtons') == 1
@@ -151,15 +180,17 @@ class TestXPPenButtonGeneration:
         with open(xp_pen_config_path) as f:
             config = json.load(f)
 
+        mode_data = get_mode_data(config)
+
         # Generate button 8 packet (uses statusOverrides)
         packet = xp_pen_generator.generate_button_packet(8)
 
         # Prepend report ID (config byte indices assume report ID at byte 0)
-        report_id = config.get('reportId', 7)
+        report_id = mode_data['reportId']
         packet_with_report_id = bytes([report_id]) + packet
 
         # Process it
-        result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+        result = process_device_data(packet_with_report_id, mode_data['byteCodeMappings'])
 
         # Should detect button 8
         assert result.get('tabletButtons') == 8
@@ -171,13 +202,14 @@ class TestXPPenButtonGeneration:
         with open(xp_pen_config_path) as f:
             config = json.load(f)
 
-        report_id = config.get('reportId', 7)
+        mode_data = get_mode_data(config)
+        report_id = mode_data['reportId']
 
         for button_num in range(1, 9):
             packet = xp_pen_generator.generate_button_packet(button_num)
             # Prepend report ID (config byte indices assume report ID at byte 0)
             packet_with_report_id = bytes([report_id]) + packet
-            result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+            result = process_device_data(packet_with_report_id, mode_data['byteCodeMappings'])
 
             # Should detect the correct button
             assert result.get('tabletButtons') == button_num, f"Button {button_num} not detected correctly"
@@ -257,7 +289,8 @@ class TestEndToEndProcessing:
         with open(xp_pen_config_path) as f:
             config = json.load(f)
 
-        report_id = config.get('reportId', 7)
+        mode_data = get_mode_data(config)
+        report_id = mode_data['reportId']
 
         # Generate packets for a horizontal line
         packets = list(xp_pen_generator.generate_horizontal_line(duration=100))
@@ -265,7 +298,7 @@ class TestEndToEndProcessing:
         # Process each packet (prepend report ID)
         for packet in packets:
             packet_with_report_id = bytes([report_id]) + packet
-            result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+            result = process_device_data(packet_with_report_id, mode_data['byteCodeMappings'])
 
             # Should have valid status (XP-Pen uses 'status' not 'state')
             assert 'status' in result or 'state' in result
@@ -279,14 +312,15 @@ class TestEndToEndProcessing:
         with open(xp_pen_config_path) as f:
             config = json.load(f)
 
-        report_id = config.get('reportId', 7)
+        mode_data = get_mode_data(config)
+        report_id = mode_data['reportId']
 
         # Test each button
         for button_num in range(1, 9):
             packet = xp_pen_generator.generate_button_packet(button_num)
             # Prepend report ID (config byte indices assume report ID at byte 0)
             packet_with_report_id = bytes([report_id]) + packet
-            result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+            result = process_device_data(packet_with_report_id, mode_data['byteCodeMappings'])
 
             # Should detect the button
             assert result.get('tabletButtons') == button_num
@@ -302,7 +336,8 @@ class TestEndToEndProcessing:
         with open(xp_pen_config_path) as f:
             config = json.load(f)
 
-        report_id = config.get('reportId', 7)
+        mode_data = get_mode_data(config)
+        report_id = mode_data['reportId']
 
         # Generate different types of packets
         stylus_packet = xp_pen_generator.generate_stylus_packet(0.5, 0.5, 0.5)
@@ -313,8 +348,8 @@ class TestEndToEndProcessing:
         button_packet = bytes([report_id]) + button_packet
 
         # Process both
-        stylus_result = process_device_data(stylus_packet, config['byteCodeMappings'])
-        button_result = process_device_data(button_packet, config['byteCodeMappings'])
+        stylus_result = process_device_data(stylus_packet, mode_data['byteCodeMappings'])
+        button_result = process_device_data(button_packet, mode_data['byteCodeMappings'])
 
         # Stylus should have coordinates
         assert 'x' in stylus_result
@@ -394,13 +429,15 @@ class TestDriverModeGenerator:
         with open(driver_config_path) as f:
             config = json.load(f)
 
+        mode_data = get_mode_data(config)
+
         # Note: The driver config file may have been generated in driverless mode
         # This test verifies the generator works with whatever config is present
-        report_id = config.get('reportId', 7)
+        report_id = mode_data['reportId']
 
         # Test first few buttons that are definitely in the config
         # (button count may vary based on config generation)
-        button_values = config.get('byteCodeMappings', {}).get('tabletButtons', {}).get('values', {})
+        button_values = mode_data['byteCodeMappings'].get('tabletButtons', {}).get('values', {})
         if not button_values:
             pytest.skip("No button values in config")
 
@@ -414,12 +451,13 @@ class TestDriverModeGenerator:
         with open(driver_config_path) as f:
             config = json.load(f)
 
-        report_id = config.get('reportId', 7)
+        mode_data = get_mode_data(config)
+        report_id = mode_data['reportId']
 
         # Generate a stylus packet at center
         packet = driver_generator.generate_stylus_packet(0.5, 0.5, 0.5)
         packet_with_report_id = bytes([report_id]) + packet
-        result = process_device_data(packet_with_report_id, config['byteCodeMappings'])
+        result = process_device_data(packet_with_report_id, mode_data['byteCodeMappings'])
 
         # process_device_data returns normalized values (0.0-1.0)
         assert 'x' in result

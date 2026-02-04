@@ -246,6 +246,70 @@ Each button press sends a unique scan code value.
 
 ---
 
+### Keyboard HID Buttons (`keyboardButtons`)
+
+Some tablets (notably Huion) send button presses through a separate **Keyboard HID interface** rather than through the digitizer interface. These tablets use the `keyboardButtons` mapping instead of `tabletButtons`.
+
+```json
+"keyboardButtons": {
+  "description": "Buttons from keyboard HID interface (requires sudo on macOS)",
+  "usagePage": 1,
+  "usage": 6,
+  "buttonCount": 30,
+  "buttons": [
+    { "button": 1, "reportId": 3, "type": "keyboard", "modifier": 0, "keycode": 5 },
+    { "button": 2, "reportId": 3, "type": "keyboard", "modifier": 7, "keycode": 17 },
+    { "button": 21, "reportId": 4, "type": "consumer", "consumerCode": 182 },
+    { "button": 25, "reportId": 5, "type": "scroll", "scrollDelta": 1 }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `description` | string | Human-readable description |
+| `usagePage` | number | HID usage page (1 = Generic Desktop/Keyboard) |
+| `usage` | number | HID usage (6 = Keyboard) |
+| `buttonCount` | number | Total number of buttons |
+| `buttons` | array | Array of button definitions |
+
+#### Button Types
+
+**Keyboard buttons** (`type: "keyboard"`):
+```json
+{ "button": 1, "reportId": 3, "type": "keyboard", "modifier": 0, "keycode": 5 }
+```
+
+| Field | Description |
+|-------|-------------|
+| `reportId` | HID report ID (typically 3 for keyboard) |
+| `modifier` | Modifier byte (bit flags: 1=Ctrl, 2=Shift, 4=Alt, 8=GUI/Cmd) |
+| `keycode` | USB HID keycode (e.g., 5 = "B", 17 = "N") |
+
+**Consumer Control buttons** (`type: "consumer"`):
+```json
+{ "button": 21, "reportId": 4, "type": "consumer", "consumerCode": 182 }
+```
+
+| Field | Description |
+|-------|-------------|
+| `reportId` | HID report ID (typically 4 for consumer control) |
+| `consumerCode` | USB HID consumer code (e.g., 182 = Previous Track, 233 = Volume Up) |
+
+**Scroll buttons** (`type: "scroll"`):
+```json
+{ "button": 25, "reportId": 5, "type": "scroll", "scrollDelta": 1 }
+```
+
+| Field | Description |
+|-------|-------------|
+| `reportId` | HID report ID (typically 5 for relative input) |
+| `scrollDelta` | Scroll direction (1 = up/forward, 255 = down/backward) |
+
+> **Note:** On macOS, reading from the Keyboard HID interface (usage page 1) requires `sudo`. See [Known Limitations](/about/limitations/#keyboard-hid-interface-buttons-huion-style) for details.
+
+---
+
 ## Byte Indexing
 
 All `byteIndex` values are **0-indexed** relative to the HID report data (after the report ID).

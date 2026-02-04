@@ -454,14 +454,25 @@ class WalkthroughController:
 
         # Store detected buttons in engine
         if detected_buttons:
-            button_mappings = [
-                {
+            button_mappings = []
+            for btn in detected_buttons:
+                mapping = {
                     'buttonNumber': btn.button_number,
                     'statusByte': btn.byte_index,
-                    'scanCode': btn.bit_position
+                    'scanCode': btn.bit_position,
+                    'interfaceType': btn.interface_type,
                 }
-                for btn in detected_buttons
-            ]
+                # Add keyboard interface metadata if present
+                if btn.interface_type == 'keyboard':
+                    if btn.modifier is not None:
+                        mapping['modifier'] = btn.modifier
+                    if btn.keycode is not None:
+                        mapping['keycode'] = btn.keycode
+                    if btn.consumer_code is not None:
+                        mapping['consumerCode'] = btn.consumer_code
+                    if btn.scroll_delta is not None:
+                        mapping['scrollDelta'] = btn.scroll_delta
+                button_mappings.append(mapping)
             self.engine.set_button_mappings(button_mappings)
 
     async def _detect_single_button(self, button_number: int) -> Optional[DetectedButton]:
@@ -484,7 +495,7 @@ class WalkthroughController:
                 return
             finished = True
 
-        def data_handler(data: bytes, report_id: int = None):
+        def data_handler(data: bytes, report_id: int = None, interface_type: str = 'other'):
             try:
                 nonlocal detected
                 if finished:
@@ -493,33 +504,109 @@ class WalkthroughController:
                 if len(data) < 3:
                     return
 
-                # Packet structure (with report ID at byte 0):
-                # Byte 0: Report ID
-                # Byte 1: Status byte (config: status.byteIndex: [1])
-                # Byte 2: Scan code for buttons (config: tabletButtons.byteIndex: [2])
-                #         OR X low byte for pen data
+                # Handle keyboard HID interface (Huion-style tablets)
+                # These send button data through a separate keyboard interface
+                if interface_type == 'keyboard':
+                    # Keyboard HID packet formats:
+                    # Report ID 3: Keyboard shortcuts [03, modifier, keycode, 0, 0, 0, 0, 0]
+                    # Report ID 4: Consumer Control [04, consumer_code, 0]
+                    # Report ID 5: Relative scroll [05, 0, 0, 0, 0, 0, scroll_delta]
 
-                status_byte = data[1]  # Status at index 1
+                    report_id_byte = data[0]
 
-                # CRITICAL: Only process BUTTON mode packets, not pen packets!
-                # Button mode status bytes:
-                #   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
-                #   With driver: 240 (0xF0) - bit-flags at byte 1
-                # Pen mode status bytes: 160-165, 192 (hover, contact, etc.)
-                # If we don't filter, pen X/Y coordinates get misinterpreted as button scan codes
-                BUTTON_MODE_STATUS_BYTES = {0, 1, 3, 6, 240}
+                    if report_id_byte == 3:
+                        # Keyboard shortcut format: modifier + keycode
+                        modifier = data[1]
+                        keycode = data[2]
 
-                if status_byte not in BUTTON_MODE_STATUS_BYTES:
-                    # This is a pen packet, not a button packet - ignore it
-                    return
+                        # Skip idle packets (no key pressed)
+                        if keycode == 0:
+                            return
 
-                scan_code = data[2]  # Scan code at index 2
+                        # Create a unique scan code combining modifier and keycode
+                        # Format: (modifier << 8) | keycode - allows up to 256 modifiers and 256 keycodes
+                        combined_code = (modifier << 8) | keycode
+                        seen_packets.append({
+                            'status': report_id_byte,  # Use report ID as "status"
+                            'scanCode': combined_code,
+                            'interface': 'keyboard',
+                            'modifier': modifier,
+                            'keycode': keycode
+                        })
 
-                # Skip idle packets (no button pressed)
-                if scan_code == 0:
-                    return
+                    elif report_id_byte == 4:
+                        # Consumer Control format: single consumer code
+                        consumer_code = data[1]
 
-                seen_packets.append({'status': status_byte, 'scanCode': scan_code})
+                        # Skip idle packets
+                        if consumer_code == 0:
+                            return
+
+                        # Use consumer code directly, with high bit set to distinguish from keyboard
+                        # Format: 0x10000 | consumer_code
+                        combined_code = 0x10000 | consumer_code
+                        seen_packets.append({
+                            'status': report_id_byte,
+                            'scanCode': combined_code,
+                            'interface': 'keyboard',
+                            'consumer_code': consumer_code
+                        })
+
+                    elif report_id_byte == 5:
+                        # Scroll wheel format: scroll delta in last byte
+                        scroll_delta = data[6] if len(data) > 6 else data[-1]
+
+                        # Skip idle packets (no scroll)
+                        if scroll_delta == 0:
+                            return
+
+                        # Use scroll delta with high bits set to distinguish
+                        # Format: 0x20000 | scroll_delta
+                        combined_code = 0x20000 | scroll_delta
+                        seen_packets.append({
+                            'status': report_id_byte,
+                            'scanCode': combined_code,
+                            'interface': 'keyboard',
+                            'scroll_delta': scroll_delta
+                        })
+
+                    # Skip other report IDs from keyboard interface
+                    else:
+                        return
+
+                else:
+                    # Original digitizer interface handling (XP-Pen style)
+                    # Packet structure (with report ID at byte 0):
+                    # Byte 0: Report ID
+                    # Byte 1: Status byte (config: status.byteIndex: [1])
+                    # Byte 2: Scan code for buttons (config: tabletButtons.byteIndex: [2])
+                    #         OR X low byte for pen data
+
+                    status_byte = data[1]  # Status at index 1
+
+                    # CRITICAL: Only process BUTTON mode packets, not pen packets!
+                    # Button mode status bytes:
+                    #   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
+                    #   With driver: 240 (0xF0) - bit-flags at byte 1
+                    # Pen mode status bytes: 160-165, 192-197 (hover, contact, etc.)
+                    # If we don't filter, pen X/Y coordinates get misinterpreted as button scan codes
+                    BUTTON_MODE_STATUS_BYTES = {0, 1, 3, 6, 240}
+
+                    if status_byte not in BUTTON_MODE_STATUS_BYTES:
+                        # This is a pen packet, not a button packet - ignore it
+                        return
+
+                    scan_code = data[2]  # Scan code at index 2
+
+                    # Skip idle packets (no button pressed)
+                    if scan_code == 0:
+                        return
+
+                    seen_packets.append({
+                        'status': status_byte,
+                        'scanCode': scan_code,
+                        'interface': 'digitizer'
+                    })
             except Exception:
                 pass  # Silently ignore errors during button detection
 
@@ -531,22 +618,32 @@ class WalkthroughController:
                     if code in scan_code_counts:
                         scan_code_counts[code]['count'] += 1
                     else:
-                        scan_code_counts[code] = {'count': 1, 'status': p['status']}
+                        scan_code_counts[code] = {'count': 1, 'status': p['status'], 'packet': p}
 
                 best_scan_code = 0
                 best_status = 0
                 best_count = 0
+                best_packet = None
                 for code, data_info in scan_code_counts.items():
                     if data_info['count'] > best_count:
                         best_count = data_info['count']
                         best_scan_code = code
                         best_status = data_info['status']
+                        best_packet = data_info['packet']
 
                 if best_count >= MIN_CONFIRMATIONS:
+                    # Extract interface-specific metadata from the best packet
+                    interface = best_packet.get('interface', 'digitizer') if best_packet else 'digitizer'
+
                     detected = DetectedButton(
                         button_number=button_number,
                         byte_index=best_status,
                         bit_position=best_scan_code,
+                        interface_type=interface,
+                        modifier=best_packet.get('modifier') if best_packet else None,
+                        keycode=best_packet.get('keycode') if best_packet else None,
+                        consumer_code=best_packet.get('consumer_code') if best_packet else None,
+                        scroll_delta=best_packet.get('scroll_delta') if best_packet else None,
                     )
                     finish()
 

@@ -17,7 +17,7 @@ class TestConfigUtilities:
     
     @pytest.fixture
     def mock_config_data(self):
-        """Mock configuration data"""
+        """Mock configuration data - multi-mode format"""
         return {
             'name': 'Test Tablet',
             'manufacturer': 'Test Manufacturer',
@@ -33,49 +33,53 @@ class TestConfigUtilities:
                 'usage': 2,
                 'interfaces': [0],
             },
-            'reportId': 1,
-            'digitizerUsagePage': 13,
-            'capabilities': {
-                'hasButtons': True,
-                'buttonCount': 8,
-                'hasPressure': True,
-                'pressureLevels': 8191,
-                'hasTilt': True,
-                'resolution': {
-                    'x': 32768,
-                    'y': 32768,
-                },
-            },
-            'byteCodeMappings': {
-                'status': {
-                    'byteIndex': [0],
-                    'type': 'code',
-                    'values': {
-                        '160': {'state': 'stylus'},
+            'modes': [
+                {
+                    'reportId': 1,
+                    'digitizerUsagePage': 13,
+                    'capabilities': {
+                        'hasButtons': True,
+                        'buttonCount': 8,
+                        'hasPressure': True,
+                        'pressureLevels': 8191,
+                        'hasTilt': True,
+                        'resolution': {
+                            'x': 32768,
+                            'y': 32768,
+                        },
                     },
-                },
-                'x': {
-                    'byteIndex': [1, 2],
-                    'max': 65535,
-                    'type': 'multi-byte-range',
-                },
-                'y': {
-                    'byteIndex': [3, 4],
-                    'max': 65535,
-                    'type': 'multi-byte-range',
-                },
-                'pressure': {
-                    'byteIndex': [5, 6],
-                    'max': 8191,
-                    'type': 'multi-byte-range',
-                },
-            },
+                    'byteCodeMappings': {
+                        'status': {
+                            'byteIndex': [0],
+                            'type': 'code',
+                            'values': {
+                                '160': {'state': 'stylus'},
+                            },
+                        },
+                        'x': {
+                            'byteIndex': [1, 2],
+                            'max': 65535,
+                            'type': 'multi-byte-range',
+                        },
+                        'y': {
+                            'byteIndex': [3, 4],
+                            'max': 65535,
+                            'type': 'multi-byte-range',
+                        },
+                        'pressure': {
+                            'byteIndex': [5, 6],
+                            'max': 8191,
+                            'type': 'multi-byte-range',
+                        },
+                    },
+                }
+            ],
         }
     
     @pytest.fixture
     def mock_config(self, mock_config_data):
         """Create a Config instance from mock data"""
-        return Config(**mock_config_data)
+        return Config.from_json(json.dumps(mock_config_data))
     
     def test_to_json_compact(self, mock_config, mock_config_data):
         """Should convert Config to JSON string (compact)"""
@@ -112,7 +116,8 @@ class TestConfigUtilities:
         assert isinstance(result, Config)
         assert result.name == mock_config_data['name']
         assert result.vendorId == mock_config_data['vendorId']
-        assert result.byteCodeMappings == mock_config_data['byteCodeMappings']
+        # Access byteCodeMappings through the modes array
+        assert result.modes[0].byteCodeMappings == mock_config_data['modes'][0]['byteCodeMappings']
     
     def test_from_json_invalid(self):
         """Should raise error for invalid JSON"""
@@ -132,10 +137,10 @@ class TestConfigUtilities:
     
     def test_from_json_all_required_fields(self, mock_config_data):
         """Should validate all required fields"""
+        # Top-level required fields for multi-mode format
         required_fields = [
             'name', 'manufacturer', 'model', 'description',
-            'vendorId', 'productId', 'deviceInfo', 'reportId',
-            'digitizerUsagePage', 'capabilities', 'byteCodeMappings'
+            'vendorId', 'productId', 'deviceInfo', 'modes'
         ]
         
         for field in required_fields:
@@ -158,7 +163,8 @@ class TestConfigUtilities:
         assert isinstance(parsed, Config)
         assert parsed.name == mock_config.name
         assert parsed.vendorId == mock_config.vendorId
-        assert parsed.byteCodeMappings == mock_config.byteCodeMappings
+        # Access byteCodeMappings through modes
+        assert parsed.modes[0].byteCodeMappings == mock_config.modes[0].byteCodeMappings
     
     def test_round_trip_pretty(self, mock_config):
         """Should maintain data integrity through to_json (pretty) -> from_json"""
@@ -167,7 +173,7 @@ class TestConfigUtilities:
         
         assert isinstance(parsed, Config)
         assert parsed.name == mock_config.name
-        assert parsed.byteCodeMappings == mock_config.byteCodeMappings
+        assert parsed.modes[0].byteCodeMappings == mock_config.modes[0].byteCodeMappings
 
 
 class TestFixtureIntegration:
@@ -195,12 +201,16 @@ class TestFixtureIntegration:
         assert config.model == 'Test Model'
         assert config.vendorId == '0x1234'
         assert config.productId == '0x5678'
-        assert config.reportId == 1
-        assert config.capabilities.hasPressure is True
-        assert config.capabilities.pressureLevels == 8191
-        assert 'x' in config.byteCodeMappings
-        assert 'y' in config.byteCodeMappings
-        assert 'pressure' in config.byteCodeMappings
+        
+        # Access mode-specific properties through modes array
+        assert len(config.modes) == 1
+        mode = config.modes[0]
+        assert mode.reportId == 1
+        assert mode.capabilities.hasPressure is True
+        assert mode.capabilities.pressureLevels == 8191
+        assert 'x' in mode.byteCodeMappings
+        assert 'y' in mode.byteCodeMappings
+        assert 'pressure' in mode.byteCodeMappings
     
     def test_round_trip_fixture(self, fixture_path):
         """Should round-trip the fixture file through to_json/from_json"""
@@ -214,7 +224,7 @@ class TestFixtureIntegration:
         
         # Should have identical properties
         assert config2.name == config1.name
-        assert config2.byteCodeMappings == config1.byteCodeMappings
+        assert config2.modes[0].byteCodeMappings == config1.modes[0].byteCodeMappings
     
     def test_validate_fixture_structure(self, fixture_path):
         """Should validate the fixture file structure"""
@@ -224,7 +234,7 @@ class TestFixtureIntegration:
         # Should not raise an error
         config = Config.from_json(fixture_content)
         
-        # Check all required fields exist
+        # Check all required fields exist on Config
         assert hasattr(config, 'name')
         assert hasattr(config, 'manufacturer')
         assert hasattr(config, 'model')
@@ -232,7 +242,12 @@ class TestFixtureIntegration:
         assert hasattr(config, 'vendorId')
         assert hasattr(config, 'productId')
         assert hasattr(config, 'deviceInfo')
-        assert hasattr(config, 'reportId')
-        assert hasattr(config, 'digitizerUsagePage')
-        assert hasattr(config, 'capabilities')
-        assert hasattr(config, 'byteCodeMappings')
+        assert hasattr(config, 'modes')
+        
+        # Check mode-specific fields exist on first mode
+        assert len(config.modes) > 0
+        mode = config.modes[0]
+        assert hasattr(mode, 'reportId')
+        assert hasattr(mode, 'digitizerUsagePage')
+        assert hasattr(mode, 'capabilities')
+        assert hasattr(mode, 'byteCodeMappings')

@@ -13,45 +13,47 @@
     "usage": 2,
     "interfaces": [0]
   },
-  "reportId": 1,
-  "digitizerUsagePage": 13,
-  "capabilities": {
-    "hasButtons": true,
-    "buttonCount": 8,
-    "hasPressure": true,
-    "pressureLevels": 8191,
-    "hasTilt": true,
-    "resolution": {
-      "x": 32768,
-      "y": 32768
-    }
-  },
-  "byteCodeMappings": {
-    "status": {
-      "byteIndex": [1],
-      "type": "code",
-      "values": {
-        "160": {
-          "state": "stylus"
+  "modes": [
+    {
+      "reportId": 1,
+      "digitizerUsagePage": 13,
+      "capabilities": {
+        "hasButtons": true,
+        "buttonCount": 8,
+        "hasPressure": true,
+        "pressureLevels": 8191,
+        "hasTilt": true,
+        "resolution": {
+          "x": 32768,
+          "y": 32768
+        }
+      },
+      "byteCodeMappings": {
+        "status": {
+          "byteIndex": [1],
+          "type": "code",
+          "values": {
+            "160": {
+              "state": "stylus"
+            }
+          }
+        },
+        "x": {
+          "byteIndex": [2, 3],
+          "max": 65535,
+          "type": "multi-byte-range"
+        },
+        "y": {
+          "byteIndex": [4, 5],
+          "max": 65535,
+          "type": "multi-byte-range"
+        },
+        "pressure": {
+          "byteIndex": [6, 7],
+          "max": 8191,
+          "type": "multi-byte-range"
         }
       }
-    },
-    "x": {
-      "byteIndex": [2, 3],
-      "max": 65535,
-      "type": "multi-byte-range"
-    },
-    "y": {
-      "byteIndex": [4, 5],
-      "max": 65535,
-      "type": "multi-byte-range"
-    },
-    "pressure": {
-      "byteIndex": [6, 7],
-      "max": 8191,
-      "type": "multi-byte-range"
     }
-  }
+  ]
 }
-
-

@@ -181,8 +181,8 @@ class CLIWalkthroughView:
         questions = [
             inquirer.Text(
                 'count',
-                message="How many express keys/buttons does your tablet have? (0-8)",
-                validate=lambda _, x: x.isdigit() and 0 <= int(x) <= 8
+                message="How many express keys/buttons does your tablet have? (0 for none)",
+                validate=lambda _, x: x.isdigit() and int(x) >= 0
             )
         ]
         

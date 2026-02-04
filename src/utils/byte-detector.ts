@@ -1,9 +1,14 @@
 /**
  * Byte Detection Utilities
- * 
+ *
  * This module contains the core logic for analyzing HID packets and identifying
  * which bytes represent coordinates, pressure, tilt, and other tablet data.
  */
+
+import { KeyboardButtonsConfig } from './data-helpers.js';
+
+// Re-export for convenience
+export type { KeyboardButtonsConfig };
 
 export interface ByteAnalysis {
   byteIndex: number;
@@ -62,6 +67,12 @@ export interface ButtonMapping {
   shiftKey?: boolean;
   altKey?: boolean;
   metaKey?: boolean;
+  // Keyboard HID interface properties (Huion-style tablets)
+  interfaceType?: 'digitizer' | 'keyboard';
+  modifier?: number;      // Keyboard modifier byte (for Report ID 3)
+  keycode?: number;       // Keyboard keycode (for Report ID 3)
+  consumerCode?: number;  // Consumer control code (for Report ID 4)
+  scrollDelta?: number;   // Scroll delta (for Report ID 5)
 }
 
 export interface DeviceByteCodeMappings {
@@ -72,6 +83,7 @@ export interface DeviceByteCodeMappings {
   tiltX?: TiltConfig;
   tiltY?: TiltConfig;
   tabletButtons?: TabletButtonsConfig;
+  keyboardButtons?: KeyboardButtonsConfig;
 }
 
 /**
@@ -541,18 +553,23 @@ export function generateDeviceConfig(
 
   // Add tablet buttons - prefer interactive mappings over auto-detected bytes
   if (buttonMappings.length > 0) {
-    // Check if we have keyboard mappings or HID scan codes
-    const hasKeyboardMappings = buttonMappings.some(m => m.key !== undefined);
-    const hasHIDMappings = buttonMappings.some(m => m.scanCode !== undefined);
+    // Separate buttons by interface type (Huion-style keyboard HID vs XP-Pen style digitizer)
+    const digitizerButtons = buttonMappings.filter(m => m.interfaceType !== 'keyboard');
+    const keyboardInterfaceButtons = buttonMappings.filter(m => m.interfaceType === 'keyboard');
+
+    // Check if we have keyboard event mappings (browser keyboard events) or HID scan codes
+    const hasKeyboardEventMappings = digitizerButtons.some(m => m.key !== undefined);
+    const hasHIDMappings = digitizerButtons.some(m => m.scanCode !== undefined);
 
     // Build keyboard info lookup by button number (for merging into HID mappings)
     const keyboardInfoByButton = new Map<number, ButtonMapping>();
-    for (const mapping of buttonMappings) {
+    for (const mapping of digitizerButtons) {
       if (mapping.key !== undefined) {
         keyboardInfoByButton.set(mapping.buttonNumber, mapping);
       }
     }
 
+    // Handle digitizer interface buttons (XP-Pen style)
     if (hasHIDMappings) {
       // HID scan code detection - include keyboard info when available
       // This creates combined entries like { button: 1, key: "b" } for documentation/UI
@@ -562,7 +579,7 @@ export function generateDeviceConfig(
 
       // Check for scan code conflicts and track status byte overrides
       const scanCodeGroups = new Map<number, ButtonMapping[]>();
-      for (const mapping of buttonMappings) {
+      for (const mapping of digitizerButtons) {
         if (mapping.scanCode !== undefined) {
           const existing = scanCodeGroups.get(mapping.scanCode) || [];
           existing.push(mapping);
@@ -615,7 +632,7 @@ export function generateDeviceConfig(
         // - With Report ID: raw index 2, read offset 0 → read from index 2
         // - Without Report ID: raw index 1, read offset -1 → config 2 - 1 = index 1
         byteIndex: [2],
-        buttonCount: buttonMappings.length,
+        buttonCount: digitizerButtons.length,
         type: 'code',
         values,
       };
@@ -626,7 +643,7 @@ export function generateDeviceConfig(
       }
 
       config.tabletButtons = tabletButtonsConfig;
-    } else if (hasKeyboardMappings) {
+    } else if (hasKeyboardEventMappings) {
       // Keyboard-only detection (driver active, HID button interface blocked)
       // This is a WebHID-specific fallback - buttons are detected via browser keyboard events
       // Python/Node don't need this since they can read raw HID in driverless mode
@@ -634,7 +651,7 @@ export function generateDeviceConfig(
       // The button number is the key in the values object, keyboard info is for documentation only
       const values: Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean }> = {};
 
-      for (const mapping of buttonMappings) {
+      for (const mapping of digitizerButtons) {
         if (mapping.key) {
           const entry: { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean } = {
             key: mapping.key,
@@ -650,9 +667,54 @@ export function generateDeviceConfig(
       config.tabletButtons = {
         // No byteIndex - buttons come via keyboard events, not HID packets
         byteIndex: [],
-        buttonCount: buttonMappings.length,
+        buttonCount: digitizerButtons.length,
         type: 'code',
         values,
+      };
+    }
+
+    // Handle keyboard HID interface buttons (Huion-style tablets)
+    if (keyboardInterfaceButtons.length > 0) {
+      const keyboardButtonMappings: KeyboardButtonsConfig['buttons'] = [];
+
+      for (const mapping of keyboardInterfaceButtons) {
+        const reportId = mapping.statusByte ?? 3; // Default to Report ID 3 (keyboard)
+
+        // Determine button type based on report ID
+        let buttonType: 'keyboard' | 'consumer' | 'scroll';
+        if (reportId === 4) {
+          buttonType = 'consumer';
+        } else if (reportId === 5) {
+          buttonType = 'scroll';
+        } else {
+          buttonType = 'keyboard';
+        }
+
+        const btnConfig: KeyboardButtonsConfig['buttons'][0] = {
+          button: mapping.buttonNumber,
+          reportId,
+          type: buttonType,
+        };
+
+        // Add type-specific data
+        if (buttonType === 'keyboard') {
+          if (mapping.modifier !== undefined) btnConfig.modifier = mapping.modifier;
+          if (mapping.keycode !== undefined) btnConfig.keycode = mapping.keycode;
+        } else if (buttonType === 'consumer') {
+          if (mapping.consumerCode !== undefined) btnConfig.consumerCode = mapping.consumerCode;
+        } else if (buttonType === 'scroll') {
+          if (mapping.scrollDelta !== undefined) btnConfig.scrollDelta = mapping.scrollDelta;
+        }
+
+        keyboardButtonMappings.push(btnConfig);
+      }
+
+      config.keyboardButtons = {
+        description: 'Buttons from keyboard HID interface (requires sudo on macOS)',
+        usagePage: 1,
+        usage: 6,
+        buttonCount: keyboardInterfaceButtons.length,
+        buttons: keyboardButtonMappings,
       };
     }
   } else if (tabletButtonBytes.length > 0) {

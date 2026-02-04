@@ -258,54 +258,55 @@ export class WalkthroughEngine {
     if (!this.state.isCapturing) return;
 
     const isButtonStep = this.state.currentStep === 'step9-tablet-buttons';
-    
+
     // Status byte location depends on whether packet includes report ID
     // Node.js: [reportId at 0][status at 1][data at 2+] -> statusIndex = 1, dataStart = 2
     // WebHID:  [status at 0][data at 1+] -> statusIndex = 0, dataStart = 1
     const statusIndex = this.options.packetIncludesReportId ? 1 : 0;
     const dataStartIndex = this.options.packetIncludesReportId ? 2 : 1;
 
-    // Report ID detection and locking
-    // Works for both:
-    // - Node.js: reportId embedded in packet (packetIncludesReportId=true)
-    // - WebHID: reportId passed separately via event.reportId (packetIncludesReportId=false)
+    // Check if packet has meaningful data (not all zeros after status byte)
+    const hasNonZeroData = packet.length > dataStartIndex &&
+                           packet.slice(dataStartIndex).some(b => b !== 0);
+
+    // Report ID detection and locking (tablet-agnostic approach)
+    // Instead of checking for specific status bytes, we identify pen data by:
+    // 1. Packets that have non-zero data in the coordinate bytes
+    // 2. Packets that change over time (indicating pen movement)
     if (reportId !== undefined) {
-      // Track all report IDs we see with pen data
-      if (packet.length > statusIndex) {
-        const statusByte = packet[statusIndex];
-        // Pen status bytes: 0xA0-0xA5 (160-165)
-        const isPenPacket = statusByte >= 0xA0 && statusByte <= 0xA5;
-        // Button status byte: 0xF0 (240)
-        const isButtonPacket = statusByte === 0xF0;
+      // Track report IDs that send packets with actual data
+      // This is tablet-agnostic - we don't assume specific status byte values
+      if (hasNonZeroData) {
+        this.candidateReportIds.add(reportId);
+      }
 
-        if (isPenPacket) {
-          this.candidateReportIds.add(reportId);
-        }
-
-        // Track button report IDs during button step
-        if (isButtonStep && isButtonPacket) {
-          this.buttonReportIdCandidates.add(reportId);
-          // Lock onto first button report ID we see
-          if (this.detectedButtonReportId === undefined) {
-            this.detectedButtonReportId = reportId;
-          }
+      // Track button report IDs during button step
+      // Button packets often have a distinct status byte, but we can't assume which one
+      // So we track all report IDs during button step and let the user confirm
+      if (isButtonStep && hasNonZeroData) {
+        this.buttonReportIdCandidates.add(reportId);
+        if (this.detectedButtonReportId === undefined) {
+          this.detectedButtonReportId = reportId;
         }
       }
 
-      // Lock onto the first report ID that sends valid pen data
-      // No preference for any specific report ID - just use whichever sends data first
+      // Lock onto the first report ID that sends data with content
+      // This works for any tablet regardless of status byte conventions
       if (this.candidateReportIds.size > 0 && !this.reportIdLocked) {
         this.detectedReportId = [...this.candidateReportIds][0];
         this.reportIdLocked = true;
       }
 
       // For gesture steps, only accept packets with the detected report ID
+      // This filters out packets from other interfaces (e.g., keyboard HID)
       if (!isButtonStep && this.reportIdLocked && reportId !== this.detectedReportId) {
         return;
       }
     }
 
     // Skip duplicate packets if enabled
+    // This is a tablet-agnostic way to filter out "idle" states
+    // When pen is stationary or out of range, packets are often identical
     if (this.options.skipDuplicates && this.lastPacket) {
       if (this.arePacketsEqual(packet, this.lastPacket)) {
         this.duplicateCount++;
@@ -313,28 +314,17 @@ export class WalkthroughEngine {
       }
     }
 
-    // Filter out idle packets if enabled
-    // Idle packets typically have status byte indicating pen is out of range
-    // Common idle status bytes: 0xC0 (out of range), 0x00 (no data)
+    // Filter out idle/empty packets if enabled
+    // Tablet-agnostic approach: only filter packets with no meaningful data
     // NOTE: Skip filtering for step9-tablet-buttons since button packets have different structures
     if (this.options.filterIdlePackets && packet.length > statusIndex && !isButtonStep) {
       const statusByte = packet[statusIndex];
-      
-      // Check for common "out of range" or "idle" status bytes
-      // 0xC0 = pen out of range (common)
-      // 0x00 = no data / idle
-      // Also check if all bytes after status are zeros (idle state)
-      if (statusByte === 0xC0 || statusByte === 0x00) {
+
+      // Filter packets that are essentially empty (all zeros after status byte)
+      // This catches true idle packets regardless of tablet-specific status byte conventions
+      if (!hasNonZeroData) {
         this.idlePacketCount++;
-        // Still track status byte for config generation, but don't add to capture buffer
-        this.trackStatusByte(statusByte);
-        return;
-      }
-      
-      // Check if packet is essentially empty (all zeros except reportId and status)
-      const hasData = packet.slice(dataStartIndex).some(b => b !== 0);
-      if (!hasData) {
-        this.idlePacketCount++;
+        // Still track status byte for config generation
         this.trackStatusByte(statusByte);
         return;
       }
@@ -384,60 +374,62 @@ export class WalkthroughEngine {
 
   /**
    * Track status byte values for button detection
-   * 
+   *
    * Always track ALL pen-related status bytes whenever they're seen,
    * regardless of the current step. This ensures the generated config
    * includes all necessary status mappings even if the user presses
    * stylus buttons during other walkthrough steps.
+   *
+   * Supports multiple tablet manufacturers with different status byte encodings:
+   * - XP-Pen tablets: 0xA0-0xA5 range (160-165)
+   * - Huion tablets: 0xC0-0xC5 range (192-197)
    */
   private trackStatusByte(byteValue: number): void {
-    // Always track all known pen status bytes
-    switch (byteValue) {
-      case 0xc0: // 192 - none (pen out of range)
-        this.statusByteValues.set(byteValue, { state: 'none' });
-        break;
-      case 0xa0: // 160 - hover
-        this.statusByteValues.set(byteValue, { state: 'hover' });
-        break;
-      case 0xa1: // 161 - contact (pen touching)
-        this.statusByteValues.set(byteValue, { state: 'contact' });
-        break;
-      case 0xa2: // 162 - hover + secondary button
-        this.statusByteValues.set(byteValue, {
-          state: 'hover',
-          secondaryButtonPressed: true,
-        });
-        break;
-      case 0xa3: // 163 - contact + secondary button
-        this.statusByteValues.set(byteValue, {
-          state: 'contact',
-          secondaryButtonPressed: true,
-        });
-        break;
-      case 0xa4: // 164 - hover + primary button
-        this.statusByteValues.set(byteValue, {
-          state: 'hover',
-          primaryButtonPressed: true,
-        });
-        break;
-      case 0xa5: // 165 - contact + primary button
-        this.statusByteValues.set(byteValue, {
-          state: 'contact',
-          primaryButtonPressed: true,
-        });
-        break;
-      case 0xf0: // 240 - tablet buttons (driver mode)
-        this.statusByteValues.set(byteValue, { state: 'buttons' });
-        break;
+    // Map of all known status byte values to their states
+    const STATUS_MAP: Record<number, { state: string; primaryButtonPressed?: boolean; secondaryButtonPressed?: boolean }> = {
+      // === Standard/XP-Pen tablets (0xA0-0xA5 range) ===
+      // Basic pen states
+      0xa0: { state: 'hover' },           // 160 - pen hovering
+      0xa1: { state: 'contact' },         // 161 - pen touching
+
+      // Stylus secondary button (barrel button closer to tip)
+      0xa2: { state: 'hover', secondaryButtonPressed: true },    // 162
+      0xa3: { state: 'contact', secondaryButtonPressed: true },  // 163
+
+      // Stylus primary button (barrel button further from tip)
+      0xa4: { state: 'hover', primaryButtonPressed: true },      // 164
+      0xa5: { state: 'contact', primaryButtonPressed: true },    // 165
+
+      // === Huion tablets (0xC0-0xC5 range) ===
+      // Basic pen states
+      0xc0: { state: 'hover' },           // 192 - pen hovering (NOT "none"!)
+      0xc1: { state: 'contact' },         // 193 - pen touching
+
+      // Stylus secondary button (barrel button closer to tip)
+      0xc2: { state: 'hover', secondaryButtonPressed: true },    // 194
+      0xc3: { state: 'contact', secondaryButtonPressed: true },  // 195
+
+      // Stylus primary button (barrel button further from tip)
+      0xc4: { state: 'hover', primaryButtonPressed: true },      // 196
+      0xc5: { state: 'contact', primaryButtonPressed: true },    // 197
+
+      // === Common status codes ===
+      0x00: { state: 'none' },            // 0 - pen out of range / idle
+
+      // Tablet button mode indicator
+      0xf0: { state: 'buttons' },         // 240
+    };
+
+    // Check if this is a known status byte
+    if (byteValue in STATUS_MAP) {
+      this.statusByteValues.set(byteValue, STATUS_MAP[byteValue]);
+      return;
     }
-    
-    // Also track button-related status bytes (0-6) for driverless mode
-    if (byteValue >= 0 && byteValue <= 6) {
-      if (byteValue === 0) {
-        this.statusByteValues.set(byteValue, { state: 'keyboard' });
-      } else {
-        this.statusByteValues.set(byteValue, { state: 'buttons' });
-      }
+
+    // Also track button-related status bytes (1-6) for driverless mode
+    // Note: 0 is already handled above as 'none'
+    if (byteValue >= 1 && byteValue <= 6) {
+      this.statusByteValues.set(byteValue, { state: 'buttons' });
     }
   }
 

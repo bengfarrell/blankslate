@@ -38,6 +38,12 @@ export interface DetectedButton {
   shiftKey?: boolean;
   altKey?: boolean;
   metaKey?: boolean;
+  // Keyboard HID interface properties (Huion-style tablets)
+  interfaceType?: 'digitizer' | 'keyboard';
+  modifier?: number;      // Keyboard modifier byte (for Report ID 3)
+  keycode?: number;       // Keyboard keycode (for Report ID 3)
+  consumerCode?: number;  // Consumer control code (for Report ID 4)
+  scrollDelta?: number;   // Scroll delta (for Report ID 5)
 }
 
 /**
@@ -506,7 +512,16 @@ export class WalkthroughController {
     return new Promise<DetectedButton | null>((resolve) => {
       let detected: DetectedButton | null = null;
       let finished = false;
-      const seenPackets: Array<{ status: number; scanCode: number }> = [];
+      // Track packets with interface type for keyboard HID support
+      const seenPackets: Array<{
+        status: number;
+        scanCode: number;
+        interfaceType?: 'digitizer' | 'keyboard';
+        modifier?: number;
+        keycode?: number;
+        consumerCode?: number;
+        scrollDelta?: number;
+      }> = [];
       const MIN_CONFIRMATIONS = this.options.buttonConfirmations;
 
       const finish = (result: DetectedButton | null) => {
@@ -523,61 +538,131 @@ export class WalkthroughController {
         }
       });
 
-      const dataHandler = (data: Uint8Array, _reportId?: number) => {
+      const dataHandler = (data: Uint8Array, _reportId?: number, interfaceType?: string) => {
         if (finished) return;
 
-        // Packet structure depends on packetIncludesReportId:
-        // Node.js (true):  [reportId, status, scanCode, ...]
-        // WebHID (false):  [status, scanCode, ...]
-        const statusIndex = this.options.packetIncludesReportId ? 1 : 0;
-        const scanCodeIndex = this.options.packetIncludesReportId ? 2 : 1;
+        // Handle keyboard HID interface packets (Huion-style tablets)
+        if (interfaceType === 'keyboard') {
+          const reportId = this.options.packetIncludesReportId ? data[0] : _reportId;
 
-        const statusByte = data.length > statusIndex ? data[statusIndex] : 0;
-        const scanCode = data.length > scanCodeIndex ? data[scanCodeIndex] : 0;
+          // Keyboard HID packets:
+          // Report ID 3: [03, modifier, keycode, 0, 0, 0, 0, 0] - keyboard shortcuts
+          // Report ID 4: [04, consumer_code, 0] - consumer control (media keys)
+          // Report ID 5: [05, 0, 0, 0, 0, 0, scroll_delta] - scroll wheel
 
-        // Skip idle packets
-        if (scanCode === 0) return;
+          if (reportId === 3) {
+            // Keyboard shortcut packet
+            const modifierIdx = this.options.packetIncludesReportId ? 1 : 0;
+            const keycodeIdx = this.options.packetIncludesReportId ? 2 : 1;
+            const modifier = data.length > modifierIdx ? data[modifierIdx] : 0;
+            const keycode = data.length > keycodeIdx ? data[keycodeIdx] : 0;
 
-        // Skip known pen status bytes (160-165, 192)
-        if (statusByte >= 0xA0 && statusByte <= 0xA5) return;
-        if (statusByte === 0xC0) return;
+            // Skip idle packets (no key pressed)
+            if (keycode === 0) return;
 
-        // Only process button mode packets:
-        //   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
-        //   With driver: 240 (0xF0) - bit-flags at byte 1
-        const BUTTON_MODE_STATUS = new Set([0, 1, 3, 6, 240]);
-        if (!BUTTON_MODE_STATUS.has(statusByte)) return;
+            // Create a unique identifier for this button (modifier << 8 | keycode)
+            const combinedCode = (modifier << 8) | keycode;
+            seenPackets.push({
+              status: reportId,
+              scanCode: combinedCode,
+              interfaceType: 'keyboard',
+              modifier,
+              keycode,
+            });
+          } else if (reportId === 4) {
+            // Consumer control packet
+            const consumerIdx = this.options.packetIncludesReportId ? 1 : 0;
+            const consumerCode = data.length > consumerIdx ? data[consumerIdx] : 0;
 
-        seenPackets.push({ status: statusByte, scanCode });
+            // Skip idle packets
+            if (consumerCode === 0) return;
+
+            seenPackets.push({
+              status: reportId,
+              scanCode: consumerCode,
+              interfaceType: 'keyboard',
+              consumerCode,
+            });
+          } else if (reportId === 5) {
+            // Scroll wheel packet
+            const scrollIdx = this.options.packetIncludesReportId ? 6 : 5;
+            const scrollDelta = data.length > scrollIdx ? (data[scrollIdx] > 127 ? data[scrollIdx] - 256 : data[scrollIdx]) : 0;
+
+            // Skip idle packets
+            if (scrollDelta === 0) return;
+
+            // Use scroll direction as the identifier (positive = up, negative = down)
+            const scrollDirection = scrollDelta > 0 ? 1 : -1;
+            seenPackets.push({
+              status: reportId,
+              scanCode: scrollDirection,
+              interfaceType: 'keyboard',
+              scrollDelta,
+            });
+          } else {
+            // Unknown keyboard report ID, skip
+            return;
+          }
+        } else {
+          // Digitizer interface packets (XP-Pen style)
+          // Packet structure depends on packetIncludesReportId:
+          // Node.js (true):  [reportId, status, scanCode, ...]
+          // WebHID (false):  [status, scanCode, ...]
+          const statusIndex = this.options.packetIncludesReportId ? 1 : 0;
+          const scanCodeIndex = this.options.packetIncludesReportId ? 2 : 1;
+
+          const statusByte = data.length > statusIndex ? data[statusIndex] : 0;
+          const scanCode = data.length > scanCodeIndex ? data[scanCodeIndex] : 0;
+
+          // Skip idle packets
+          if (scanCode === 0) return;
+
+          // Skip known pen status bytes (160-165, 192)
+          if (statusByte >= 0xA0 && statusByte <= 0xA5) return;
+          if (statusByte === 0xC0) return;
+
+          // Only process button mode packets:
+          //   No driver: 0 (keyboard), 1, 3, 6 (buttons) - scan codes at byte 2
+          //   With driver: 240 (0xF0) - bit-flags at byte 1
+          const BUTTON_MODE_STATUS = new Set([0, 1, 3, 6, 240]);
+          if (!BUTTON_MODE_STATUS.has(statusByte)) return;
+
+          seenPackets.push({ status: statusByte, scanCode, interfaceType: 'digitizer' });
+        }
 
         // Check for enough confirmations
         if (seenPackets.length >= MIN_CONFIRMATIONS) {
-          const scanCodeCounts = new Map<number, { count: number; status: number }>();
+          const packetCounts = new Map<string, { count: number; packet: typeof seenPackets[0] }>();
           for (const p of seenPackets) {
-            const existing = scanCodeCounts.get(p.scanCode);
+            // Create unique key based on interface type and scan code
+            const key = `${p.interfaceType || 'digitizer'}-${p.status}-${p.scanCode}`;
+            const existing = packetCounts.get(key);
             if (existing) {
               existing.count++;
             } else {
-              scanCodeCounts.set(p.scanCode, { count: 1, status: p.status });
+              packetCounts.set(key, { count: 1, packet: p });
             }
           }
 
-          let bestScanCode = 0;
-          let bestStatus = 0;
+          let bestPacket: typeof seenPackets[0] | null = null;
           let bestCount = 0;
-          for (const [code, data] of scanCodeCounts) {
+          for (const [_key, data] of packetCounts) {
             if (data.count > bestCount) {
               bestCount = data.count;
-              bestScanCode = code;
-              bestStatus = data.status;
+              bestPacket = data.packet;
             }
           }
 
-          if (bestCount >= MIN_CONFIRMATIONS) {
+          if (bestCount >= MIN_CONFIRMATIONS && bestPacket) {
             detected = {
               buttonNumber,
-              statusByte: bestStatus,
-              scanCode: bestScanCode,
+              statusByte: bestPacket.status,
+              scanCode: bestPacket.scanCode,
+              interfaceType: bestPacket.interfaceType,
+              modifier: bestPacket.modifier,
+              keycode: bestPacket.keycode,
+              consumerCode: bestPacket.consumerCode,
+              scrollDelta: bestPacket.scrollDelta,
             };
             finish(detected);
           }

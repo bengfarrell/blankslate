@@ -124,6 +124,15 @@ class Config:
         # If no reportId specified, return first mode's mappings as default
         return self.modes[0].byteCodeMappings if self.modes else None
 
+    def is_multi_mode(self) -> bool:
+        """
+        Check if config has multiple modes
+
+        Returns:
+            True if the config has more than one mode
+        """
+        return len(self.modes) > 1
+
     def get_capabilities(self, report_id: Optional[int] = None) -> Optional[Capabilities]:
         """
         Get capabilities for a specific mode

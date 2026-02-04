@@ -182,7 +182,6 @@ class CLIWalkthroughView implements IWalkthroughView {
       validate: (input) => {
         const num = parseInt(input);
         if (isNaN(num) || num < 0) return 'Please enter a valid number (0 or more)';
-        if (num > 20) return 'Maximum 20 buttons supported';
         return true;
       },
     }]);
@@ -353,17 +352,28 @@ class CLIWalkthroughView implements IWalkthroughView {
         process.stdin.setRawMode(true);
       }
 
+      let timeoutId: NodeJS.Timeout | null = null;
+
+      const cleanup = () => {
+        process.stdin.removeListener('data', handler);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        if (process.stdin.isTTY) {
+          process.stdin.setRawMode(wasRaw ?? false);
+        }
+        this.gestureResolve = null;
+      };
+
       const handler = (data: Buffer) => {
         const char = data.toString();
         if (char === '\r' || char === '\n' || char === '\x03') {
           if (char === '\x03') {
+            cleanup();
             process.exit(0);
           }
-          process.stdin.removeListener('data', handler);
-          if (process.stdin.isTTY) {
-            process.stdin.setRawMode(wasRaw ?? false);
-          }
-          this.gestureResolve = null;
+          cleanup();
           resolve();
         }
       };
@@ -371,15 +381,9 @@ class CLIWalkthroughView implements IWalkthroughView {
       process.stdin.on('data', handler);
 
       // 30 second timeout
-      setTimeout(() => {
-        process.stdin.removeListener('data', handler);
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(wasRaw ?? false);
-        }
-        if (this.gestureResolve) {
-          this.gestureResolve = null;
-          resolve();
-        }
+      timeoutId = setTimeout(() => {
+        cleanup();
+        resolve();
       }, 30000);
     });
   }
@@ -532,23 +536,54 @@ export interface CLIWalkthroughOptions {
  * Run the CLI walkthrough
  */
 export async function runCLI(options: CLIWalkthroughOptions = {}): Promise<void> {
+  // Increase max listeners to prevent warnings during multi-step walkthrough
+  // Each gesture step + inquirer prompts add listeners to stdin
+  process.stdin.setMaxListeners(30);
+  process.setMaxListeners(30);
+
   const view = new CLIWalkthroughView();
   const readerFactory = new CLIReaderFactory();
-  
+
   const controller = new WalkthroughController(view, readerFactory, {
     autoPlayMockGestures: true,
     gesturePlayDuration: 2000,
   });
 
-  // Set up signal handlers
-  const handleExit = async () => {
-    console.log(theme.dim('\n\nCleaning up...'));
-    await controller.cleanup();
-    process.exit(0);
+  // Track Ctrl+C presses for force exit
+  let ctrlCCount = 0;
+
+  const forceExit = () => {
+    console.log(theme.dim('\nForce exiting...'));
+    process.exit(1);
   };
 
-  process.on('SIGINT', handleExit);
-  process.on('SIGTERM', handleExit);
+  const handleCtrlC = () => {
+    ctrlCCount++;
+    console.log(theme.dim(`\n[Ctrl+C received: ${ctrlCCount}]`));
+
+    if (ctrlCCount >= 2) {
+      forceExit();
+    } else {
+      console.log(theme.dim('Closing device...'));
+
+      // Synchronously close the HID device to unblock the event loop
+      try {
+        const reader = (controller as any).reader;
+        if (reader && typeof reader.closeSync === 'function') {
+          reader.closeSync();
+        }
+      } catch {
+        // Ignore errors
+      }
+
+      console.log(theme.dim('Exiting...'));
+      process.exit(0);
+    }
+  };
+
+  // SIGINT handler (works when terminal sends signal)
+  process.on('SIGINT', handleCtrlC);
+  process.on('SIGTERM', forceExit);
 
   try {
     await controller.run(options.useMock);

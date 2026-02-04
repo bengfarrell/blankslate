@@ -122,6 +122,7 @@ Open the web app, connect your tablet via WebHID, and see real-time visualizatio
 Blankslate works with any HID-compatible graphics tablet. Currently tested:
 
 - **XP-Pen Deco 640** - Full support with included configuration
+- **Huion Inspiroy 2 M (H951P)** - Full support with included configuration (requires `sudo` on macOS for buttons)
 - **Other tablets** - Use the config generator walkthrough to create support
 
 ## System Requirements

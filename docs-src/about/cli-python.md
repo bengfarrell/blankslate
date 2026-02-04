@@ -100,6 +100,13 @@ python generate_config.py
 python generate_config.py --mock
 ```
 
+> **macOS + Huion tablets:** If your tablet sends buttons via the Keyboard HID interface, you'll need `sudo` to detect buttons during the walkthrough:
+> ```bash
+> sudo tablet-config
+> # or
+> sudo python generate_config.py
+> ```
+
 **Features:**
 - Automatic device detection
 - Interactive walkthrough for byte mapping detection
@@ -127,6 +134,13 @@ tablet-events -c config.json --live --raw
 # Use mock data
 tablet-events -c config.json --mock --live
 ```
+
+> **macOS + Keyboard HID buttons:** If your config has `keyboardButtons` (Huion-style tablets), use `sudo` to read button events:
+> ```bash
+> sudo tablet-events -c config.json --live
+> # or
+> sudo python view_events.py -c config.json --live
+> ```
 
 **Features:**
 - Real-time event visualization
