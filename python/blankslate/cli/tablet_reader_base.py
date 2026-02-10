@@ -17,7 +17,7 @@ from dataclasses import dataclass
 try:
     import hid
     from ..models import Config
-    from ..core.data_helpers import process_device_data
+    from ..core.data_helpers import process_device_data, process_keyboard_button_data
     from ..mockbytes import create_mock_hid_reader, MockHIDReader, create_config_based_generator
     from ..utils import find_and_open_device
 except ImportError:
@@ -25,7 +25,7 @@ except ImportError:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
     import hid
     from blankslate.models import Config
-    from blankslate.core.data_helpers import process_device_data
+    from blankslate.core.data_helpers import process_device_data, process_keyboard_button_data
     from blankslate.mockbytes import create_mock_hid_reader, MockHIDReader, create_config_based_generator
     from blankslate.utils import find_and_open_device
 
@@ -244,6 +244,21 @@ class TabletReaderBase(ABC):
             return {}
 
         report_id = data[0]
+
+        # Check if this is a keyboard button packet (report IDs 3, 4, 5)
+        # These come from a separate keyboard HID interface on some tablets
+        if report_id in (3, 4, 5):
+            # Try to find keyboardButtons config in any mode
+            keyboard_buttons_config = None
+            for mode in self.config_data.modes:
+                kb_config = mode.byteCodeMappings.get('keyboardButtons')
+                if kb_config and 'buttons' in kb_config:
+                    keyboard_buttons_config = kb_config
+                    break
+
+            if keyboard_buttons_config:
+                return process_keyboard_button_data(data, keyboard_buttons_config)
+            # If no keyboard buttons config, fall through to normal processing
 
         # Detect mode from first packet if not already detected
         if self.current_mode is None:

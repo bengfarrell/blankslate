@@ -53,12 +53,21 @@ Interactive step-by-step wizard to generate tablet configurations:
 npx tsx src/cli/config-generator.ts
 npx tsx src/cli/config-generator.ts --output my-config.json
 npx tsx src/cli/config-generator.ts --mock  # Use mock data for testing
+npx tsx src/cli/config-generator.ts --record captured-data.json  # Save all captured packets
 ```
 
 > **macOS + Huion tablets:** If your tablet sends buttons via the Keyboard HID interface, you'll need `sudo` to detect buttons during the walkthrough:
 > ```bash
 > sudo npx tsx src/cli/config-generator.ts
 > ```
+
+**Options:**
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--output <path>` | `-o` | Output path for generated config JSON |
+| `--mock` | `-m` | Use mock data instead of real device |
+| `--record <path>` | `-r` | Save all captured packet data to a JSON file |
 
 **Features:**
 - Automatic device detection
@@ -67,6 +76,52 @@ npx tsx src/cli/config-generator.ts --mock  # Use mock data for testing
 - Multi-interface support (pen + keyboard interfaces)
 - Mock mode for testing without physical hardware
 - Generates JSON config files compatible with all tools
+- Record mode to capture all raw packet data for debugging
+
+### Recorded Data Format
+
+When using `--record`, the tool saves all captured HID packets organized by walkthrough step:
+
+```json
+{
+  "timestamp": "2026-02-10T17:00:00.000Z",
+  "device": {
+    "vendorId": "0x28bd",
+    "productId": "0x2904",
+    "productName": "XP-Pen Deco 640"
+  },
+  "steps": {
+    "step1-horizontal": {
+      "packetCount": 150,
+      "packets": ["a000ff3c2a00...", "a000ff3d2b00...", "..."],
+      "detectedBytes": [
+        { "byteIndex": 2, "variance": 200, "min": 0, "max": 255 },
+        { "byteIndex": 3, "variance": 180, "min": 0, "max": 200 }
+      ]
+    },
+    "step2-vertical": { "..." },
+    "step3-pressure": { "..." },
+    "step4-tiltX": { "..." },
+    "step5-tiltY": { "..." },
+    "step6-buttons": { "..." }
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `timestamp` | ISO 8601 timestamp when recording completed |
+| `device` | Device info (vendorId, productId, productName) |
+| `steps` | Map of step name → captured data |
+| `packetCount` | Number of packets captured in this step |
+| `packets` | Array of hex-encoded HID packets |
+| `detectedBytes` | Bytes identified as significant (high variance) |
+
+This is useful for:
+- Debugging byte detection issues
+- Sharing raw data for troubleshooting
+- Replaying captures for testing
+- Analyzing packet patterns
 
 ---
 

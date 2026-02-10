@@ -34,8 +34,6 @@ def sample_config_dict():
             'vendor_id': 10429,
             'product_id': 2324,
             'product_string': 'Test Tablet',
-            'usage_page': 13,
-            'usage': 2,
             'interfaces': [0]
         },
         'reportId': 2,

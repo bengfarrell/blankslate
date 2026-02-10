@@ -4,7 +4,7 @@
  * These tests verify that the walkthrough correctly detects byte patterns
  * and generates a configuration matching the XP-Pen Deco 640 tablet.
  * 
- * The expected values are defined in test/fixtures/xp-pen-deco640-expected.ts
+ * The expected values are defined in test/unit/xp-pen-deco640-expected.ts
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -21,7 +21,7 @@ import {
   CAPABILITIES,
   createTestPacket,
   createKeyboardPacket,
-} from '../fixtures/xp-pen-deco640-expected.js';
+} from './xp-pen-deco640-expected.js';
 
 describe('XP-Pen Deco 640 Walkthrough', () => {
   let engine: WalkthroughEngine;

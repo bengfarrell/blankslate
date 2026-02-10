@@ -162,26 +162,27 @@ import { NodeHIDReader, MultiInterfaceReader } from 'blankslate/cli/node-hid-rea
 ```typescript
 import { Config } from 'blankslate/models';
 import { processDeviceData } from 'blankslate/utils';
-import { NodeHIDReader } from 'blankslate/cli/node-hid-reader';
+import { NodeHIDReaderManager } from 'blankslate/cli/node-hid-reader';
 
 // Load configuration
 const config = await Config.load('./my-tablet-config.json');
+const mode = config.modes[0]; // Get first mode configuration
 
-// Create HID reader
-const reader = new NodeHIDReader(
-  config.deviceInfo.vendorId,
-  config.deviceInfo.productId,
-  config.deviceInfo.usagePage,
-  config.deviceInfo.usage
+// Create HID reader manager and open device
+const manager = new NodeHIDReaderManager();
+const reader = await manager.openAllInterfaces(
+  config.deviceInfo.vendor_id,
+  config.deviceInfo.product_id
 );
+await reader.open();
 
-// Process incoming data
+// Process incoming data using mode's byte mappings
 reader.onData((bytes: Uint8Array) => {
-  const event = processDeviceData(bytes, config.byteCodeMappings, 0);
+  const event = processDeviceData(bytes, mode.byteCodeMappings, 0);
   console.log(`X: ${event.x}, Y: ${event.y}, Pressure: ${event.pressure}`);
 });
 
-reader.start();
+reader.startReading();
 ```
 
 ### Using Web Components

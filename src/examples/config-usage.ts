@@ -53,6 +53,7 @@ export function serializeConfigExample(config: Config) {
 
 /**
  * Example 4: Create and save a custom configuration
+ * Uses the modes[] array format for multi-mode tablet support
  */
 export function createCustomConfig(): Config {
   const customConfigData: ConfigData = {
@@ -66,68 +67,69 @@ export function createCustomConfig(): Config {
       vendor_id: 0xABCD,
       product_id: 0x1234,
       product_string: 'Custom Tablet',
-      usage_page: 13,
-      usage: 2,
-      interfaces: [0, 1],
+      interfaces: [13, 1],
     },
-    reportId: 2,
-    digitizerUsagePage: 13,
-    buttonInterfaceReportId: 6,
-    capabilities: {
-      hasButtons: true,
-      buttonCount: 6,
-      hasPressure: true,
-      pressureLevels: 8191,
-      hasTilt: true,
-      resolution: {
-        x: 50800,
-        y: 31750,
-      },
-    },
-    byteCodeMappings: {
-      status: {
-        byteIndex: [0],
-        type: MappingType.CODE,
-        values: {
-          '192': { state: 'stylus', primaryButtonPressed: true },
-          '160': { state: 'stylus', primaryButtonPressed: false },
+    modes: [
+      {
+        reportId: 2,
+        digitizerUsagePage: 13,
+        capabilities: {
+          hasButtons: true,
+          buttonCount: 6,
+          hasPressure: true,
+          pressureLevels: 8191,
+          hasTilt: true,
+          resolution: {
+            x: 50800,
+            y: 31750,
+          },
+        },
+        byteCodeMappings: {
+          status: {
+            byteIndex: [0],
+            type: MappingType.CODE,
+            values: {
+              '192': { state: 'hover', primaryButtonPressed: true },
+              '160': { state: 'hover', primaryButtonPressed: false },
+            },
+          },
+          x: {
+            byteIndex: [1, 2],
+            max: 50800,
+            type: MappingType.MULTI_BYTE_RANGE,
+          },
+          y: {
+            byteIndex: [3, 4],
+            max: 31750,
+            type: MappingType.MULTI_BYTE_RANGE,
+          },
+          pressure: {
+            byteIndex: [5, 6],
+            max: 8191,
+            type: MappingType.MULTI_BYTE_RANGE,
+          },
+          tiltX: {
+            byteIndex: [7],
+            positiveMax: 60,
+            negativeMin: 192,
+            negativeMax: 196,
+            type: MappingType.BIPOLAR_RANGE,
+          },
+          tiltY: {
+            byteIndex: [8],
+            positiveMax: 60,
+            negativeMin: 192,
+            negativeMax: 196,
+            type: MappingType.BIPOLAR_RANGE,
+          },
+          tabletButtons: {
+            type: MappingType.BIT_FLAGS,
+            buttonCount: 6,
+            byteIndex: [9],
+          },
         },
       },
-      x: {
-        byteIndex: [1, 2],
-        max: 50800,
-        type: MappingType.MULTI_BYTE_RANGE,
-      },
-      y: {
-        byteIndex: [3, 4],
-        max: 31750,
-        type: MappingType.MULTI_BYTE_RANGE,
-      },
-      pressure: {
-        byteIndex: [5, 6],
-        max: 8191,
-        type: MappingType.MULTI_BYTE_RANGE,
-      },
-      tiltX: {
-        byteIndex: [7],
-        positiveMax: 60,
-        negativeMin: 192,
-        negativeMax: 196,
-        type: MappingType.BIPOLAR_RANGE,
-      },
-      tiltY: {
-        byteIndex: [8],
-        positiveMax: 60,
-        negativeMin: 192,
-        negativeMax: 196,
-        type: MappingType.BIPOLAR_RANGE,
-      },
-      tabletButtons: {
-        type: MappingType.BIT_FLAGS,
-        buttonCount: 6,
-        byteIndex: [9],
-      },
-    },
+    ],
   };
 
   // Create Config instance

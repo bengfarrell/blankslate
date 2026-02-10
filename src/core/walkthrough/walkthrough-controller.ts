@@ -152,6 +152,7 @@ export class WalkthroughController {
   private isMockMode = false;
   private buttonCount = 0;
   private detectedButtons: DetectedButton[] = [];
+  private buttonRawPackets: Uint8Array[] = [];  // Raw packets collected during button detection
   private captureStatus: CaptureStatus = {
     packetCount: 0,
     duplicatesFiltered: 0,
@@ -485,6 +486,7 @@ export class WalkthroughController {
    */
   private async runButtonDetection(): Promise<void> {
     this.detectedButtons = [];
+    this.buttonRawPackets = [];  // Clear raw packets for this detection session
     this.view.showButtonDetectionStart(this.buttonCount);
 
     for (let i = 1; i <= this.buttonCount; i++) {
@@ -495,6 +497,11 @@ export class WalkthroughController {
       } else {
         this.view.showButtonSkipped(i);
       }
+    }
+
+    // Store raw packets in engine's stepData for recording
+    if (this.buttonRawPackets.length > 0) {
+      this.engine.storeButtonStepData(this.buttonRawPackets);
     }
 
     this.view.showButtonDetectionSummary(this.detectedButtons, this.buttonCount);
@@ -541,6 +548,9 @@ export class WalkthroughController {
 
       const dataHandler = (data: Uint8Array, _reportId?: number, interfaceType?: string) => {
         if (finished) return;
+
+        // Collect raw packet for recording (make a copy since data may be reused)
+        this.buttonRawPackets.push(new Uint8Array(data));
 
         // Handle keyboard HID interface packets (Huion-style tablets)
         if (interfaceType === 'keyboard') {

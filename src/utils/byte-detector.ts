@@ -376,8 +376,10 @@ export function findStatusByte(
         distinctValues.add(packet[byte.byteIndex]);
       }
 
-      // Status byte should have 2-10 distinct values
-      if (distinctValues.size >= 2 && distinctValues.size <= 10) {
+      // Status byte should have 2-20 distinct values
+      // Note: Huion tablets with keyboard HID buttons can have more distinct values
+      // because button packets from different report IDs may be mixed in
+      if (distinctValues.size >= 2 && distinctValues.size <= 20) {
         return byte.byteIndex;
       }
     }

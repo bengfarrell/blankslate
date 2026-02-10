@@ -40,8 +40,6 @@ class DeviceInfo:
     vendor_id: int
     product_id: int
     product_string: str
-    usage_page: int
-    usage: int
     interfaces: List[int] = field(default_factory=list)
 
 

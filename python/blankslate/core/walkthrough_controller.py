@@ -440,10 +440,14 @@ class WalkthroughController:
     async def run_button_detection(self) -> None:
         """Run interactive button detection"""
         detected_buttons = []
+        all_button_packets = []  # Collect all packets for recording
+        button_report_ids = set()  # Track report IDs seen during button detection
         self.view.show_button_detection_start(self.button_count)
 
         for i in range(1, self.button_count + 1):
-            button = await self._detect_single_button(i)
+            button, packets, report_ids = await self._detect_single_button(i)
+            all_button_packets.extend(packets)  # Collect packets from each button
+            button_report_ids.update(report_ids)  # Collect report IDs
             if button:
                 detected_buttons.append(button)
                 self.view.show_button_detected(button)
@@ -475,10 +479,21 @@ class WalkthroughController:
                 button_mappings.append(mapping)
             self.engine.set_button_mappings(button_mappings)
 
-    async def _detect_single_button(self, button_number: int) -> Optional[DetectedButton]:
-        """Detect a single button press (via HID packets)"""
+        # Determine button report ID (use first one seen, if any)
+        button_report_id = list(button_report_ids)[0] if button_report_ids else None
+
+        # Store button step data for recording (even if no buttons detected)
+        # This ensures step9-tablet-buttons appears in recordings
+        self.engine.store_button_step_data(all_button_packets, detected_buttons, button_report_id)
+
+    async def _detect_single_button(self, button_number: int) -> tuple[Optional[DetectedButton], list[bytes], set[int]]:
+        """Detect a single button press (via HID packets)
+
+        Returns:
+            Tuple of (detected button or None, list of raw packets captured, set of report IDs seen)
+        """
         if not self.reader:
-            return None
+            return None, [], set()
 
         self.view.show_button_detection_prompt(button_number)
 
@@ -487,6 +502,8 @@ class WalkthroughController:
         detected: Optional[DetectedButton] = None
         finished = False
         seen_packets = []
+        raw_packets = []  # Store raw packet bytes for recording
+        seen_report_ids = set()  # Track report IDs seen during button detection
         MIN_CONFIRMATIONS = self.options.button_confirmations
 
         def finish():
@@ -503,6 +520,13 @@ class WalkthroughController:
 
                 if len(data) < 3:
                     return
+
+                # Store raw packet for recording
+                raw_packets.append(bytes(data))
+
+                # Track report ID if provided
+                if report_id is not None:
+                    seen_report_ids.add(report_id)
 
                 # Handle keyboard HID interface (Huion-style tablets)
                 # These send button data through a separate keyboard interface
@@ -677,7 +701,7 @@ class WalkthroughController:
         # Brief pause to let any in-flight packets settle (minimal delay)
         await asyncio.sleep(0.05)
 
-        return detected
+        return detected, raw_packets, seen_report_ids
     
     def handle_navigation(self, action: NavigationAction) -> None:
         """Handle navigation action"""

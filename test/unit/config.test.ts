@@ -15,8 +15,6 @@ describe('Config Utilities', () => {
       vendor_id: 0x1234,
       product_id: 0x5678,
       product_string: 'Test Tablet',
-      usage_page: 13,
-      usage: 2,
       interfaces: [0],
     },
     modes: [
@@ -157,7 +155,7 @@ describe('Config Utilities', () => {
   describe('Fixture Integration Tests', () => {
     it('should load and parse the test fixture config file', () => {
       // Load the fixture file
-      const fixturePath = join(__dirname, '..', 'fixtures', 'test-tablet-config.json');
+      const fixturePath = join(__dirname, '..', '..', 'common-test-fixtures', 'test-tablet-config.json');
       const fixtureContent = readFileSync(fixturePath, 'utf-8');
 
       // Parse it using Config.fromJSON
@@ -180,7 +178,7 @@ describe('Config Utilities', () => {
 
     it('should round-trip the fixture file through toJSON/fromJSON', () => {
       // Load the fixture file
-      const fixturePath = join(__dirname, '..', 'fixtures', 'test-tablet-config.json');
+      const fixturePath = join(__dirname, '..', '..', 'common-test-fixtures', 'test-tablet-config.json');
       const fixtureContent = readFileSync(fixturePath, 'utf-8');
 
       // Parse, serialize, and parse again
@@ -194,7 +192,7 @@ describe('Config Utilities', () => {
     });
 
     it('should validate the fixture file structure', () => {
-      const fixturePath = join(__dirname, '..', 'fixtures', 'test-tablet-config.json');
+      const fixturePath = join(__dirname, '..', '..', 'common-test-fixtures', 'test-tablet-config.json');
       const fixtureContent = readFileSync(fixturePath, 'utf-8');
 
       // Should not throw an error

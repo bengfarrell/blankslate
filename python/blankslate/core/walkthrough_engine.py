@@ -59,6 +59,9 @@ class WalkthroughEngine:
         self.detected_report_id: Optional[int] = None  # Will be set to first valid report ID seen
         self.candidate_report_ids: Set[int] = set()  # Track all seen report IDs before locking in
         self.report_id_locked: bool = False  # Flag to track if we've locked onto a report ID
+        # Button interface report ID detection (for tablets that send buttons on different report ID)
+        self.detected_button_report_id: Optional[int] = None
+        self.button_report_id_candidates: Set[int] = set()
     
     def on(self, handler: Callable) -> Callable:
         """Subscribe to walkthrough events"""
@@ -242,46 +245,69 @@ class WalkthroughEngine:
         }
     
     def _track_status_byte(self, byte_value: int) -> None:
-        """Track status byte values - records ALL pen-related status codes whenever seen"""
-        # Map ALL known status byte values to their states
-        # This ensures we capture stylus button states regardless of which step we're on
-        # Supports multiple tablet manufacturers with different status byte encodings
-        status_map = {
-            # === Standard/XP-Pen tablets (0xA0-0xA5 range) ===
-            # Basic pen states
+        """Track status byte values - records ALL pen-related status codes whenever seen.
+
+        Handles two different tablet encoding schemes:
+        - XP-Pen style: 0xA0-0xA5 for pen states, 0xC0 for "none" (pen out of range)
+        - Huion style: 0xC0-0xC5 for pen states (no 0xA0 range)
+
+        We detect which scheme is in use by checking if 0xA0 (160) is seen.
+        If 0xA0 is present, then 0xC0 means "none". Otherwise, 0xC0 means "hover".
+        """
+        # === Standard/XP-Pen tablets (0xA0-0xA5 range) ===
+        xppen_status_map = {
             0xa0: {'state': 'hover'},           # 160 - pen hovering
             0xa1: {'state': 'contact'},         # 161 - pen touching
-
-            # Stylus secondary button (barrel button closer to tip)
             0xa2: {'state': 'hover', 'secondaryButtonPressed': True},    # 162
             0xa3: {'state': 'contact', 'secondaryButtonPressed': True},  # 163
-
-            # Stylus primary button (barrel button further from tip)
             0xa4: {'state': 'hover', 'primaryButtonPressed': True},      # 164
             0xa5: {'state': 'contact', 'primaryButtonPressed': True},    # 165
-
-            # === Huion tablets (0xC0-0xC5 range) ===
-            # Basic pen states
-            0xc0: {'state': 'hover'},           # 192 - pen hovering (NOT "none"!)
-            0xc1: {'state': 'contact'},         # 193 - pen touching
-
-            # Stylus secondary button (barrel button closer to tip)
-            0xc2: {'state': 'hover', 'secondaryButtonPressed': True},    # 194
-            0xc3: {'state': 'contact', 'secondaryButtonPressed': True},  # 195
-
-            # Stylus primary button (barrel button further from tip)
-            0xc4: {'state': 'hover', 'primaryButtonPressed': True},      # 196
-            0xc5: {'state': 'contact', 'primaryButtonPressed': True},    # 197
-
-            # === Common status codes ===
-            0x00: {'state': 'none'},            # 0 - pen out of range / idle
-
-            # Tablet button mode indicator
-            0xf0: {'state': 'buttons'},         # 240
         }
 
-        if byte_value in status_map:
-            self.status_byte_values[byte_value] = status_map[byte_value]
+        # === Huion tablets (0xC0-0xC5 range) - only used if XP-Pen range not seen ===
+        huion_status_map = {
+            0xc0: {'state': 'hover'},           # 192 - pen hovering (Huion only)
+            0xc1: {'state': 'contact'},         # 193 - pen touching
+            0xc2: {'state': 'hover', 'secondaryButtonPressed': True},    # 194
+            0xc3: {'state': 'contact', 'secondaryButtonPressed': True},  # 195
+            0xc4: {'state': 'hover', 'primaryButtonPressed': True},      # 196
+            0xc5: {'state': 'contact', 'primaryButtonPressed': True},    # 197
+        }
+
+        # === Common status codes ===
+        common_status_map = {
+            0x00: {'state': 'none'},            # 0 - pen out of range / idle
+            0xf0: {'state': 'buttons'},         # 240 - tablet button mode indicator
+        }
+
+        # Check if we're using XP-Pen style (0xA0 range present)
+        uses_xppen_style = 0xa0 in self.status_byte_values or byte_value in xppen_status_map
+
+        # Handle XP-Pen style status bytes
+        if byte_value in xppen_status_map:
+            self.status_byte_values[byte_value] = xppen_status_map[byte_value]
+            # If we see XP-Pen style, 0xC0 should be "none" not "hover"
+            # Update 0xC0 if it was previously set to "hover"
+            if 0xc0 in self.status_byte_values and self.status_byte_values[0xc0].get('state') == 'hover':
+                self.status_byte_values[0xc0] = {'state': 'none'}
+            return
+
+        # Handle 0xC0 specially - it's "none" for XP-Pen, "hover" for Huion
+        if byte_value == 0xc0:
+            if uses_xppen_style:
+                self.status_byte_values[byte_value] = {'state': 'none'}
+            else:
+                self.status_byte_values[byte_value] = {'state': 'hover'}
+            return
+
+        # Handle other Huion style status bytes (0xC1-0xC5)
+        if byte_value in huion_status_map:
+            self.status_byte_values[byte_value] = huion_status_map[byte_value]
+            return
+
+        # Handle common status codes
+        if byte_value in common_status_map:
+            self.status_byte_values[byte_value] = common_status_map[byte_value]
     
     def _process_step_data(self) -> None:
         """Process collected step data and detect bytes"""
@@ -352,8 +378,11 @@ class WalkthroughEngine:
             return []
         
         elif step == 'step9-tablet-buttons':
-            # Tablet button detection
-            return []
+            # Tablet button detection - detect bytes with variance
+            # Button packets typically have scan codes at byte 2 (after report ID and status)
+            # Filter to bytes with any variance (button presses cause changes)
+            button_bytes = [b for b in filtered_analysis if b.variance > 0]
+            return button_bytes
         
         return []
     
@@ -444,7 +473,49 @@ class WalkthroughEngine:
         for status_byte, status_value in BUTTON_MODE_STATUS_MAP.items():
             if status_byte not in self.status_byte_values:
                 self.status_byte_values[status_byte] = status_value
-    
+
+    def store_button_step_data(self, packets: List[bytes], detected_buttons: List,
+                                report_id: Optional[int] = None) -> None:
+        """Store button step data for recording purposes.
+
+        This is called after button detection completes to store the raw packets
+        in step_data so they can be included in recordings.
+
+        Args:
+            packets: List of raw HID packets captured during button detection
+            detected_buttons: List of DetectedButton objects that were detected
+            report_id: Optional report ID of button packets (for buttonInterfaceReportId)
+        """
+        from .byte_detector import analyze_bytes
+
+        # Track button report ID if provided and different from main report ID
+        if report_id is not None:
+            self.button_report_id_candidates.add(report_id)
+            if self.detected_button_report_id is None:
+                self.detected_button_report_id = report_id
+
+        # Analyze the packets to get detected bytes (for consistency with other steps)
+        detected_bytes = []
+        if packets:
+            analysis = analyze_bytes(packets)
+            # For button step, we're interested in the button byte (typically byte 2)
+            # Filter to bytes with significant variance
+            detected_bytes = [b for b in analysis if b.variance > 0]
+
+        # Store step data
+        step_data = StepData(
+            packets=packets,
+            detected_bytes=detected_bytes,
+            status_values=self.status_byte_values.copy()
+        )
+        self.state.step_data['step9-tablet-buttons'] = step_data
+
+        self.emit({
+            'type': 'bytes-detected',
+            'step': 'step9-tablet-buttons',
+            'bytes': detected_bytes
+        })
+
     def generate_config(self) -> None:
         """Generate the final configuration"""
         if not self.state.device_info or not self.state.user_metadata:
@@ -679,6 +750,11 @@ class WalkthroughEngine:
         if stylus_mode_status_byte is not None:
             mode_config['stylusModeStatusByte'] = stylus_mode_status_byte
 
+        # Add buttonInterfaceReportId if buttons come on a different report ID than pen data
+        if (self.detected_button_report_id is not None and
+            self.detected_button_report_id != self.detected_report_id):
+            mode_config['buttonInterfaceReportId'] = self.detected_button_report_id
+
         # Always generate multi-mode format (with single mode in array)
         return {
             'name': user_meta.name,
@@ -691,8 +767,6 @@ class WalkthroughEngine:
                 'vendor_id': device_info.vendor_id,
                 'product_id': device_info.product_id,
                 'product_string': device_info.product_string,
-                'usage_page': device_info.usage_page,
-                'usage': device_info.usage,
                 'interfaces': device_info.interfaces
             },
             'modes': [mode_config]

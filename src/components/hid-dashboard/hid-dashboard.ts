@@ -618,25 +618,19 @@ export class HidDashboard extends LitElement {
       // Find the interface matching the config
       // Priority (matching Node.js logic):
       // 1. Vendor-specific interface (usagePage >= 0xFF00) - often required on macOS
-      // 2. Exact match (usagePage + usage from config)
-      // 3. UsagePage match only
-      // 4. Standard digitizer (usagePage 13)
-      const configUsagePage = this.config.deviceInfo.usage_page;
-      const configUsage = this.config.deviceInfo.usage;
+      // 2. digitizerUsagePage from mode config
+      // 3. Standard digitizer (usagePage 13)
+      // 4. First available device
+      const digitizerUsagePage = this.config.modes?.[0]?.digitizerUsagePage ?? 13;
 
       // Check for vendor-specific interface (highest priority on macOS)
       const vendorDevice = tabletDevices.find(d =>
         d.collections.some(c => c.usagePage && c.usagePage >= 0xFF00)
       );
 
-      // Try to match both usagePage and usage from config
-      const exactMatch = tabletDevices.find(d =>
-        d.collections.some(c => c.usagePage === configUsagePage && c.usage === configUsage)
-      );
-
-      // Fallback to just usagePage match
+      // Try to match digitizerUsagePage from mode config
       const usagePageMatch = tabletDevices.find(d =>
-        d.collections.some(c => c.usagePage === configUsagePage)
+        d.collections.some(c => c.usagePage === digitizerUsagePage)
       );
 
       // Fallback to digitizer (13) or first device
@@ -645,7 +639,7 @@ export class HidDashboard extends LitElement {
       );
 
       // Try vendor device first, but also try digitizer as fallback
-      const primaryDevice = vendorDevice || exactMatch || usagePageMatch || digitizerDevice || tabletDevices[0];
+      const primaryDevice = vendorDevice || usagePageMatch || digitizerDevice || tabletDevices[0];
       const secondaryDevice = vendorDevice && digitizerDevice && vendorDevice !== digitizerDevice ? digitizerDevice : null;
 
       // Also try Device 0 (might have button interface)
@@ -1502,8 +1496,7 @@ export class HidDashboard extends LitElement {
               .deviceInfo=${{
                 isMock: this.activeSource === 'mock',
                 packetCount: this.packetCount,
-                usagePage: this.config?.deviceInfo?.usage_page,
-                usage: this.config?.deviceInfo?.usage
+                digitizerUsagePage: this.config?.modes?.[0]?.digitizerUsagePage
               } as DeviceInfo}>
             </bytes-display>
           </div>

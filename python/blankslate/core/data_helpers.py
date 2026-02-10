@@ -295,3 +295,134 @@ def process_device_data(
             result.update(button_states)
 
     return result
+
+
+def process_keyboard_button_data(
+    data: Union[bytes, List[int]],
+    keyboard_buttons_config: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Process keyboard HID button data from a separate keyboard interface.
+
+    This handles tablets like Huion that send button presses via a separate
+    keyboard HID interface using standard keyboard report format.
+
+    Args:
+        data: Raw HID data bytes. Format depends on report ID:
+            - Report ID 3 (keyboard): [3, modifier, 0, keycode1, keycode2, ...]
+            - Report ID 4 (consumer): [4, consumerCode_low, consumerCode_high]
+            - Report ID 5 (scroll): [5, scrollDelta]
+        keyboard_buttons_config: The keyboardButtons section from device config
+            containing 'buttons' array with button definitions
+
+    Returns:
+        Dictionary with button states like {'button1': True, 'button2': False, ...}
+    """
+    if not data or len(data) < 2:
+        return {}
+
+    # Convert to list if bytes
+    data_list = list(data) if isinstance(data, bytes) else data
+
+    report_id = data_list[0]
+    buttons_config = keyboard_buttons_config.get('buttons', [])
+
+    if not buttons_config:
+        return {}
+
+    result: Dict[str, Any] = {}
+
+    # Initialize all buttons to False
+    button_count = keyboard_buttons_config.get('buttonCount', 0)
+    for i in range(1, button_count + 1):
+        result[f'button{i}'] = False
+
+    # Parse based on report ID
+    if report_id == 3:
+        # Keyboard report format varies by device:
+        # - Standard HID: [reportId, modifier, reserved, keycode1, keycode2, ...]
+        # - Huion tablets: [reportId, modifier, keycode1, keycode2, ...] (no reserved byte)
+        # We detect which format by checking if byte 2 is 0 (reserved) or non-zero (keycode)
+        if len(data_list) < 3:
+            return result
+
+        modifier = data_list[1]
+
+        # Check if byte 2 looks like a reserved byte (0) or a keycode
+        # If byte 2 is 0 and byte 3 has a keycode, use standard format
+        # If byte 2 is non-zero, it's likely a keycode (Huion format)
+        if len(data_list) >= 4 and data_list[2] == 0 and data_list[3] != 0:
+            # Standard HID format: keycodes start at byte 3
+            keycodes = [k for k in data_list[3:] if k != 0]
+        else:
+            # Huion format: keycodes start at byte 2 (no reserved byte)
+            keycodes = [k for k in data_list[2:] if k != 0]
+
+        # Find matching button in config
+        for btn_config in buttons_config:
+            if btn_config.get('reportId') != 3:
+                continue
+            if btn_config.get('type') != 'keyboard':
+                continue
+
+            cfg_modifier = btn_config.get('modifier', 0)
+            cfg_keycode = btn_config.get('keycode', 0)
+
+            # Check if this button's modifier and keycode match
+            if modifier == cfg_modifier and cfg_keycode in keycodes:
+                button_num = btn_config.get('button', 0)
+                if button_num > 0:
+                    result[f'button{button_num}'] = True
+
+    elif report_id == 4:
+        # Consumer control report: [reportId, consumerCode_low, consumerCode_high]
+        if len(data_list) < 3:
+            return result
+
+        consumer_code = data_list[1] | (data_list[2] << 8)
+
+        if consumer_code == 0:
+            return result
+
+        # Find matching button in config
+        for btn_config in buttons_config:
+            if btn_config.get('reportId') != 4:
+                continue
+            if btn_config.get('type') != 'consumer':
+                continue
+
+            cfg_consumer_code = btn_config.get('consumerCode', 0)
+
+            if consumer_code == cfg_consumer_code:
+                button_num = btn_config.get('button', 0)
+                if button_num > 0:
+                    result[f'button{button_num}'] = True
+
+    elif report_id == 5:
+        # Scroll report: [reportId, scrollDelta]
+        if len(data_list) < 2:
+            return result
+
+        scroll_delta = data_list[1]
+        # Convert to signed byte
+        if scroll_delta > 127:
+            scroll_delta = scroll_delta - 256
+
+        if scroll_delta == 0:
+            return result
+
+        # Find matching button in config
+        for btn_config in buttons_config:
+            if btn_config.get('reportId') != 5:
+                continue
+            if btn_config.get('type') != 'scroll':
+                continue
+
+            cfg_scroll_delta = btn_config.get('scrollDelta', 0)
+
+            if scroll_delta == cfg_scroll_delta:
+                button_num = btn_config.get('button', 0)
+                if button_num > 0:
+                    result[f'button{button_num}'] = True
+
+    return result

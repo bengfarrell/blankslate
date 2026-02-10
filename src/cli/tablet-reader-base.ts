@@ -214,30 +214,26 @@ export function createMockReader(config: Config): IHIDReader {
  * Auto-select the best interface based on config and available devices
  */
 export function autoSelectInterface(devices: HIDDeviceInfo[], config: Config): HIDDeviceInfo {
-  const configUsagePage = config.deviceInfo?.usage_page;
-  const configUsage = config.deviceInfo?.usage;
+  const digitizerUsagePage = config.modes?.[0]?.digitizerUsagePage ?? 13;
 
   // Priority:
-  // 1. Match config's deviceInfo.usage_page and usage (from walkthrough)
-  // 2. Vendor-specific interface (usagePage >= 0xFF00) - often required on macOS
+  // 1. Vendor-specific interface (usagePage >= 0xFF00) - often required on macOS
+  // 2. Match digitizerUsagePage from mode config
   // 3. Standard digitizer pen interface (usagePage 13, usage 2)
   // 4. Any digitizer interface (usagePage 13)
   // 5. First available interface
 
-  const configMatch = configUsagePage !== undefined && configUsage !== undefined
-    ? devices.find(d => d.usagePage === configUsagePage && d.usage === configUsage)
-    : undefined;
-
   const vendorSpecific = devices.find(d => d.usagePage && d.usagePage >= 0xFF00);
+  const usagePageMatch = devices.find(d => d.usagePage === digitizerUsagePage);
   const digitizerPen = devices.find(d => d.usagePage === 13 && d.usage === 2);
   const anyDigitizer = devices.find(d => d.usagePage === 13);
 
-  const device = configMatch || vendorSpecific || digitizerPen || anyDigitizer || devices[0];
+  const device = vendorSpecific || usagePageMatch || digitizerPen || anyDigitizer || devices[0];
 
-  if (configMatch) {
-    console.log(chalk.green(`Using interface from config: usagePage:${configUsagePage} usage:${configUsage}`));
-  } else if (vendorSpecific) {
+  if (vendorSpecific) {
     console.log(chalk.yellow('Note: Using vendor-specific interface'));
+  } else if (usagePageMatch && digitizerUsagePage !== 13) {
+    console.log(chalk.green(`Using interface matching digitizerUsagePage: ${digitizerUsagePage}`));
   }
 
   return device;

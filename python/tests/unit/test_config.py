@@ -29,8 +29,6 @@ class TestConfigUtilities:
                 'vendor_id': 0x1234,
                 'product_id': 0x5678,
                 'product_string': 'Test Tablet',
-                'usage_page': 13,
-                'usage': 2,
                 'interfaces': [0],
             },
             'modes': [
@@ -182,7 +180,7 @@ class TestFixtureIntegration:
     @pytest.fixture
     def fixture_path(self):
         """Path to test fixture"""
-        return Path(__file__).parent.parent / 'fixtures' / 'test-tablet-config.json'
+        return Path(__file__).parent.parent.parent.parent / 'common-test-fixtures' / 'test-tablet-config.json'
     
     def test_load_fixture_file(self, fixture_path):
         """Should load and parse the test fixture config file"""

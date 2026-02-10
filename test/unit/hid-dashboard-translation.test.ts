@@ -1,14 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { MockTabletDevice } from '../../src/mockbytes/mock-tablet-device.js';
 import { processDeviceData } from '../../src/utils/data-helpers.js';
+import { MappingType } from '../../src/models/index.js';
 
 describe('HID Dashboard Translation Integration', () => {
+  // Config must include proper type fields for processDeviceData to work
   const testConfig = {
-    x: { byteIndex: [1, 2], min: 0, max: 16000 },
-    y: { byteIndex: [3, 4], min: 0, max: 9000 },
-    pressure: { byteIndex: [5, 6], min: 0, max: 8191 },
-    tiltX: { byteIndex: [7], min: -60, max: 60 },
-    tiltY: { byteIndex: [8], min: -60, max: 60 },
+    status: {
+      byteIndex: [0],
+      type: MappingType.CODE,
+      values: {
+        '161': { state: 'contact' },
+        '160': { state: 'hover' },
+      },
+    },
+    x: { byteIndex: [1, 2], max: 16000, type: MappingType.MULTI_BYTE_RANGE },
+    y: { byteIndex: [3, 4], max: 9000, type: MappingType.MULTI_BYTE_RANGE },
+    pressure: { byteIndex: [5, 6], max: 8191, type: MappingType.MULTI_BYTE_RANGE },
+    tiltX: { byteIndex: [7], positiveMax: 60, negativeMin: 196, negativeMax: 255, type: MappingType.BIPOLAR_RANGE },
+    tiltY: { byteIndex: [8], positiveMax: 60, negativeMin: 196, negativeMax: 255, type: MappingType.BIPOLAR_RANGE },
   };
 
   describe('Mock Device Configuration for Dashboard', () => {
@@ -90,23 +100,34 @@ describe('HID Dashboard Translation Integration', () => {
 
       let rawData: Uint8Array | null = null;
       let translatedData: any = null;
+      let completed = false;
 
       device.addEventListener('inputreport', (data: Uint8Array) => {
+        // Ignore events after test completion
+        if (completed) return;
         rawData = data;
       });
 
       device.addEventListener('tablet-event', (data: Uint8Array) => {
+        // Ignore events after test completion
+        if (completed) return;
+
         const jsonStr = new TextDecoder().decode(data);
         translatedData = JSON.parse(jsonStr);
 
         if (rawData && translatedData) {
-          const manuallyProcessed = processDeviceData(rawData, testConfig);
+          // Mark completed and stop device BEFORE assertions to prevent further events
+          completed = true;
+          device.stop();
+
+          // Use offset -1 to match how MockTabletDevice processes data internally
+          // (simulating WebHID which strips the report ID)
+          const manuallyProcessed = processDeviceData(rawData, testConfig, -1);
 
           // Values should be equivalent
           expect(Math.abs(translatedData.x - manuallyProcessed.x)).toBeLessThan(0.001);
           expect(Math.abs(translatedData.y - manuallyProcessed.y)).toBeLessThan(0.001);
 
-          device.stop();
           done();
         }
       });

@@ -22,7 +22,7 @@ from blankslate.cli.cli_walkthrough_view import CLIWalkthroughView
 
 
 # Path to stable driver-mode config (test fixture)
-STABLE_CONFIG_PATH = Path(__file__).parent.parent / 'fixtures' / 'xp-pen-deco640-driver.json'
+STABLE_CONFIG_PATH = Path(__file__).parent.parent.parent.parent / 'common-test-fixtures' / 'xp-pen-deco640-driver.json'
 
 
 class SingleReportIDGenerator:
@@ -150,8 +150,6 @@ async def test():
         'product_id': stable_config['deviceInfo']['product_id'],
         'product_string': stable_config['deviceInfo']['product_string'],
         'manufacturer': stable_config.get('manufacturer', 'Unknown'),
-        'usage_page': stable_config['deviceInfo']['usage_page'],
-        'usage': stable_config['deviceInfo']['usage'],
         'interfaces': stable_config['deviceInfo']['interfaces']
     }
 

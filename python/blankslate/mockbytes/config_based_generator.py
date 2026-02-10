@@ -387,6 +387,12 @@ class ConfigBasedGenerator:
     def get_device_info(self) -> Dict[str, Any]:
         """Get device info from config"""
         device_info_config = self.config.get('deviceInfo', {})
+        # Get digitizerUsagePage from mode config (or top-level for legacy configs)
+        modes = self.config.get('modes', [])
+        digitizer_usage_page = (
+            modes[0].get('digitizerUsagePage', 13) if modes
+            else self.config.get('digitizerUsagePage', 13)
+        )
 
         return {
             'vendor_id': int(self.config.get('vendorId', '0x0000'), 16),
@@ -394,8 +400,8 @@ class ConfigBasedGenerator:
             'product_name': self.config.get('name', 'Mock Tablet'),
             'product_string': device_info_config.get('product_string', self.config.get('name', 'Mock Tablet')),
             'manufacturer': self.config.get('manufacturer', 'Mock'),
-            'usage_page': device_info_config.get('usage_page', 13),
-            'usage': device_info_config.get('usage', 2),
+            'usage_page': digitizer_usage_page,
+            'usage': 2,  # Standard pen usage
             'interfaces': device_info_config.get('interfaces', [13]),
             'report_id': self.config.get('reportId', 2)
         }

@@ -78,11 +78,38 @@ class MultiInterfaceHIDReader:
         else:
             return 'other'
 
+    def _get_interface_type_by_report_id(self, report_id: int) -> str:
+        """
+        Determine interface type based on report ID.
+
+        This is used as a fallback on Linux where usage_page is always 0.
+        Keyboard buttons typically use report IDs 3, 4, 5:
+        - Report ID 3: Keyboard (modifier + keycode)
+        - Report ID 4: Consumer Control (media keys)
+        - Report ID 5: Scroll wheel
+
+        Digitizer typically uses report ID 10 or similar high values.
+
+        Returns:
+            'keyboard' for keyboard button report IDs (3, 4, 5)
+            'digitizer' for digitizer report IDs (7, 8, 10, etc.)
+            'other' for unknown report IDs
+        """
+        # Keyboard button report IDs (common across Huion and similar tablets)
+        if report_id in (3, 4, 5):
+            return 'keyboard'
+        # Digitizer report IDs (pen data)
+        elif report_id in (7, 8, 10, 11):
+            return 'digitizer'
+        else:
+            return 'other'
+
     def _read_loop(self, device, device_index):
         """Background thread that continuously reads from a single device"""
         import time
 
-        interface_type = self._get_interface_type(device_index)
+        # Get initial interface type from usage_page (works on macOS)
+        base_interface_type = self._get_interface_type(device_index)
 
         while self.is_reading:
             try:
@@ -100,6 +127,16 @@ class MultiInterfaceHIDReader:
                     # Track report IDs
                     if report_id is not None:
                         self.detected_report_ids.add(report_id)
+
+                    # Determine interface type:
+                    # 1. If usage_page is available (macOS), use it
+                    # 2. Otherwise, detect by report ID (Linux fallback)
+                    if base_interface_type != 'other':
+                        interface_type = base_interface_type
+                    elif report_id is not None:
+                        interface_type = self._get_interface_type_by_report_id(report_id)
+                    else:
+                        interface_type = 'other'
 
                     # Pass FULL data (including report ID at byte 0) to match stable config byte indices
                     # The stable config has: status at [1], x at [2,3], y at [4,5], etc.
@@ -325,18 +362,22 @@ class HIDReaderFactory:
             opened_devices = []
             device_infos = []
 
+            print(f"[HIDReaderFactory] Found {len(unique_paths)} unique interface paths")
             for path, device_info in unique_paths.items():
+                iface_num = device_info.get('interface_number', '?')
                 try:
                     device = hid.device()
                     device.open_path(path)
                     opened_devices.append(device)
                     device_infos.append(device_info)
-                except Exception:
-                    pass  # Skip interfaces that can't be opened
+                    print(f"[HIDReaderFactory] ✓ Opened interface {iface_num}")
+                except Exception as e:
+                    print(f"[HIDReaderFactory] ✗ Failed to open interface {iface_num}: {e}")
 
             if not opened_devices:
                 return None
 
+            print(f"[HIDReaderFactory] Successfully opened {len(opened_devices)} interfaces")
             # Wrap in multi-interface reader
             return MultiInterfaceHIDReader(opened_devices, device_infos)
 

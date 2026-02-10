@@ -161,8 +161,6 @@ export interface ConfigData {
     vendor_id: number;
     product_id: number;
     product_string: string;
-    usage_page: number;
-    usage: number;
     interfaces: number[];
   };
 
@@ -191,8 +189,6 @@ export class Config implements ConfigData {
     vendor_id: number;
     product_id: number;
     product_string: string;
-    usage_page: number;
-    usage: number;
     interfaces: number[];
   };
 

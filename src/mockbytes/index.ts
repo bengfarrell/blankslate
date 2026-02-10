@@ -6,4 +6,5 @@
 export * from './tablet-data-generator.js';
 export * from './mock-tablet-device.js';
 export * from './presets.js';
+export * from './config-based-generator.js';
 

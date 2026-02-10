@@ -530,6 +530,57 @@ class CLIReaderFactory implements IReaderFactory {
 export interface CLIWalkthroughOptions {
   outputPath?: string;
   useMock?: boolean;
+  recordPath?: string;
+}
+
+/**
+ * Save all captured step data to a JSON file
+ */
+async function saveRecordedData(controller: WalkthroughController, outputPath: string): Promise<void> {
+  const engine = controller.getEngine();
+  const state = engine.getState();
+  const deviceInfo = state.deviceInfo;
+
+  // Build the recorded data structure
+  const recordedData: {
+    timestamp: string;
+    device: { vendorId: string; productId: string; productName: string } | null;
+    steps: Record<string, { packetCount: number; packets: string[]; detectedBytes: Array<{ byteIndex: number; variance: number; min: number; max: number }> }>;
+  } = {
+    timestamp: new Date().toISOString(),
+    device: deviceInfo ? {
+      vendorId: `0x${deviceInfo.vendorId.toString(16).padStart(4, '0')}`,
+      productId: `0x${deviceInfo.productId.toString(16).padStart(4, '0')}`,
+      productName: deviceInfo.productName,
+    } : null,
+    steps: {},
+  };
+
+  // Add data for each step
+  for (const [stepName, stepData] of state.stepData.entries()) {
+    // Convert packets (Uint8Array) to hex strings for JSON serialization
+    const packetsHex = stepData.packets.map(packet =>
+      Array.from(packet).map(b => b.toString(16).padStart(2, '0')).join('')
+    );
+
+    // Convert detected bytes to serializable format
+    const detectedBytes = stepData.detectedBytes.map(byteAnalysis => ({
+      byteIndex: byteAnalysis.byteIndex,
+      variance: byteAnalysis.variance,
+      min: byteAnalysis.min,
+      max: byteAnalysis.max,
+    }));
+
+    recordedData.steps[stepName] = {
+      packetCount: stepData.packets.length,
+      packets: packetsHex,
+      detectedBytes,
+    };
+  }
+
+  // Write to file
+  await writeFile(outputPath, JSON.stringify(recordedData, null, 2));
+  console.log(theme.success(`\n📝 Recorded data saved to: ${outputPath}`));
 }
 
 /**
@@ -587,6 +638,12 @@ export async function runCLI(options: CLIWalkthroughOptions = {}): Promise<void>
 
   try {
     await controller.run(options.useMock);
+
+    // Save recorded data if requested
+    if (options.recordPath) {
+      await saveRecordedData(controller, options.recordPath);
+    }
+
     // Exit cleanly after completion
     await controller.cleanup();
     process.exit(0);
@@ -606,11 +663,13 @@ program
   .version('1.0.0')
   .option('-o, --output <path>', 'Output path for generated config JSON')
   .option('-m, --mock', 'Use mock data instead of real device')
+  .option('-r, --record <path>', 'Save all captured packet data to a JSON file (organized by step)')
   .action(async (options) => {
     try {
       await runCLI({
         outputPath: options.output,
         useMock: options.mock,
+        recordPath: options.record,
       });
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : error);

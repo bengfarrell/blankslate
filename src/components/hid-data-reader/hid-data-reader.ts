@@ -1387,8 +1387,7 @@ export class HidDataReader extends LitElement implements IWalkthroughView {
     const deviceInfo: DeviceInfo | undefined = activeDeviceIndex !== undefined ? {
       deviceNumber: activeDeviceIndex,
       packetCount: deviceStream?.packetCount || 0,
-      usagePage: isMockDevice ? 13 : this.webReaders[activeDeviceIndex]?.deviceInfo.usagePage,
-      usage: isMockDevice ? 2 : this.webReaders[activeDeviceIndex]?.deviceInfo.usage,
+      digitizerUsagePage: isMockDevice ? 13 : this.webReaders[activeDeviceIndex]?.deviceInfo.usagePage,
       isMock: isMockDevice
     } : undefined;
 

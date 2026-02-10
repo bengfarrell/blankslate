@@ -21,7 +21,7 @@ import {
   TABLET_BUTTON_VALUES_DRIVERLESS,
   VALUE_RANGES,
   DEVICE_INFO,
-} from '../fixtures/xp-pen-deco640-expected.js';
+} from './xp-pen-deco640-expected.js';
 
 describe('Button Status Byte Handling', () => {
   let engine: WalkthroughEngine;

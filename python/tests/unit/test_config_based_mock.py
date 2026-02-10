@@ -46,13 +46,13 @@ def get_mode_data(config: dict) -> dict:
 @pytest.fixture
 def test_config_path():
     """Path to test config file"""
-    return str(Path(__file__).parent.parent / 'fixtures' / 'test-tablet-config.json')
+    return str(Path(__file__).parent.parent.parent.parent / 'common-test-fixtures' / 'test-tablet-config.json')
 
 
 @pytest.fixture
 def xp_pen_config_path():
     """Path to XP-Pen driverless mode config file (test fixture)"""
-    return str(Path(__file__).parent.parent / 'fixtures' / 'xp-pen-deco640-driverless.json')
+    return str(Path(__file__).parent.parent.parent.parent / 'common-test-fixtures' / 'xp-pen-deco640-driverless.json')
 
 
 @pytest.fixture
@@ -365,7 +365,7 @@ class TestDriverModeGenerator:
     @pytest.fixture
     def driver_config_path(self):
         """Path to driver mode config file (test fixture)"""
-        return str(Path(__file__).parent.parent / 'fixtures' / 'xp-pen-deco640-driver.json')
+        return str(Path(__file__).parent.parent.parent.parent / 'common-test-fixtures' / 'xp-pen-deco640-driver.json')
 
     @pytest.fixture
     def driver_generator(self, driver_config_path):

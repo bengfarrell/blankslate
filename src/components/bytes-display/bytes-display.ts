@@ -17,8 +17,7 @@ export interface ByteData {
 export interface DeviceInfo {
   deviceNumber?: number;
   packetCount?: number;
-  usagePage?: number;
-  usage?: number;
+  digitizerUsagePage?: number;
   isMock?: boolean;
 }
 
@@ -56,19 +55,13 @@ export class BytesDisplay extends LitElement {
             <span class="info-value">${this.deviceInfo.packetCount}</span>
           </span>
         ` : ''}
-        ${this.deviceInfo.usagePage !== undefined ? html`
+        ${this.deviceInfo.digitizerUsagePage !== undefined ? html`
           <span class="info-item">
-            <span class="info-label">Usage Page:</span>
-            <span class="info-value">${this.deviceInfo.usagePage}</span>
+            <span class="info-label">Digitizer Usage Page:</span>
+            <span class="info-value">${this.deviceInfo.digitizerUsagePage}</span>
           </span>
         ` : ''}
-        ${this.deviceInfo.usage !== undefined ? html`
-          <span class="info-item">
-            <span class="info-label">Usage:</span>
-            <span class="info-value">${this.deviceInfo.usage}</span>
-          </span>
-        ` : ''}
-        ${this.deviceInfo.usagePage === 13 && this.deviceInfo.usage === 2 ? html`
+        ${this.deviceInfo.digitizerUsagePage === 13 ? html`
           <span class="info-badge digitizer ${this.deviceInfo.isMock ? 'mock' : ''}">
             ${this.deviceInfo.isMock ? 'Simulated Pen' : 'Digitizer - Pen'}
           </span>

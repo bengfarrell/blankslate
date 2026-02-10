@@ -158,32 +158,6 @@ export function generateCompleteConfig(
     capabilities.hasButtons
   );
 
-  // Find the collection for correct usage_page and usage
-  // Priority: 1) dataSourceUsagePage with pen usage (13, 2), 2) dataSourceUsagePage (any usage), 3) Digitizer pen (13, 2), 4) Any digitizer (13), 5) First collection
-  let primaryCollection;
-
-  if (deviceMetadata.dataSourceUsagePage !== undefined) {
-    // Use the interface that actually sent data (works with or without driver)
-    // Prefer pen interface (usage 2) if available for the data source usage page
-    const dataSourcePen = deviceMetadata.collections?.find(
-      c => c.usagePage === deviceMetadata.dataSourceUsagePage && c.usage === 2
-    );
-    const dataSourceAny = deviceMetadata.collections?.find(
-      c => c.usagePage === deviceMetadata.dataSourceUsagePage
-    );
-    primaryCollection = dataSourcePen || dataSourceAny;
-  }
-
-  if (!primaryCollection) {
-    // Fallback to standard digitizer interface
-    const digitizerPen = deviceMetadata.collections?.find(c => c.usagePage === 13 && c.usage === 2);
-    const anyDigitizer = deviceMetadata.collections?.find(c => c.usagePage === 13);
-    primaryCollection = digitizerPen || anyDigitizer || deviceMetadata.collections?.[0];
-  }
-
-  const usagePage = primaryCollection?.usagePage || 13;
-  const usage = primaryCollection?.usage || 2;
-
   // Build mode configuration
   const modeConfig: any = {
     reportId: deviceMetadata.detectedReportId || 0,
@@ -221,9 +195,6 @@ export function generateCompleteConfig(
       vendor_id: deviceMetadata.vendorId || 0,
       product_id: deviceMetadata.productId || 0,
       product_string: deviceMetadata.productName || '',
-      // Use the interface that actually sent data (works with or without driver)
-      usage_page: usagePage,
-      usage: usage,
       interfaces: deviceMetadata.allInterfaces || [],
     },
     modes: [modeConfig],

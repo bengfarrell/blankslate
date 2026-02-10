@@ -403,45 +403,77 @@ export class WalkthroughEngine {
    * - XP-Pen tablets: 0xA0-0xA5 range (160-165)
    * - Huion tablets: 0xC0-0xC5 range (192-197)
    */
+  /**
+   * Track status byte values for button detection.
+   *
+   * Handles two different tablet encoding schemes:
+   * - XP-Pen style: 0xA0-0xA5 for pen states, 0xC0 for "none" (pen out of range)
+   * - Huion style: 0xC0-0xC5 for pen states (no 0xA0 range)
+   *
+   * We detect which scheme is in use by checking if 0xA0 (160) is seen.
+   * If 0xA0 is present, then 0xC0 means "none". Otherwise, 0xC0 means "hover".
+   */
   private trackStatusByte(byteValue: number): void {
-    // Map of all known status byte values to their states
-    const STATUS_MAP: Record<number, { state: string; primaryButtonPressed?: boolean; secondaryButtonPressed?: boolean }> = {
-      // === Standard/XP-Pen tablets (0xA0-0xA5 range) ===
-      // Basic pen states
+    // === Standard/XP-Pen tablets (0xA0-0xA5 range) ===
+    const XPPEN_STATUS_MAP: Record<number, { state: string; primaryButtonPressed?: boolean; secondaryButtonPressed?: boolean }> = {
       0xa0: { state: 'hover' },           // 160 - pen hovering
       0xa1: { state: 'contact' },         // 161 - pen touching
-
-      // Stylus secondary button (barrel button closer to tip)
       0xa2: { state: 'hover', secondaryButtonPressed: true },    // 162
       0xa3: { state: 'contact', secondaryButtonPressed: true },  // 163
-
-      // Stylus primary button (barrel button further from tip)
       0xa4: { state: 'hover', primaryButtonPressed: true },      // 164
       0xa5: { state: 'contact', primaryButtonPressed: true },    // 165
-
-      // === Huion tablets (0xC0-0xC5 range) ===
-      // Basic pen states
-      0xc0: { state: 'hover' },           // 192 - pen hovering (NOT "none"!)
-      0xc1: { state: 'contact' },         // 193 - pen touching
-
-      // Stylus secondary button (barrel button closer to tip)
-      0xc2: { state: 'hover', secondaryButtonPressed: true },    // 194
-      0xc3: { state: 'contact', secondaryButtonPressed: true },  // 195
-
-      // Stylus primary button (barrel button further from tip)
-      0xc4: { state: 'hover', primaryButtonPressed: true },      // 196
-      0xc5: { state: 'contact', primaryButtonPressed: true },    // 197
-
-      // === Common status codes ===
-      0x00: { state: 'none' },            // 0 - pen out of range / idle
-
-      // Tablet button mode indicator
-      0xf0: { state: 'buttons' },         // 240
     };
 
-    // Check if this is a known status byte
-    if (byteValue in STATUS_MAP) {
-      this.statusByteValues.set(byteValue, STATUS_MAP[byteValue]);
+    // === Huion tablets (0xC0-0xC5 range) - only used if XP-Pen range not seen ===
+    const HUION_STATUS_MAP: Record<number, { state: string; primaryButtonPressed?: boolean; secondaryButtonPressed?: boolean }> = {
+      0xc0: { state: 'hover' },           // 192 - pen hovering (Huion only)
+      0xc1: { state: 'contact' },         // 193 - pen touching
+      0xc2: { state: 'hover', secondaryButtonPressed: true },    // 194
+      0xc3: { state: 'contact', secondaryButtonPressed: true },  // 195
+      0xc4: { state: 'hover', primaryButtonPressed: true },      // 196
+      0xc5: { state: 'contact', primaryButtonPressed: true },    // 197
+    };
+
+    // === Common status codes ===
+    const COMMON_STATUS_MAP: Record<number, { state: string }> = {
+      0x00: { state: 'none' },            // 0 - pen out of range / idle
+      0xf0: { state: 'buttons' },         // 240 - tablet button mode indicator
+    };
+
+    // Check if we're using XP-Pen style (0xA0 range present)
+    const usesXppenStyle = this.statusByteValues.has(0xa0) || byteValue in XPPEN_STATUS_MAP;
+
+    // Handle XP-Pen style status bytes
+    if (byteValue in XPPEN_STATUS_MAP) {
+      this.statusByteValues.set(byteValue, XPPEN_STATUS_MAP[byteValue]);
+      // If we see XP-Pen style, 0xC0 should be "none" not "hover"
+      // Update 0xC0 if it was previously set to "hover"
+      const existingC0 = this.statusByteValues.get(0xc0);
+      if (existingC0 && existingC0.state === 'hover') {
+        this.statusByteValues.set(0xc0, { state: 'none' });
+      }
+      return;
+    }
+
+    // Handle 0xC0 specially - it's "none" for XP-Pen, "hover" for Huion
+    if (byteValue === 0xc0) {
+      if (usesXppenStyle) {
+        this.statusByteValues.set(byteValue, { state: 'none' });
+      } else {
+        this.statusByteValues.set(byteValue, { state: 'hover' });
+      }
+      return;
+    }
+
+    // Handle other Huion style status bytes (0xC1-0xC5)
+    if (byteValue in HUION_STATUS_MAP) {
+      this.statusByteValues.set(byteValue, HUION_STATUS_MAP[byteValue]);
+      return;
+    }
+
+    // Handle common status codes
+    if (byteValue in COMMON_STATUS_MAP) {
+      this.statusByteValues.set(byteValue, COMMON_STATUS_MAP[byteValue]);
       return;
     }
 
@@ -474,6 +506,31 @@ export class WalkthroughEngine {
     this.state.stepData.set(step, stepData);
 
     this.emit({ type: 'bytes-detected', step, bytes: detectedBytes });
+  }
+
+  /**
+   * Store button step data from externally collected packets
+   * This is used by the controller during button detection, which has its own
+   * packet collection flow separate from the normal capture mechanism.
+   */
+  storeButtonStepData(packets: Uint8Array[]): void {
+    if (packets.length === 0) return;
+
+    // Analyze bytes in the collected packets
+    const analysis = analyzeBytes(packets);
+
+    // Detect bytes with variance (button presses cause changes)
+    const buttonBytes = analysis.filter(b => b.variance > 0);
+
+    // Store step data
+    const stepData: StepData = {
+      packets,
+      detectedBytes: buttonBytes,
+      statusValues: new Map(this.statusByteValues),
+    };
+    this.state.stepData.set('step9-tablet-buttons', stepData);
+
+    this.emit({ type: 'bytes-detected', step: 'step9-tablet-buttons', bytes: buttonBytes });
   }
 
   /**

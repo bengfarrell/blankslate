@@ -9,8 +9,6 @@
     "vendor_id": 4660,
     "product_id": 22136,
     "product_string": "Test Tablet",
-    "usage_page": 13,
-    "usage": 2,
     "interfaces": [0]
   },
   "modes": [

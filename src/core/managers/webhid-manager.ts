@@ -123,24 +123,20 @@ export class WebHIDManager {
   }
 
   private selectPrimaryDevice(devices: HIDDevice[], config: Config): HIDDevice | undefined {
-    const configUsagePage = config.deviceInfo.usage_page;
-    const configUsage = config.deviceInfo.usage;
+    const digitizerUsagePage = config.modes?.[0]?.digitizerUsagePage ?? 13;
 
-    // Priority: vendor-specific > exact match > usagePage match > digitizer > first
+    // Priority: vendor-specific > digitizerUsagePage match > standard digitizer > first
     const vendorDevice = devices.find(d =>
       d.collections.some(c => c.usagePage && c.usagePage >= 0xFF00)
     );
-    const exactMatch = devices.find(d =>
-      d.collections.some(c => c.usagePage === configUsagePage && c.usage === configUsage)
-    );
     const usagePageMatch = devices.find(d =>
-      d.collections.some(c => c.usagePage === configUsagePage)
+      d.collections.some(c => c.usagePage === digitizerUsagePage)
     );
     const digitizerDevice = devices.find(d =>
       d.collections.some(c => c.usagePage === 13)
     );
 
-    return vendorDevice || exactMatch || usagePageMatch || digitizerDevice || devices[0];
+    return vendorDevice || usagePageMatch || digitizerDevice || devices[0];
   }
 
   private async setupSecondaryDevices(

@@ -16,7 +16,7 @@ import type { TabletWebSocketEvent } from '../../src/cli/tablet-websocket-server
 import * as path from 'path';
 
 const TEST_PORT = 8766; // Different from default 8765 to avoid conflicts
-const TEST_CONFIG = path.join(process.cwd(), 'test/fixtures/test-tablet-config.json');
+const TEST_CONFIG = path.join(process.cwd(), 'common-test-fixtures/test-tablet-config.json');
 const CONNECT_TIMEOUT = 5000;
 const MESSAGE_TIMEOUT = 3000;
 
