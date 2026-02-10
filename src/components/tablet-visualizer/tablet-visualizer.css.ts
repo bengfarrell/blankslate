@@ -103,9 +103,46 @@ export const styles = css`
         text-align: center;
         color: var(--spectrum-gray-600);
     }
-    
+
     .no-mappings p {
         margin: 0;
         font-size: 14px;
+    }
+
+    .button-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: var(--spectrum-gray-200);
+        border-radius: 6px;
+        transition: all 0.15s ease;
+    }
+
+    .button-indicator.pressed {
+        background: var(--spectrum-positive-color-900);
+    }
+
+    .button-indicator .button-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--spectrum-gray-600);
+    }
+
+    .button-indicator.pressed .button-label {
+        color: var(--spectrum-gray-50);
+    }
+
+    .button-indicator .button-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--spectrum-gray-800);
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .button-indicator.pressed .button-value {
+        color: var(--spectrum-gray-50);
     }
 `;

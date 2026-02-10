@@ -360,6 +360,22 @@ export const styles = css`
     color: var(--spectrum-gray-800);
   }
 
+  .data-item.button-indicator {
+    background: var(--spectrum-gray-200);
+    border-radius: 6px;
+    padding: 4px 8px;
+    transition: all 0.15s ease;
+  }
+
+  .data-item.button-indicator.pressed {
+    background: var(--spectrum-positive-color-900);
+  }
+
+  .data-item.button-indicator.pressed .data-label,
+  .data-item.button-indicator.pressed .data-value {
+    color: var(--spectrum-gray-50);
+  }
+
   .empty-state {
     text-align: center;
     padding: 60px 40px;

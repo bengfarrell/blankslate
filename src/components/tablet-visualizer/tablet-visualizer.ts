@@ -33,15 +33,13 @@ export class TabletVisualizer extends LitElement {
     private pressedButtons: Set<number> = new Set();
 
     @state()
+    private lastPressedButton: number | null = null;
+
+    @state()
     private primaryButtonPressed: boolean = false;
 
     @state()
     private secondaryButtonPressed: boolean = false;
-
-    // Dummy hardware config - will be replaced with actual config later
-    private hardwareConfig = {
-        buttonCount: 8
-    };
 
     private pressureAnimationFrame: number | null = null;
     private tiltPressureAnimationFrame: number | null = null;
@@ -284,6 +282,7 @@ export class TabletVisualizer extends LitElement {
     private handleButtonMouseDown(buttonIndex: number, e: MouseEvent) {
         e.stopPropagation(); // Prevent tablet events
         this.pressedButtons = new Set(this.pressedButtons).add(buttonIndex);
+        this.lastPressedButton = buttonIndex;
     }
 
     private handleButtonMouseUp(buttonIndex: number, e: MouseEvent) {
@@ -317,6 +316,16 @@ export class TabletVisualizer extends LitElement {
         window.addEventListener('mouseup', this.handleGlobalMouseUp);
     }
 
+    updated(changedProperties: Map<string, unknown>) {
+        super.updated(changedProperties);
+        // Track last pressed button when external buttons change in socket mode
+        if (changedProperties.has('externalPressedButtons') && this.socketMode) {
+            if (this.externalPressedButtons.size > 0) {
+                // Update lastPressedButton with the first pressed button
+                this.lastPressedButton = Array.from(this.externalPressedButtons)[0];
+            }
+        }
+    }
 
     disconnectedCallback() {
         super.disconnectedCallback();
@@ -349,58 +358,25 @@ export class TabletVisualizer extends LitElement {
         }
     }
 
-    protected renderButtons(activeAreaWidth: number, activeAreaX: number, activeAreaY: number) {
-        const buttonCount = this.hardwareConfig.buttonCount;
-        if (buttonCount === 0) return svg``;
-        
-        // Smaller buttons to fit within active area with padding
-        const buttonRadius = 8;
-        const buttonGap = 6; // Reduced gap to fit all buttons
-        const horizontalPadding = 10; // Padding from left/right edges
-        const verticalPadding = 20; // Padding from top edge
-        
-        const totalButtonsWidth = (buttonRadius * 2 * buttonCount) + (buttonGap * (buttonCount - 1));
-        // For 8 buttons: (8*2*8) + (6*7) = 128 + 42 = 170px, fits in 200px - 20px padding = 180px
-        
-        // Center within the active area, accounting for horizontal padding
-        const availableWidth = activeAreaWidth - (horizontalPadding * 2);
-        const startX = activeAreaX + horizontalPadding + (availableWidth - totalButtonsWidth) / 2;
-        const buttonY = activeAreaY + verticalPadding + buttonRadius;
-        
-        return svg`
-            ${Array.from({ length: buttonCount }, (_, i) => {
-                const buttonCx = startX + buttonRadius + (i * (buttonRadius * 2 + buttonGap));
-                // Use external pressed buttons when in socket mode, otherwise use internal state
-                const pressedButtonsSet = this.socketMode ? this.externalPressedButtons : this.pressedButtons;
-                // Button numbers are 1-indexed from the tablet, so check i+1
-                const buttonNum = i + 1;
-                const isPressed = pressedButtonsSet.has(buttonNum);
-                
-                return svg`
-                    <g class="tablet-button">
-                        <!-- Circular button -->
-                        <circle cx="${buttonCx}" cy="${buttonY}"
-                              r="${buttonRadius}"
-                              fill="${isPressed ? 'var(--svg-positive-900)' : 'var(--svg-gray-200)'}"
-                              stroke="var(--svg-gray-500)"
-                              stroke-width="1.5"
-                              pointer-events="${this.socketMode ? 'none' : 'auto'}"
-                              @mousedown=${(e: MouseEvent) => this.handleButtonMouseDown(i + 1, e)}
-                              @mouseup=${(e: MouseEvent) => this.handleButtonMouseUp(i + 1, e)}
-                              class="button-rect" />
-                        
-                        <!-- Button number label -->
-                        <text x="${buttonCx}" y="${buttonY + 4}"
-                              text-anchor="middle"
-                              font-size="11"
-                              fill="${isPressed ? 'var(--svg-gray-50)' : 'var(--svg-gray-800)'}"
-                              font-weight="600"
-                              pointer-events="none">
-                            ${i + 1}
-                        </text>
-                    </g>
-                `;
-            })}
+    protected renderButtonIndicator() {
+        // Use external pressed buttons when in socket mode, otherwise use internal state
+        const pressedButtonsSet = this.socketMode ? this.externalPressedButtons : this.pressedButtons;
+        const isAnyPressed = pressedButtonsSet.size > 0;
+
+        // Track last pressed button - update when a button is pressed
+        let displayButton: number | null = null;
+        if (isAnyPressed) {
+            // Get the first (or any) pressed button from the set
+            displayButton = Array.from(pressedButtonsSet)[0];
+        } else {
+            displayButton = this.lastPressedButton;
+        }
+
+        return html`
+            <div class="button-indicator ${isAnyPressed ? 'pressed' : ''}">
+                <span class="button-label">Btn</span>
+                <span class="button-value">${displayButton !== null ? displayButton : '–'}</span>
+            </div>
         `;
     }
 
@@ -416,52 +392,49 @@ export class TabletVisualizer extends LitElement {
 
         return html`
             <div class="tablet-container">
-                <svg width="100%" height="100%" 
+                <svg width="100%" height="100%"
                      viewBox="0 0 ${tabletWidth + 40} ${tabletHeight + 40}"
                      preserveAspectRatio="xMidYMid meet"
                  xmlns="http://www.w3.org/2000/svg"
                      class="tablet-svg">
-                
+
                 <!-- Tablet body (with pointer events for the main area) -->
-                <rect x="${tabletX}" y="${tabletY}" width="${tabletWidth}" height="${tabletHeight}" 
+                <rect x="${tabletX}" y="${tabletY}" width="${tabletWidth}" height="${tabletHeight}"
                     class="tablet-body" rx="15"
                     pointer-events="${this.socketMode ? 'none' : 'auto'}"
                  @mousemove=${this.handleTabletMouseMove}
                  @mouseleave=${this.handleTabletMouseLeave}
                  @mousedown=${this.handleTabletMouseDown}
                     @mouseup=${this.handleTabletMouseUp} />
-                
+
                 <!-- Active area (darker rectangle) -->
                 <rect x="${activeAreaX}" y="${activeAreaY}" width="${activeAreaWidth}" height="${activeAreaHeight}"
                     class="tablet-surface" rx="8"
                     pointer-events="none" />
 
-                <!-- Buttons -->
-                ${this.renderButtons(activeAreaWidth, activeAreaX, activeAreaY)}
-                
                 ${(() => {
                     // Use external data when in socket mode, otherwise use internal state
                     if (this.socketMode) {
                         // Show position when pen is in range (x or y > 0)
                         const penInRange = this.externalTabletData.x > 0 || this.externalTabletData.y > 0;
                         if (!penInRange) return '';
-                        
+
                         const isContact = this.externalTabletData.pressure > 0;
                         // Convert normalized coordinates to SVG coordinates
                         const x = activeAreaX + (this.externalTabletData.x * activeAreaWidth);
                         const y = activeAreaY + (this.externalTabletData.y * activeAreaHeight);
-                        
+
                         // Contact: red with pressure-based opacity
                         // Hover: blue with fixed opacity
                         const color = isContact ? '#ff6b6b' : '#74c0fc';
                         const opacity = isContact ? Math.max(0.3, this.externalTabletData.pressure) : 0.6;
                         const radius = isContact ? 12 : 8;
-                        
+
                         return svg`
                             <!-- Position indicator dot -->
-                            <circle cx="${x}" 
-                                    cy="${y}" 
-                                    r="${radius}" 
+                            <circle cx="${x}"
+                                    cy="${y}"
+                                    r="${radius}"
                                     fill="${color}"
                                     opacity="${opacity}"
                                     pointer-events="none" />
@@ -469,10 +442,10 @@ export class TabletVisualizer extends LitElement {
                     } else {
                         // Local mouse interaction - only show when pressing
                         if (!(this.clickPosition && this.isPressingTablet)) return '';
-                        
+
                         return svg`
                             <!-- Pressure indicator dot -->
-                            <circle cx="${this.clickPosition!.x}" 
+                            <circle cx="${this.clickPosition!.x}"
                                     cy="${this.clickPosition!.y}"
                                     r="12"
                                     fill="var(--svg-negative-900)"

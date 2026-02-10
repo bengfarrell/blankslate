@@ -11,7 +11,7 @@ import * as path from 'path';
 import HID from 'node-hid';
 
 import { Config } from '../models/config.js';
-import { processDeviceData } from '../utils/data-helpers.js';
+import { processDeviceData, processKeyboardButtonData, type KeyboardButtonsConfig } from '../utils/data-helpers.js';
 import { MockHIDReader, createMockHIDReader } from '../core/hid/mock-hid-reader.js';
 import type { IHIDReader, HIDDeviceInfo } from '../core/hid/hid-interface.js';
 import { createNodeHIDManager, MultiInterfaceReader, type NodeHIDReaderOptions } from './node-hid-reader.js';
@@ -482,6 +482,32 @@ export abstract class TabletReaderBase {
    * @param reportId Optional Report ID (if not included in data)
    */
   protected processPacket(data: Uint8Array, reportId?: number): Record<string, string | number | boolean> {
+    if (data.length === 0) {
+      return {};
+    }
+
+    // Extract report ID from first byte if not provided
+    const rid = reportId !== undefined ? reportId : data[0];
+
+    // Check if this is a keyboard button packet (report IDs 3, 4, 5)
+    // These come from a separate keyboard HID interface on some tablets (e.g., Huion)
+    if (rid === 3 || rid === 4 || rid === 5) {
+      // Try to find keyboardButtons config in any mode
+      let keyboardButtonsConfig: KeyboardButtonsConfig | null = null;
+      for (const mode of this.configData.modes) {
+        const kbConfig = mode.byteCodeMappings?.keyboardButtons;
+        if (kbConfig && kbConfig.buttons) {
+          keyboardButtonsConfig = kbConfig as KeyboardButtonsConfig;
+          break;
+        }
+      }
+
+      if (keyboardButtonsConfig) {
+        return processKeyboardButtonData(data, keyboardButtonsConfig);
+      }
+      // If no keyboard buttons config, fall through to normal processing
+    }
+
     // For multi-mode configs, get Report ID and appropriate mappings
     let mappings;
     let buttonInterfaceReportId;
@@ -490,11 +516,8 @@ export abstract class TabletReaderBase {
     const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
 
     if (isMultiMode) {
-      // Use provided reportId, or extract from first byte if not provided
-      const rid = reportId !== undefined ? reportId : (data.length > 0 ? data[0] : undefined);
-
       // First try to find mode by main report ID
-      let mode = rid !== undefined ? this.configData.getModeByReportId(rid) : null;
+      let mode = this.configData.getModeByReportId(rid);
 
       // If found by main report ID, this becomes the current mode
       if (mode && this.currentMode === null) {
@@ -515,7 +538,7 @@ export abstract class TabletReaderBase {
         }
         // If not, search all modes (fallback for first button packet before stylus packet)
         else if (this.configData.modes) {
-          mode = this.configData.modes.find(m => m.buttonInterfaceReportId === rid) || null;
+          mode = this.configData.modes.find(m => m.buttonInterfaceReportId === rid);
         }
       }
 

@@ -222,6 +222,9 @@ export class HidDashboard extends LitElement {
   private pressedButtons: Set<number> = new Set();
 
   @state()
+  private lastPressedButton: number | null = null;
+
+  @state()
   private rawBytes: ByteData[] = [];
 
   @state()
@@ -827,6 +830,7 @@ export class HidDashboard extends LitElement {
       if (data.button > 0) {
         // Button pressed - show it
         this.pressedButtons = new Set([data.button]);
+        this.lastPressedButton = data.button;
       } else {
         // No button pressed - clear all
         this.pressedButtons = new Set();
@@ -966,6 +970,7 @@ export class HidDashboard extends LitElement {
 
         // Trigger button press
         this.pressedButtons = new Set([mapping.button]);
+        this.lastPressedButton = mapping.button;
 
         // Add to events
         const event: TabletEvent = {
@@ -1114,13 +1119,15 @@ export class HidDashboard extends LitElement {
       // Handle tablet buttons
       if (data.tabletButtons !== undefined && data.tabletButtons > 0) {
         this.pressedButtons = new Set([data.tabletButtons]);
+        this.lastPressedButton = data.tabletButtons;
       } else {
-        // Check individual button flags
+        // Check individual button flags (legacy support for buttons 1-8)
         const pressed = new Set<number>();
         for (let i = 1; i <= 8; i++) {
           const key = `button${i}` as keyof WebSocketTabletEvent;
           if (data[key]) {
             pressed.add(i);
+            this.lastPressedButton = i;
           }
         }
         this.pressedButtons = pressed;
@@ -1429,6 +1436,10 @@ export class HidDashboard extends LitElement {
                 <span class="data-value ${this.tabletData.x === 0 ? 'zero' : ''}">
                   ${this._formatValue(this.tabletData.x)}
                 </span>
+              </div>
+              <div class="data-item button-indicator ${this.pressedButtons.size > 0 ? 'pressed' : ''}">
+                <span class="data-label">Btn</span>
+                <span class="data-value">${this.lastPressedButton !== null ? this.lastPressedButton : '–'}</span>
               </div>
               <div class="data-item">
                 <span class="data-label">Y</span>
