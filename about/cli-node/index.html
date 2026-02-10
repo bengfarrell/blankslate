@@ -98,8 +98,6 @@
     
         <a href="../web-app/">Web Application</a>
     
-        <a href="../walkthrough/">Config Walkthrough</a>
-    
 
     <h4>Development</h4>
     
@@ -111,10 +109,14 @@
     
         <a href="../sharing-code/">Using as a Library</a>
     
+        <a href="../testing/">Testing</a>
+    
 
     <h4>Architecture</h4>
     
         <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../keyboard-input/">Keyboard Input Handling</a>
     
         <a href="../implementation-differences/">Platform Differences</a>
     
@@ -157,7 +159,39 @@ npx tsx src/cli/tablet-websocket-server.ts <span class="token parameter variable
 <p>Interactive step-by-step wizard to generate tablet configurations:</p>
 <pre class="language-bash" tabindex="0"><code class="language-bash">npx tsx src/cli/config-generator.ts
 npx tsx src/cli/config-generator.ts <span class="token parameter variable">--output</span> my-config.json
-npx tsx src/cli/config-generator.ts <span class="token parameter variable">--mock</span>  <span class="token comment"># Use mock data for testing</span></code></pre>
+npx tsx src/cli/config-generator.ts <span class="token parameter variable">--mock</span>  <span class="token comment"># Use mock data for testing</span>
+npx tsx src/cli/config-generator.ts <span class="token parameter variable">--record</span> captured-data.json  <span class="token comment"># Save all captured packets</span></code></pre>
+<blockquote>
+<p><strong>macOS + Huion tablets:</strong> If your tablet sends buttons via the Keyboard HID interface, you'll need <code>sudo</code> to detect buttons during the walkthrough:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">sudo</span> npx tsx src/cli/config-generator.ts</code></pre>
+</blockquote>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Short</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output &lt;path&gt;</code></td>
+<td><code>-o</code></td>
+<td>Output path for generated config JSON</td>
+</tr>
+<tr>
+<td><code>--mock</code></td>
+<td><code>-m</code></td>
+<td>Use mock data instead of real device</td>
+</tr>
+<tr>
+<td><code>--record &lt;path&gt;</code></td>
+<td><code>-r</code></td>
+<td>Save all captured packet data to a JSON file</td>
+</tr>
+</tbody>
+</table>
 <p><strong>Features:</strong></p>
 <ul>
 <li>Automatic device detection</li>
@@ -166,6 +200,73 @@ npx tsx src/cli/config-generator.ts <span class="token parameter variable">--moc
 <li>Multi-interface support (pen + keyboard interfaces)</li>
 <li>Mock mode for testing without physical hardware</li>
 <li>Generates JSON config files compatible with all tools</li>
+<li>Record mode to capture all raw packet data for debugging</li>
+</ul>
+<h3>Recorded Data Format</h3>
+<p>When using <code>--record</code>, the tool saves all captured HID packets organized by walkthrough step:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"timestamp"</span><span class="token operator">:</span> <span class="token string">"2026-02-10T17:00:00.000Z"</span><span class="token punctuation">,</span>
+  <span class="token property">"device"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"vendorId"</span><span class="token operator">:</span> <span class="token string">"0x28bd"</span><span class="token punctuation">,</span>
+    <span class="token property">"productId"</span><span class="token operator">:</span> <span class="token string">"0x2904"</span><span class="token punctuation">,</span>
+    <span class="token property">"productName"</span><span class="token operator">:</span> <span class="token string">"XP-Pen Deco 640"</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"steps"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"step1-horizontal"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">"packetCount"</span><span class="token operator">:</span> <span class="token number">150</span><span class="token punctuation">,</span>
+      <span class="token property">"packets"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"a000ff3c2a00..."</span><span class="token punctuation">,</span> <span class="token string">"a000ff3d2b00..."</span><span class="token punctuation">,</span> <span class="token string">"..."</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token property">"detectedBytes"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">{</span> <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token property">"variance"</span><span class="token operator">:</span> <span class="token number">200</span><span class="token punctuation">,</span> <span class="token property">"min"</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token property">"max"</span><span class="token operator">:</span> <span class="token number">255</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{</span> <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token property">"variance"</span><span class="token operator">:</span> <span class="token number">180</span><span class="token punctuation">,</span> <span class="token property">"min"</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token property">"max"</span><span class="token operator">:</span> <span class="token number">200</span> <span class="token punctuation">}</span>
+      <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"step2-vertical"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token string">"..."</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"step3-pressure"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token string">"..."</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"step4-tiltX"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token string">"..."</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"step5-tiltY"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token string">"..."</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"step6-buttons"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token string">"..."</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>timestamp</code></td>
+<td>ISO 8601 timestamp when recording completed</td>
+</tr>
+<tr>
+<td><code>device</code></td>
+<td>Device info (vendorId, productId, productName)</td>
+</tr>
+<tr>
+<td><code>steps</code></td>
+<td>Map of step name → captured data</td>
+</tr>
+<tr>
+<td><code>packetCount</code></td>
+<td>Number of packets captured in this step</td>
+</tr>
+<tr>
+<td><code>packets</code></td>
+<td>Array of hex-encoded HID packets</td>
+</tr>
+<tr>
+<td><code>detectedBytes</code></td>
+<td>Bytes identified as significant (high variance)</td>
+</tr>
+</tbody>
+</table>
+<p>This is useful for:</p>
+<ul>
+<li>Debugging byte detection issues</li>
+<li>Sharing raw data for troubleshooting</li>
+<li>Replaying captures for testing</li>
+<li>Analyzing packet patterns</li>
 </ul>
 <hr>
 <h2>Event Viewer</h2>
@@ -181,6 +282,10 @@ npx tsx src/cli/event-viewer.ts <span class="token parameter variable">-c</span>
 
 <span class="token comment"># Use mock data</span>
 npx tsx src/cli/event-viewer.ts <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--mock</span> <span class="token parameter variable">--live</span></code></pre>
+<blockquote>
+<p><strong>macOS + Keyboard HID buttons:</strong> If your config has <code>keyboardButtons</code> (Huion-style tablets), use <code>sudo</code> to read button events:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">sudo</span> npx tsx src/cli/event-viewer.ts <span class="token parameter variable">-c</span> config.json <span class="token parameter variable">--live</span></code></pre>
+</blockquote>
 <p><strong>Display Modes:</strong></p>
 <table>
 <thead>
@@ -256,13 +361,6 @@ ws<span class="token punctuation">.</span><span class="token function-variable f
   console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Tablet event:'</span><span class="token punctuation">,</span> data<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span><span class="token punctuation">;</span></code></pre>
 <hr>
-<h2>Interface Diagnostic</h2>
-<p>List all HID devices and their interfaces:</p>
-<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run diagnose
-<span class="token comment"># or</span>
-npx tsx src/cli/interface-diagnostic.ts</code></pre>
-<p>Useful for finding your tablet's vendor ID, product ID, and usage pages.</p>
-<hr>
 <h2>npm Scripts Reference</h2>
 <table>
 <thead>
@@ -283,10 +381,6 @@ npx tsx src/cli/interface-diagnostic.ts</code></pre>
 <tr>
 <td><code>npm run websocket</code></td>
 <td>Run WebSocket server</td>
-</tr>
-<tr>
-<td><code>npm run diagnose</code></td>
-<td>Run interface diagnostic</td>
 </tr>
 <tr>
 <td><code>npm run build:cli</code></td>

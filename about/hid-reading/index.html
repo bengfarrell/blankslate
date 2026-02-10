@@ -98,8 +98,6 @@
     
         <a href="../web-app/">Web Application</a>
     
-        <a href="../walkthrough/">Config Walkthrough</a>
-    
 
     <h4>Development</h4>
     
@@ -111,10 +109,14 @@
     
         <a href="../sharing-code/">Using as a Library</a>
     
+        <a href="../testing/">Testing</a>
+    
 
     <h4>Architecture</h4>
     
         <a href=".">HID Data Reading</a>
+    
+        <a href="../keyboard-input/">Keyboard Input Handling</a>
     
         <a href="../implementation-differences/">Platform Differences</a>
     
@@ -276,17 +278,17 @@ device<span class="token punctuation">.</span><span class="token function">addEv
 <pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">class</span> <span class="token class-name">MultiInterfaceReader</span> <span class="token punctuation">{</span>
   <span class="token keyword">private</span> penInterface<span class="token operator">:</span> HIDDevice<span class="token punctuation">;</span>
   <span class="token keyword">private</span> buttonInterface<span class="token operator">:</span> HIDDevice<span class="token punctuation">;</span>
-  
+
   <span class="token keyword">async</span> <span class="token function">connect</span><span class="token punctuation">(</span>config<span class="token operator">:</span> Config<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token comment">// Open digitizer interface (usage page 13)</span>
     <span class="token keyword">this</span><span class="token punctuation">.</span>penInterface <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">openInterface</span><span class="token punctuation">(</span><span class="token number">13</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    
+
     <span class="token comment">// Open keyboard interface (usage page 1) for buttons</span>
     <span class="token keyword">if</span> <span class="token punctuation">(</span>config<span class="token punctuation">.</span>buttonInterfaceReportId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
       <span class="token keyword">this</span><span class="token punctuation">.</span>buttonInterface <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">openInterface</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">}</span>
-  
+
   <span class="token keyword">private</span> <span class="token function">mergeEvents</span><span class="token punctuation">(</span>penEvent<span class="token operator">:</span> TabletEvent<span class="token punctuation">,</span> buttonEvent<span class="token operator">:</span> ButtonEvent<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token punctuation">{</span>
       <span class="token operator">...</span>penEvent<span class="token punctuation">,</span>
@@ -294,6 +296,60 @@ device<span class="token punctuation">.</span><span class="token function">addEv
     <span class="token punctuation">}</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span></code></pre>
+<h3>HID Usage Pages</h3>
+<p>Tablets expose different interfaces identified by their <strong>usage page</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Usage Page</th>
+<th>Name</th>
+<th>Purpose</th>
+<th>macOS Access</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Generic Desktop</td>
+<td>Keyboard/mouse input, tablet buttons (Huion)</td>
+<td><strong>Requires sudo</strong></td>
+</tr>
+<tr>
+<td>12</td>
+<td>Consumer Control</td>
+<td>Media keys (volume, playback)</td>
+<td>Requires sudo</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Digitizer</td>
+<td>Pen position, pressure, tilt</td>
+<td>✅ No sudo needed</td>
+</tr>
+<tr>
+<td>65280</td>
+<td>Vendor-Specific</td>
+<td>Pen data on some tablets (Huion)</td>
+<td>✅ No sudo needed</td>
+</tr>
+</tbody>
+</table>
+<h3>Tablet Button Interface Styles</h3>
+<p>Different tablet manufacturers use different approaches for button data:</p>
+<p><strong>XP-Pen style</strong> - Buttons in digitizer interface:</p>
+<ul>
+<li>Buttons sent as part of pen packets (same interface)</li>
+<li>Uses <code>tabletButtons</code> mapping with <code>byteIndex</code></li>
+<li>No special permissions needed</li>
+</ul>
+<p><strong>Huion style</strong> - Buttons via keyboard HID:</p>
+<ul>
+<li>Buttons sent through separate Keyboard HID interface (usage page 1)</li>
+<li>Uses <code>keyboardButtons</code> mapping with button array</li>
+<li><strong>Requires <code>sudo</code> on macOS</strong> to read button data</li>
+<li>Supports multiple button types: keyboard shortcuts, media keys, scroll</li>
+</ul>
+<p>See <a href="/blankslate/about/config-schema/#keyboard-hid-buttons-keyboardbuttons">Configuration Schema</a> for config format details.</p>
 <hr>
 <h2>Byte Detection (Walkthrough)</h2>
 <p>The config generator detects byte mappings by analyzing changes:</p>

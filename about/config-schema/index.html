@@ -98,8 +98,6 @@
     
         <a href="../web-app/">Web Application</a>
     
-        <a href="../walkthrough/">Config Walkthrough</a>
-    
 
     <h4>Development</h4>
     
@@ -111,10 +109,14 @@
     
         <a href="../sharing-code/">Using as a Library</a>
     
+        <a href="../testing/">Testing</a>
+    
 
     <h4>Architecture</h4>
     
         <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../keyboard-input/">Keyboard Input Handling</a>
     
         <a href="../implementation-differences/">Platform Differences</a>
     
@@ -549,6 +551,125 @@
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span></code></pre>
 <p>Each button press sends a unique scan code value.</p>
+<hr>
+<h3>Keyboard HID Buttons (<code>keyboardButtons</code>)</h3>
+<p>Some tablets (notably Huion) send button presses through a separate <strong>Keyboard HID interface</strong> rather than through the digitizer interface. These tablets use the <code>keyboardButtons</code> mapping instead of <code>tabletButtons</code>.</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token property">"keyboardButtons"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"description"</span><span class="token operator">:</span> <span class="token string">"Buttons from keyboard HID interface (requires sudo on macOS)"</span><span class="token punctuation">,</span>
+  <span class="token property">"usagePage"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">"usage"</span><span class="token operator">:</span> <span class="token number">6</span><span class="token punctuation">,</span>
+  <span class="token property">"buttonCount"</span><span class="token operator">:</span> <span class="token number">30</span><span class="token punctuation">,</span>
+  <span class="token property">"buttons"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"keyboard"</span><span class="token punctuation">,</span> <span class="token property">"modifier"</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token property">"keycode"</span><span class="token operator">:</span> <span class="token number">5</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"keyboard"</span><span class="token punctuation">,</span> <span class="token property">"modifier"</span><span class="token operator">:</span> <span class="token number">7</span><span class="token punctuation">,</span> <span class="token property">"keycode"</span><span class="token operator">:</span> <span class="token number">17</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">21</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"consumer"</span><span class="token punctuation">,</span> <span class="token property">"consumerCode"</span><span class="token operator">:</span> <span class="token number">182</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">25</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"scroll"</span><span class="token punctuation">,</span> <span class="token property">"scrollDelta"</span><span class="token operator">:</span> <span class="token number">1</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>
+<span class="token punctuation">}</span></code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>Human-readable description</td>
+</tr>
+<tr>
+<td><code>usagePage</code></td>
+<td>number</td>
+<td>HID usage page (1 = Generic Desktop/Keyboard)</td>
+</tr>
+<tr>
+<td><code>usage</code></td>
+<td>number</td>
+<td>HID usage (6 = Keyboard)</td>
+</tr>
+<tr>
+<td><code>buttonCount</code></td>
+<td>number</td>
+<td>Total number of buttons</td>
+</tr>
+<tr>
+<td><code>buttons</code></td>
+<td>array</td>
+<td>Array of button definitions</td>
+</tr>
+</tbody>
+</table>
+<h4>Button Types</h4>
+<p><strong>Keyboard buttons</strong> (<code>type: &quot;keyboard&quot;</code>):</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"keyboard"</span><span class="token punctuation">,</span> <span class="token property">"modifier"</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token property">"keycode"</span><span class="token operator">:</span> <span class="token number">5</span> <span class="token punctuation">}</span></code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reportId</code></td>
+<td>HID report ID (typically 3 for keyboard)</td>
+</tr>
+<tr>
+<td><code>modifier</code></td>
+<td>Modifier byte (bit flags: 1=Ctrl, 2=Shift, 4=Alt, 8=GUI/Cmd)</td>
+</tr>
+<tr>
+<td><code>keycode</code></td>
+<td>USB HID keycode (e.g., 5 = &quot;B&quot;, 17 = &quot;N&quot;)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Consumer Control buttons</strong> (<code>type: &quot;consumer&quot;</code>):</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">21</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"consumer"</span><span class="token punctuation">,</span> <span class="token property">"consumerCode"</span><span class="token operator">:</span> <span class="token number">182</span> <span class="token punctuation">}</span></code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reportId</code></td>
+<td>HID report ID (typically 4 for consumer control)</td>
+</tr>
+<tr>
+<td><code>consumerCode</code></td>
+<td>USB HID consumer code (e.g., 182 = Previous Track, 233 = Volume Up)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scroll buttons</strong> (<code>type: &quot;scroll&quot;</code>):</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">25</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"scroll"</span><span class="token punctuation">,</span> <span class="token property">"scrollDelta"</span><span class="token operator">:</span> <span class="token number">1</span> <span class="token punctuation">}</span></code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reportId</code></td>
+<td>HID report ID (typically 5 for relative input)</td>
+</tr>
+<tr>
+<td><code>scrollDelta</code></td>
+<td>Scroll direction (1 = up/forward, 255 = down/backward)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> On macOS, reading from the Keyboard HID interface (usage page 1) requires <code>sudo</code>. See <a href="/blankslate/about/limitations/#keyboard-hid-interface-buttons-huion-style">Known Limitations</a> for details.</p>
+</blockquote>
 <hr>
 <h2>Byte Indexing</h2>
 <p>All <code>byteIndex</code> values are <strong>0-indexed</strong> relative to the HID report data (after the report ID).</p>

@@ -98,8 +98,6 @@
     
         <a href="about/web-app/">Web Application</a>
     
-        <a href="about/walkthrough/">Config Walkthrough</a>
-    
 
     <h4>Development</h4>
     
@@ -111,10 +109,14 @@
     
         <a href="about/sharing-code/">Using as a Library</a>
     
+        <a href="about/testing/">Testing</a>
+    
 
     <h4>Architecture</h4>
     
         <a href="about/hid-reading/">HID Data Reading</a>
+    
+        <a href="about/keyboard-input/">Keyboard Input Handling</a>
     
         <a href="about/implementation-differences/">Platform Differences</a>
     
@@ -132,14 +134,16 @@
 <p>Hi, welcome to Blankslate! Much of this project and documentation were done with AI coding tools, but I wanted to
 write this introduction myself.</p>
 <p>Blankslate is the second iteration of a project I was working on. The human interface device part of that project became
-a little to big and confusing, so I broke it out into this project.</p>
+a little too big and confusing, so I broke it out into this project.</p>
 <p>I started with a $30 drawing tablet (<a href="https://www.amazon.com/Deco-640-Sensitivity-Battery-Free-Designing/dp/B0D6XZF9N4">the XPPen Deco 640</a>) with the goal to
 use like a musical instrument - specifically to strum a guitar like the <a href="https://www.suzuki-music.co.jp/special/omnichord_om-108/en/">Suzuki Omnichord</a>.</p>
 <p>Choosing to use a drawing tablet not as a drawing tablet requires reading and interpreting those low level bytes.
 I only have this one drawing tablet right now, and if I plan to share what I've done, other drawing tablets need to work.</p>
-<p>Unfortunately, it's looking like reading those bytes across tablets will all be different. So in addition to reading a data stream and translating to tablet events,
+<p>Unfortunately, it's looking like reading those bytes across tablets might vary. So in addition to reading a data stream and translating to tablet events,
 this project also features a way to generate JSON configuration files that can be used to interpret the raw data into tablet events.</p>
-<p>Will this work for your tablet? I don't know! I've just done the one so far.</p>
+<p>Will this work for your tablet? I don't know! I've just done the XP Pen Deco 640 as well as my new <a href="https://www.amazon.com/dp/B0BNQ9DVD3">Huion Inspiroy 2 M</a> so far.
+The digitizer interface (the drawing part) seems to be extremely similar with just different report IDs identifying the two interfaces.
+The buttons are an entirely different story. The Huion comes in only as a keyboard HID interface, while on the XP they come in on the digitizer.</p>
 <p>Blankslate has support for Node.js, Python and Web. Node.js and Python are low level enough that things work pretty well.
 Web is based on Chrome's experimental <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API">WebHID API</a>. There are some restrictions here.
 For one, the tablet has some &quot;hot shortcut&quot; keys. The keys are buttons that a user would tap to perform some kind of action. Node.js and Python can easily
@@ -208,6 +212,7 @@ Open the web app, connect your tablet via WebHID, and see real-time visualizatio
 <p>Blankslate works with any HID-compatible graphics tablet. Currently tested:</p>
 <ul>
 <li><strong>XP-Pen Deco 640</strong> - Full support with included configuration</li>
+<li><strong>Huion Inspiroy 2 M (H951P)</strong> - Full support with included configuration (requires <code>sudo</code> on macOS for buttons)</li>
 <li><strong>Other tablets</strong> - Use the config generator walkthrough to create support</li>
 </ul>
 <h2>System Requirements</h2>

@@ -1,0 +1,385 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/keyboard-input/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Keyboard Input Handling">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/keyboard-input/">
+
+    <title>Blankslate: Keyboard Input Handling</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+        <a href="../testing/">Testing</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href=".">Keyboard Input Handling</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title">How Blankslate handles tablet buttons that use keyboard HID interfaces</h2>
+        <h1>Keyboard Input Handling</h1>
+<p>Some drawing tablets send button presses through a <strong>Keyboard HID interface</strong> rather than through the digitizer interface. This page explains how Blankslate handles these tablets and the various configuration formats involved.</p>
+<h2>Background: How Tablets Send Button Data</h2>
+<p>Drawing tablets can send button data in two fundamentally different ways:</p>
+<h3>Digitizer-Style Buttons (XP-Pen)</h3>
+<p>Most tablets include button data in the same HID packet as pen data:</p>
+<pre><code>[reportId, status, x_lo, x_hi, y_lo, y_hi, pressure_lo, pressure_hi, tiltX, tiltY, buttonByte]
+</code></pre>
+<p>The button byte contains bit flags or scan codes indicating which buttons are pressed. This data comes through the <strong>Digitizer HID interface</strong> (usage page 13).</p>
+<h3>Keyboard-Style Buttons (Huion)</h3>
+<p>Some tablets (notably Huion) send button presses through a completely separate <strong>Keyboard HID interface</strong> (usage page 1, usage 6). When you press a tablet button, the tablet sends a keyboard shortcut:</p>
+<table>
+<thead>
+<tr>
+<th>Report ID</th>
+<th>Type</th>
+<th>Data Format</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3</td>
+<td>Keyboard</td>
+<td><code>[modifier, 0, keycode, 0, 0, 0, 0, 0]</code></td>
+<td>Button 1 → <code>keycode: 5</code> (B key)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Consumer Control</td>
+<td><code>[consumerCode_lo, consumerCode_hi]</code></td>
+<td>Media keys</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Relative Scroll</td>
+<td><code>[scrollDelta]</code></td>
+<td>Scroll wheel</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Platform Differences</h2>
+<h3>Raw HID Access</h3>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Can Read Keyboard HID Interface</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node.js (Linux)</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Node.js (macOS)</td>
+<td>⚠️ Requires <code>sudo</code></td>
+</tr>
+<tr>
+<td>Python (Linux)</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Python (macOS)</td>
+<td>⚠️ Requires <code>sudo</code></td>
+</tr>
+<tr>
+<td>WebHID (Browser)</td>
+<td>❌ No (security blocklist)</td>
+</tr>
+</tbody>
+</table>
+<h3>macOS Sudo Requirement</h3>
+<p>On macOS, the Keyboard HID interface is protected by the operating system. Applications cannot read from this interface without elevated privileges:</p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Without sudo - pen works, buttons don't</span>
+npx tsx src/cli/event-viewer.ts my-config.json <span class="token parameter variable">--live</span>
+
+<span class="token comment"># With sudo - everything works</span>
+<span class="token function">sudo</span> npx tsx src/cli/event-viewer.ts my-config.json <span class="token parameter variable">--live</span></code></pre>
+<h3>WebHID Security Blocklist</h3>
+<p>WebHID maintains a <a href="https://github.com/WICG/webhid/blob/main/blocklist.txt">security blocklist</a> that prevents websites from accessing certain HID device types. This includes:</p>
+<table>
+<thead>
+<tr>
+<th>Usage Page</th>
+<th>Usage</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x0001</td>
+<td>0x0006</td>
+<td>Generic Desktop / Keyboard</td>
+</tr>
+<tr>
+<td>0x0001</td>
+<td>0x0007</td>
+<td>Generic Desktop / Keypad</td>
+</tr>
+</tbody>
+</table>
+<p>This blocklist exists to prevent malicious websites from creating keyloggers. Unfortunately, it also blocks access to tablet buttons that use the keyboard interface.</p>
+<p><strong>Impact:</strong> WebHID can open and enumerate the keyboard interface, but <strong>cannot receive input reports</strong> from it. Raw HID button data is not accessible.</p>
+<hr>
+<h2>Configuration Formats</h2>
+<p>Blankslate uses different configuration formats depending on how button data is accessed:</p>
+<h3><code>tabletButtons</code> - Digitizer Interface Buttons</h3>
+<p>For tablets where buttons come through the digitizer interface:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token property">"tabletButtons"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token property">"buttonCount"</span><span class="token operator">:</span> <span class="token number">8</span><span class="token punctuation">,</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"bit-flags"</span>
+<span class="token punctuation">}</span></code></pre>
+<p>Or with scan code mappings:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token property">"tabletButtons"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"byteIndex"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token property">"buttonCount"</span><span class="token operator">:</span> <span class="token number">8</span><span class="token punctuation">,</span>
+  <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"code"</span><span class="token punctuation">,</span>
+  <span class="token property">"values"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"1"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">1</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"3"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">2</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"6"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">3</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<p><strong>Used by:</strong> All platforms (WebHID, Node.js, Python)</p>
+<h3><code>keyboardButtons</code> - Raw Keyboard HID Data</h3>
+<p>For tablets where buttons come through the keyboard HID interface, with raw USB HID keycodes:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token property">"keyboardButtons"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"description"</span><span class="token operator">:</span> <span class="token string">"Buttons from keyboard HID interface (requires sudo on macOS)"</span><span class="token punctuation">,</span>
+  <span class="token property">"usagePage"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">"usage"</span><span class="token operator">:</span> <span class="token number">6</span><span class="token punctuation">,</span>
+  <span class="token property">"buttonCount"</span><span class="token operator">:</span> <span class="token number">30</span><span class="token punctuation">,</span>
+  <span class="token property">"buttons"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"keyboard"</span><span class="token punctuation">,</span> <span class="token property">"modifier"</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token property">"keycode"</span><span class="token operator">:</span> <span class="token number">5</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"keyboard"</span><span class="token punctuation">,</span> <span class="token property">"modifier"</span><span class="token operator">:</span> <span class="token number">7</span><span class="token punctuation">,</span> <span class="token property">"keycode"</span><span class="token operator">:</span> <span class="token number">17</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">21</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"consumer"</span><span class="token punctuation">,</span> <span class="token property">"consumerCode"</span><span class="token operator">:</span> <span class="token number">182</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">25</span><span class="token punctuation">,</span> <span class="token property">"reportId"</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"scroll"</span><span class="token punctuation">,</span> <span class="token property">"scrollDelta"</span><span class="token operator">:</span> <span class="token number">1</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>
+<span class="token punctuation">}</span></code></pre>
+<p><strong>Generated by:</strong> Node.js and Python config generators (with sudo on macOS)</p>
+<p><strong>Used by:</strong> All platforms - WebHID automatically converts to <code>keyboardMappings</code> format at runtime</p>
+<h3><code>keyboardMappings</code> - Browser Keyboard Event Codes</h3>
+<p>For WebHID when the driver is active and converts button presses to keyboard shortcuts:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token property">"keyboardMappings"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+  <span class="token property">"description"</span><span class="token operator">:</span> <span class="token string">"Keyboard shortcuts for WebHID mode when driver is active"</span><span class="token punctuation">,</span>
+  <span class="token property">"buttons"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">"keys"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"KeyB"</span><span class="token punctuation">]</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token property">"keys"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"KeyE"</span><span class="token punctuation">]</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token property">"button"</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token property">"keys"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"ControlLeft"</span><span class="token punctuation">,</span> <span class="token string">"NumpadSubtract"</span><span class="token punctuation">]</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>
+<span class="token punctuation">}</span></code></pre>
+<p>The <code>keys</code> array uses JavaScript <code>KeyboardEvent.code</code> values (physical key positions like <code>KeyB</code>, <code>ControlLeft</code>), not <code>KeyboardEvent.key</code> values (characters like <code>b</code>, <code>Control</code>).</p>
+<p><strong>Generated by:</strong> Manual configuration only (for driver mode scenarios)</p>
+<p><strong>Used by:</strong> WebHID dashboard only</p>
+<hr>
+<h2>How the Formats Relate</h2>
+<p>The <code>keyboardButtons</code> and <code>keyboardMappings</code> formats represent the same button mappings in different forms:</p>
+<table>
+<thead>
+<tr>
+<th><code>keyboardButtons</code> (raw HID)</th>
+<th><code>keyboardMappings</code> (browser events)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>keycode: 5</code></td>
+<td><code>keys: [&quot;KeyB&quot;]</code></td>
+</tr>
+<tr>
+<td><code>keycode: 8</code></td>
+<td><code>keys: [&quot;KeyE&quot;]</code></td>
+</tr>
+<tr>
+<td><code>modifier: 1, keycode: 86</code></td>
+<td><code>keys: [&quot;ControlLeft&quot;, &quot;NumpadSubtract&quot;]</code></td>
+</tr>
+</tbody>
+</table>
+<p>The WebHID dashboard automatically converts <code>keyboardButtons</code> to <code>keyboardMappings</code> at runtime using a USB HID keycode lookup table. This means:</p>
+<ul>
+<li><strong>Generate configs with Node.js/Python</strong> to get raw HID keycodes (<code>keyboardButtons</code>)</li>
+<li><strong>Use in WebHID</strong> - the dashboard converts them automatically</li>
+<li><strong>No need to manually create <code>keyboardMappings</code></strong> for Huion-style tablets</li>
+</ul>
+<hr>
+<h2>Recommendations</h2>
+<h3>For Best Compatibility</h3>
+<ol>
+<li><strong>Generate configs using Node.js or Python</strong> with <code>sudo</code> on macOS</li>
+<li><strong>Use driverless mode</strong> to capture raw HID scan codes</li>
+<li>The resulting <code>keyboardButtons</code> format works everywhere</li>
+</ol>
+<h3>For WebHID-Only Use</h3>
+<p>If you only need WebHID support and have the manufacturer's driver active:</p>
+<ol>
+<li>The driver converts button presses to keyboard shortcuts</li>
+<li>WebHID can capture these via browser keyboard events</li>
+<li>Add <code>keyboardMappings</code> manually to your config</li>
+</ol>
+<h3>Comparison Table</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Config Generator</th>
+<th>Button Format</th>
+<th>Works In</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XP-Pen (any mode)</td>
+<td>Any</td>
+<td><code>tabletButtons</code></td>
+<td>All platforms</td>
+</tr>
+<tr>
+<td>Huion (driverless)</td>
+<td>Node.js/Python + sudo</td>
+<td><code>keyboardButtons</code></td>
+<td>All platforms</td>
+</tr>
+<tr>
+<td>Huion (driver mode)</td>
+<td>Manual</td>
+<td><code>keyboardMappings</code></td>
+<td>WebHID only</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>See Also</h2>
+<ul>
+<li><a href="/blankslate/about/config-schema/">Configuration Schema</a> - Full details on all config formats</li>
+<li><a href="/blankslate/about/limitations/">Known Limitations</a> - Platform-specific limitations</li>
+<li><a href="/blankslate/about/hid-reading/">HID Reading</a> - How Blankslate reads HID data</li>
+</ul>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+

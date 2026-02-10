@@ -98,8 +98,6 @@
     
         <a href="../web-app/">Web Application</a>
     
-        <a href="../walkthrough/">Config Walkthrough</a>
-    
 
     <h4>Development</h4>
     
@@ -111,10 +109,14 @@
     
         <a href=".">Using as a Library</a>
     
+        <a href="../testing/">Testing</a>
+    
 
     <h4>Architecture</h4>
     
         <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../keyboard-input/">Keyboard Input Handling</a>
     
         <a href="../implementation-differences/">Platform Differences</a>
     
@@ -220,26 +222,27 @@
 <h3>Reading Tablet Data (Node.js)</h3>
 <pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> Config <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/models'</span><span class="token punctuation">;</span>
 <span class="token keyword">import</span> <span class="token punctuation">{</span> processDeviceData <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/utils'</span><span class="token punctuation">;</span>
-<span class="token keyword">import</span> <span class="token punctuation">{</span> NodeHIDReader <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/cli/node-hid-reader'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> NodeHIDReaderManager <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/cli/node-hid-reader'</span><span class="token punctuation">;</span>
 
 <span class="token comment">// Load configuration</span>
 <span class="token keyword">const</span> config <span class="token operator">=</span> <span class="token keyword">await</span> Config<span class="token punctuation">.</span><span class="token function">load</span><span class="token punctuation">(</span><span class="token string">'./my-tablet-config.json'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> mode <span class="token operator">=</span> config<span class="token punctuation">.</span>modes<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token comment">// Get first mode configuration</span>
 
-<span class="token comment">// Create HID reader</span>
-<span class="token keyword">const</span> reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">NodeHIDReader</span><span class="token punctuation">(</span>
-  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>vendorId<span class="token punctuation">,</span>
-  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>productId<span class="token punctuation">,</span>
-  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>usagePage<span class="token punctuation">,</span>
-  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>usage
+<span class="token comment">// Create HID reader manager and open device</span>
+<span class="token keyword">const</span> manager <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">NodeHIDReaderManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> reader <span class="token operator">=</span> <span class="token keyword">await</span> manager<span class="token punctuation">.</span><span class="token function">openAllInterfaces</span><span class="token punctuation">(</span>
+  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>vendor_id<span class="token punctuation">,</span>
+  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>product_id
 <span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">await</span> reader<span class="token punctuation">.</span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment">// Process incoming data</span>
+<span class="token comment">// Process incoming data using mode's byte mappings</span>
 reader<span class="token punctuation">.</span><span class="token function">onData</span><span class="token punctuation">(</span><span class="token punctuation">(</span>bytes<span class="token operator">:</span> Uint8Array<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
-  <span class="token keyword">const</span> event <span class="token operator">=</span> <span class="token function">processDeviceData</span><span class="token punctuation">(</span>bytes<span class="token punctuation">,</span> config<span class="token punctuation">.</span>byteCodeMappings<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> event <span class="token operator">=</span> <span class="token function">processDeviceData</span><span class="token punctuation">(</span>bytes<span class="token punctuation">,</span> mode<span class="token punctuation">.</span>byteCodeMappings<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">`</span><span class="token string">X: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>event<span class="token punctuation">.</span>x<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">, Y: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>event<span class="token punctuation">.</span>y<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">, Pressure: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>event<span class="token punctuation">.</span>pressure<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-reader<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+reader<span class="token punctuation">.</span><span class="token function">startReading</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
 <h3>Using Web Components</h3>
 <pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> TabletVisualizer <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/components'</span><span class="token punctuation">;</span>
 <span class="token keyword">import</span> <span class="token punctuation">{</span> Config <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/models'</span><span class="token punctuation">;</span>

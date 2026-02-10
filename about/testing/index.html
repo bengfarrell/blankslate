@@ -1,0 +1,620 @@
+<html lang="en-US" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="canonical" href="/blankslate/about/testing/">
+    <meta property="og:site_name" content="Blankslate">
+    <meta property="og:title" content="Blankslate: Testing">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/about/testing/">
+
+    <title>Blankslate: Testing</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../docs.css">
+    <link rel="stylesheet" href="../../prism-okaidia.css">
+    <link rel="preload" href="../../docs.css" as="style">
+</head>
+<body>
+
+<header>
+    <button id="mobile-menu" class="mobile-menu-button" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" fill="currentColor" height="24" width="24" aria-hidden="true">
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="16"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="6"></rect>
+            <rect height="4" rx="1" ry="1" width="28" x="4" y="26"></rect>
+        </svg>
+    </button>
+  
+    <div class="logo-container">
+        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tablet outline -->
+            <rect x="10" y="15" width="80" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="4"></rect>
+            <!-- Active area -->
+            <rect x="18" y="22" width="64" height="46" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"></rect>
+        </svg>
+    </div>
+
+    <div class="title">
+        <h1>Blankslate</h1>
+        <h4>Universal HID tablet configuration toolkit</h4>
+    </div>
+
+    <a href="../../app/" class="launch-app-button">Launch App</a>
+
+    <div class="logo-container github">
+        <a href="https://github.com/bengfarrell/blankslate"><img src="../../img/github-logo.svg" alt="Github Logo"></a>
+    </div>
+</header>
+
+<div id="main-wrapper">
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+    <div class="mobile-header">
+        <h1>Blankslate</h1>
+    </div>
+    <h4>About</h4>
+    
+    <a href="../../">Introduction</a>
+    
+    <a href="../getting-started/">Getting Started</a>
+    
+
+    <h4>CLI Tools</h4>
+    
+        <a href="../cli-overview/">Overview</a>
+    
+        <a href="../cli-node/">Node.js CLI</a>
+    
+        <a href="../cli-python/">Python CLI</a>
+    
+
+    <h4>Configuration</h4>
+    
+        <a href="../config-schema/">Configuration Schema</a>
+    
+        <a href="../config-modes/">Multi-Mode Configs</a>
+    
+
+    <h4>Web Application</h4>
+    
+        <a href="../../app/">🚀 Launch App</a>
+    
+        <a href="../web-app/">Web Application</a>
+    
+
+    <h4>Development</h4>
+    
+        <a href="../dev-node/">Node.js Setup</a>
+    
+        <a href="../dev-python/">Python Setup</a>
+    
+        <a href="../dev-web/">Web Development</a>
+    
+        <a href="../sharing-code/">Using as a Library</a>
+    
+        <a href=".">Testing</a>
+    
+
+    <h4>Architecture</h4>
+    
+        <a href="../hid-reading/">HID Data Reading</a>
+    
+        <a href="../keyboard-input/">Keyboard Input Handling</a>
+    
+        <a href="../implementation-differences/">Platform Differences</a>
+    
+        <a href="../limitations/">Known Limitations</a>
+    
+</nav>
+
+  <main>
+      <div class="content">
+        <h2 id="page-title"></h2>
+        <h1>Testing</h1>
+<p>Blankslate has comprehensive test suites for both Node.js/TypeScript and Python implementations, ensuring feature parity and reliability across platforms.</p>
+<h2>Test Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Tests</th>
+<th>Test Files</th>
+<th>Framework</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Node.js/TypeScript</strong></td>
+<td>566</td>
+<td>22</td>
+<td>Vitest</td>
+</tr>
+<tr>
+<td><strong>Python</strong></td>
+<td>295</td>
+<td>10</td>
+<td>pytest</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>861</strong></td>
+<td><strong>32</strong></td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Running Tests</h2>
+<h3>Node.js/TypeScript</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Run all tests</span>
+<span class="token function">npm</span> <span class="token builtin class-name">test</span>
+
+<span class="token comment"># Run with coverage</span>
+<span class="token function">npm</span> run test:coverage
+
+<span class="token comment"># Run specific test file</span>
+<span class="token function">npm</span> <span class="token builtin class-name">test</span> -- test/unit/config.test.ts
+
+<span class="token comment"># Run tests matching a pattern</span>
+<span class="token function">npm</span> <span class="token builtin class-name">test</span> -- <span class="token parameter variable">--grep</span> <span class="token string">"walkthrough"</span>
+
+<span class="token comment"># Watch mode for development</span>
+<span class="token function">npm</span> run test:watch</code></pre>
+<h3>Python</h3>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Activate virtual environment first</span>
+<span class="token builtin class-name">cd</span> python
+<span class="token builtin class-name">source</span> venv/bin/activate
+
+<span class="token comment"># Run all tests</span>
+pytest
+
+<span class="token comment"># Run with coverage</span>
+pytest <span class="token parameter variable">--cov</span><span class="token operator">=</span>blankslate --cov-report<span class="token operator">=</span>html
+
+<span class="token comment"># Run specific test file</span>
+pytest tests/unit/test_config.py
+
+<span class="token comment"># Run specific test class or method</span>
+pytest tests/unit/test_config.py::TestConfigCreation::test_create_from_dict
+
+<span class="token comment"># Run with verbose output</span>
+pytest <span class="token parameter variable">-v</span>
+
+<span class="token comment"># Run only unit tests</span>
+pytest tests/unit/
+
+<span class="token comment"># Run only integration tests</span>
+pytest tests/integration/</code></pre>
+<hr>
+<h2>Test Categories</h2>
+<h3>Unit Tests</h3>
+<p>Unit tests verify individual functions and classes in isolation.</p>
+<h4>Node.js (<code>test/unit/</code>)</h4>
+<table>
+<thead>
+<tr>
+<th>Test File</th>
+<th>Tests</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data-helpers.test.ts</code></td>
+<td>40</td>
+<td>Data processing utilities, byte parsing, normalization</td>
+</tr>
+<tr>
+<td><code>finddevice.test.ts</code></td>
+<td>28</td>
+<td>Device discovery, WebHID integration, connection handling</td>
+</tr>
+<tr>
+<td><code>config.test.ts</code></td>
+<td>13</td>
+<td>Configuration loading, validation, serialization</td>
+</tr>
+<tr>
+<td><code>config-based-mock.test.ts</code></td>
+<td>18</td>
+<td>Mock tablet data generation from configs</td>
+</tr>
+<tr>
+<td><code>byte-detector.test.ts</code></td>
+<td>14</td>
+<td>Byte analysis, status byte detection, variance calculation</td>
+</tr>
+<tr>
+<td><code>metadata-generator.test.ts</code></td>
+<td>10</td>
+<td>Device metadata generation, capability inference</td>
+</tr>
+<tr>
+<td><code>walkthrough-detection.test.ts</code></td>
+<td>9</td>
+<td>Core byte detection for walkthrough steps</td>
+</tr>
+<tr>
+<td><code>walkthrough-button-status.test.ts</code></td>
+<td>12</td>
+<td>Status byte tracking for XP-Pen and Huion tablets</td>
+</tr>
+<tr>
+<td><code>device-switching.test.ts</code></td>
+<td>8</td>
+<td>Multi-device handling, active device tracking</td>
+</tr>
+<tr>
+<td><code>translation-*.test.ts</code></td>
+<td>20</td>
+<td>Data translation and edge cases</td>
+</tr>
+</tbody>
+</table>
+<h4>Python (<code>python/tests/unit/</code>)</h4>
+<table>
+<thead>
+<tr>
+<th>Test File</th>
+<th>Tests</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_data_helpers.py</code></td>
+<td>40+</td>
+<td>Data processing, byte parsing (mirrors Node.js)</td>
+</tr>
+<tr>
+<td><code>test_config.py</code></td>
+<td>15+</td>
+<td>Configuration loading and validation</td>
+</tr>
+<tr>
+<td><code>test_config_based_mock.py</code></td>
+<td>18</td>
+<td>Mock tablet data generation</td>
+</tr>
+<tr>
+<td><code>test_byte_detector.py</code></td>
+<td>14</td>
+<td>Byte analysis algorithms</td>
+</tr>
+<tr>
+<td><code>test_walkthrough_engine.py</code></td>
+<td>20+</td>
+<td>Walkthrough engine logic</td>
+</tr>
+<tr>
+<td><code>test_config_auto_detection.py</code></td>
+<td>5</td>
+<td>Auto-detection of tablet configs</td>
+</tr>
+</tbody>
+</table>
+<h3>Integration Tests</h3>
+<p>Integration tests verify complete workflows using recorded HID data.</p>
+<h4>Recording Replay Tests</h4>
+<p>These tests replay recorded HID packets through the walkthrough engine to verify correct configuration generation.</p>
+<table>
+<thead>
+<tr>
+<th>Test File</th>
+<th>Tests</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>recording-replay.test.ts</code></td>
+<td>92</td>
+<td>XP-Pen Deco 640 driverless mode recordings</td>
+</tr>
+<tr>
+<td><code>recording-replay-driver.test.ts</code></td>
+<td>94</td>
+<td>XP-Pen Deco 640 driver mode recordings</td>
+</tr>
+<tr>
+<td><code>recording-replay-huion.test.ts</code></td>
+<td>60</td>
+<td>Huion Inspiroy 2M recordings</td>
+</tr>
+<tr>
+<td><code>test_recording_replay.py</code></td>
+<td>57</td>
+<td>Python equivalents of above</td>
+</tr>
+</tbody>
+</table>
+<h4>Recording Reader Tests</h4>
+<p>These tests verify that <code>processDeviceData</code> correctly interprets recorded HID packets using existing configurations.</p>
+<table>
+<thead>
+<tr>
+<th>Test File</th>
+<th>Tests</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>recording-reader-huion.test.ts</code></td>
+<td>80</td>
+<td>Huion packet interpretation (40 tests × 2 recordings)</td>
+</tr>
+<tr>
+<td><code>test_recording_reader.py</code></td>
+<td>80</td>
+<td>Python equivalent</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Test categories include:</strong></p>
+<ul>
+<li>Status byte interpretation (hover, contact, button states)</li>
+<li>Coordinate parsing (X, Y, little-endian verification)</li>
+<li>Pressure parsing and normalization</li>
+<li>Tilt parsing (bipolar encoding)</li>
+<li>State transitions (hover→contact, button press/release)</li>
+<li>Raw byte verification</li>
+</ul>
+<h4>Config Validation Tests</h4>
+<table>
+<thead>
+<tr>
+<th>Test File</th>
+<th>Tests</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stable-config-validation.test.ts</code></td>
+<td>5</td>
+<td>Validates existing config files load correctly</td>
+</tr>
+<tr>
+<td><code>driver-mode-config-validation.test.ts</code></td>
+<td>6</td>
+<td>Validates driver-mode specific configs</td>
+</tr>
+<tr>
+<td><code>test_stable_config_validation.py</code></td>
+<td>5</td>
+<td>Python equivalents</td>
+</tr>
+<tr>
+<td><code>test_driver_mode_config_validation.py</code></td>
+<td>6</td>
+<td>Python equivalents</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Test Fixtures</h2>
+<h3>Common Test Fixtures (<code>common-test-fixtures/</code>)</h3>
+<p>Shared test data used by both Node.js and Python tests:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>xp-pen-deco640-driver.json</code></td>
+<td>XP-Pen Deco 640 config (driver mode)</td>
+</tr>
+<tr>
+<td><code>xp-pen-deco640-driverless.json</code></td>
+<td>XP-Pen Deco 640 config (driverless mode)</td>
+</tr>
+<tr>
+<td><code>huion-inspiroy2m.json</code></td>
+<td>Huion Inspiroy 2M config</td>
+</tr>
+<tr>
+<td><code>xp-pen-deco640-nodriver-recording.json</code></td>
+<td>Recorded HID packets (XP-Pen, no driver)</td>
+</tr>
+<tr>
+<td><code>xp-pen-deco640-nodriver-recording2.json</code></td>
+<td>Second recording session</td>
+</tr>
+<tr>
+<td><code>xp-pen-deco640-driver-recording.json</code></td>
+<td>Recorded HID packets (XP-Pen, with driver)</td>
+</tr>
+<tr>
+<td><code>xp-pen-deco640-driver-recording2.json</code></td>
+<td>Second recording session</td>
+</tr>
+<tr>
+<td><code>huion-inspiroy2m-nodriver-recording.json</code></td>
+<td>Recorded HID packets (Huion)</td>
+</tr>
+<tr>
+<td><code>huion-inspiroy2m-nodriver-recording2.json</code></td>
+<td>Second recording session</td>
+</tr>
+</tbody>
+</table>
+<h3>Recording Format</h3>
+<p>Recording files contain captured HID packets organized by walkthrough step:</p>
+<pre class="language-json" tabindex="0"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"metadata"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"deviceName"</span><span class="token operator">:</span> <span class="token string">"XP-Pen Deco 640"</span><span class="token punctuation">,</span>
+    <span class="token property">"recordedAt"</span><span class="token operator">:</span> <span class="token string">"2024-01-15T10:30:00Z"</span><span class="token punctuation">,</span>
+    <span class="token property">"driverMode"</span><span class="token operator">:</span> <span class="token boolean">false</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"steps"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"step1-horizontal"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">"packets"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">160</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">,</span> <span class="token number">50</span><span class="token punctuation">,</span> ...<span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">160</span><span class="token punctuation">,</span> <span class="token number">110</span><span class="token punctuation">,</span> <span class="token number">50</span><span class="token punctuation">,</span> ...<span class="token punctuation">]</span><span class="token punctuation">,</span> ...<span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">"step2-vertical"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">"packets"</span><span class="token operator">:</span> <span class="token punctuation">[</span>...<span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    ...
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<hr>
+<h2>Writing Tests</h2>
+<h3>Test Structure (Node.js)</h3>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> describe<span class="token punctuation">,</span> it<span class="token punctuation">,</span> expect<span class="token punctuation">,</span> beforeEach <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'vitest'</span><span class="token punctuation">;</span>
+
+<span class="token function">describe</span><span class="token punctuation">(</span><span class="token string">'FeatureName'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token keyword">let</span> instance<span class="token operator">:</span> MyClass<span class="token punctuation">;</span>
+
+  <span class="token function">beforeEach</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+    instance <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MyClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token function">describe</span><span class="token punctuation">(</span><span class="token string">'methodName'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+    <span class="token function">it</span><span class="token punctuation">(</span><span class="token string">'should do something specific'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+      <span class="token comment">// Arrange</span>
+      <span class="token keyword">const</span> input <span class="token operator">=</span> <span class="token function">setupTestData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token comment">// Act</span>
+      <span class="token keyword">const</span> result <span class="token operator">=</span> instance<span class="token punctuation">.</span><span class="token function">methodName</span><span class="token punctuation">(</span>input<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token comment">// Assert</span>
+      <span class="token function">expect</span><span class="token punctuation">(</span>result<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toBe</span><span class="token punctuation">(</span>expectedValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h3>Test Structure (Python)</h3>
+<pre class="language-python" tabindex="0"><code class="language-python"><span class="token keyword">import</span> pytest
+<span class="token keyword">from</span> blankslate<span class="token punctuation">.</span>core <span class="token keyword">import</span> MyClass
+
+<span class="token keyword">class</span> <span class="token class-name">TestFeatureName</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Tests for specific feature"""</span>
+
+    <span class="token decorator annotation punctuation">@pytest<span class="token punctuation">.</span>fixture</span>
+    <span class="token keyword">def</span> <span class="token function">instance</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> MyClass<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">def</span> <span class="token function">test_specific_behavior</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> instance<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Should do something specific"""</span>
+        <span class="token comment"># Arrange</span>
+        input_data <span class="token operator">=</span> setup_test_data<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token comment"># Act</span>
+        result <span class="token operator">=</span> instance<span class="token punctuation">.</span>method_name<span class="token punctuation">(</span>input_data<span class="token punctuation">)</span>
+
+        <span class="token comment"># Assert</span>
+        <span class="token keyword">assert</span> result <span class="token operator">==</span> expected_value</code></pre>
+<h3>Parametrized Tests</h3>
+<p>For testing multiple inputs with the same logic:</p>
+<p><strong>Node.js:</strong></p>
+<pre class="language-typescript" tabindex="0"><code class="language-typescript">describe<span class="token punctuation">.</span><span class="token function">each</span><span class="token punctuation">(</span><span class="token punctuation">[</span>
+  <span class="token punctuation">[</span><span class="token string">'recording1.json'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token punctuation">[</span><span class="token string">'recording2.json'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token string">'with %s'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>filename<span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token function">it</span><span class="token punctuation">(</span><span class="token string">'should process correctly'</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+    <span class="token keyword">const</span> data <span class="token operator">=</span> <span class="token function">loadRecording</span><span class="token punctuation">(</span>filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">expect</span><span class="token punctuation">(</span><span class="token function">process</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toBeDefined</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<p><strong>Python:</strong></p>
+<pre class="language-python" tabindex="0"><code class="language-python"><span class="token decorator annotation punctuation">@pytest<span class="token punctuation">.</span>mark<span class="token punctuation">.</span>parametrize</span><span class="token punctuation">(</span><span class="token string">"filename"</span><span class="token punctuation">,</span> <span class="token punctuation">[</span>
+    <span class="token string">"recording1.json"</span><span class="token punctuation">,</span>
+    <span class="token string">"recording2.json"</span><span class="token punctuation">,</span>
+<span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token keyword">def</span> <span class="token function">test_process_correctly</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> filename<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    data <span class="token operator">=</span> load_recording<span class="token punctuation">(</span>filename<span class="token punctuation">)</span>
+    <span class="token keyword">assert</span> process<span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token keyword">is</span> <span class="token keyword">not</span> <span class="token boolean">None</span></code></pre>
+<hr>
+<h2>Coverage</h2>
+<h3>Viewing Coverage Reports</h3>
+<p><strong>Node.js:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run test:coverage
+<span class="token comment"># Open coverage/index.html in browser</span></code></pre>
+<p><strong>Python:</strong></p>
+<pre class="language-bash" tabindex="0"><code class="language-bash">pytest <span class="token parameter variable">--cov</span><span class="token operator">=</span>blankslate --cov-report<span class="token operator">=</span>html
+<span class="token comment"># Open htmlcov/index.html in browser</span></code></pre>
+<h3>Coverage Targets</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Target</th>
+<th>Current</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Core data processing</td>
+<td>90%+</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Byte detection</td>
+<td>90%+</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Configuration loading</td>
+<td>85%+</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Walkthrough engine</td>
+<td>80%+</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>CLI tools</td>
+<td>50%+</td>
+<td>⚠️</td>
+</tr>
+<tr>
+<td>UI components</td>
+<td>30%+</td>
+<td>⚠️</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Continuous Integration</h2>
+<p>Tests run automatically on:</p>
+<ul>
+<li>Pull requests</li>
+<li>Pushes to main branch</li>
+<li>Release tags</li>
+</ul>
+<p>Both Node.js and Python test suites must pass before merging.</p>
+
+      </div>
+  </main>
+</div>
+</body>
+<script>
+    document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.add('menu-open');
+    });
+    document.getElementById('main-wrapper').addEventListener('click', () => {
+        document.getElementById('main-wrapper').classList.remove('menu-open');
+    });
+</script>
+</html>
+
