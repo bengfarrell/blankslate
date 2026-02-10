@@ -18,7 +18,7 @@ pip install -e .
 ```
 
 This installs three CLI commands:
-- `tablet-config` → Interactive configuration generator
+- `tablet-config-generator` → Interactive configuration generator
 - `tablet-events` → Real-time event viewer
 - `tablet-websocket` → WebSocket server for broadcasting tablet events
 
@@ -70,7 +70,7 @@ After installing with `pip install -e .`:
 # Interactive configuration generator
 python -m blankslate.cli.config_generator
 # or
-tablet-config
+tablet-config-generator
 
 # View tablet events
 python -m blankslate.cli.event_viewer -c path/to/config.json --live
@@ -91,9 +91,9 @@ Interactive step-by-step wizard to generate tablet configurations:
 
 ```bash
 # With installation
-tablet-config
-tablet-config --mock  # Use mock data for testing
-tablet-config --record captured-data.json  # Save all captured packets
+tablet-config-generator
+tablet-config-generator --mock  # Use mock data for testing
+tablet-config-generator --record captured-data.json  # Save all captured packets
 
 # Without installation (development)
 cd python
@@ -104,7 +104,7 @@ python generate_config.py --record captured-data.json
 
 > **macOS + Huion tablets:** If your tablet sends buttons via the Keyboard HID interface, you'll need `sudo` to detect buttons during the walkthrough:
 > ```bash
-> sudo tablet-config
+> sudo tablet-config-generator
 > # or
 > sudo python generate_config.py
 > ```
@@ -300,7 +300,7 @@ All tools support `--mock` flag for testing without physical hardware:
 
 ```bash
 # With installation
-tablet-config --mock
+tablet-config-generator --mock
 tablet-events -c config.json --mock --live
 tablet-websocket -c config.json --mock
 

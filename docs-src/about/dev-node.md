@@ -103,9 +103,6 @@ npm run events -- -c public/configs/xp-pen-deco640.json --live
 
 # WebSocket server
 npm run websocket -- -c public/configs/xp-pen-deco640.json
-
-# Interface diagnostic
-npm run diagnose
 ```
 
 ### Building

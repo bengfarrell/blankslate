@@ -14,7 +14,7 @@ Hi, welcome to Blankslate! Much of this project and documentation were done with
 write this introduction myself.
 
 Blankslate is the second iteration of a project I was working on. The human interface device part of that project became
-a little to big and confusing, so I broke it out into this project.  
+a little too big and confusing, so I broke it out into this project.  
 
 I started with a $30 drawing tablet ([the XPPen Deco 640](https://www.amazon.com/Deco-640-Sensitivity-Battery-Free-Designing/dp/B0D6XZF9N4)) with the goal to 
 use like a musical instrument - specifically to strum a guitar like the [Suzuki Omnichord](https://www.suzuki-music.co.jp/special/omnichord_om-108/en/).
@@ -22,10 +22,12 @@ use like a musical instrument - specifically to strum a guitar like the [Suzuki 
 Choosing to use a drawing tablet not as a drawing tablet requires reading and interpreting those low level bytes.
 I only have this one drawing tablet right now, and if I plan to share what I've done, other drawing tablets need to work.
 
-Unfortunately, it's looking like reading those bytes across tablets will all be different. So in addition to reading a data stream and translating to tablet events,
+Unfortunately, it's looking like reading those bytes across tablets might vary. So in addition to reading a data stream and translating to tablet events,
 this project also features a way to generate JSON configuration files that can be used to interpret the raw data into tablet events.
 
-Will this work for your tablet? I don't know! I've just done the one so far.
+Will this work for your tablet? I don't know! I've just done the XP Pen Deco 640 as well as my new [Huion Inspiroy 2 M](https://www.amazon.com/dp/B0BNQ9DVD3) so far.
+The digitizer interface (the drawing part) seems to be extremely similar with just different report IDs identifying the two interfaces.
+The buttons are an entirely different story. The Huion comes in only as a keyboard HID interface, while on the XP they come in on the digitizer.
 
 Blankslate has support for Node.js, Python and Web. Node.js and Python are low level enough that things work pretty well.
 Web is based on Chrome's experimental [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API). There are some restrictions here.

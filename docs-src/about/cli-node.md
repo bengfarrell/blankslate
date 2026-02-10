@@ -213,20 +213,6 @@ ws.onmessage = (event) => {
 
 ---
 
-## Interface Diagnostic
-
-List all HID devices and their interfaces:
-
-```bash
-npm run diagnose
-# or
-npx tsx src/cli/interface-diagnostic.ts
-```
-
-Useful for finding your tablet's vendor ID, product ID, and usage pages.
-
----
-
 ## npm Scripts Reference
 
 | Script | Description |
@@ -234,5 +220,4 @@ Useful for finding your tablet's vendor ID, product ID, and usage pages.
 | `npm run config` | Run config generator |
 | `npm run events` | Run event viewer |
 | `npm run websocket` | Run WebSocket server |
-| `npm run diagnose` | Run interface diagnostic |
 | `npm run build:cli` | Build CLI for distribution |

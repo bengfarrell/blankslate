@@ -39,8 +39,8 @@ npm run config
 npx tsx src/cli/config-generator.ts --mock
 
 # Python
-tablet-config
-tablet-config --mock
+tablet-config-generator
+tablet-config-generator --mock
 ```
 
 ### Event Viewer
