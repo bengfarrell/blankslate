@@ -3,7 +3,6 @@
  * Generates mock HID packets that match a specific device configuration
  */
 
-import { readFileSync } from 'fs';
 import { TabletDataGenerator, GeneratorConfig } from './tablet-data-generator.js';
 
 export interface DeviceConfig {
@@ -42,7 +41,7 @@ export interface ConfigDeviceInfo {
 
 /**
  * Generates mock data tailored to a specific device configuration.
- * Reads the config and creates packets matching the exact byte structure.
+ * Accepts a config object and creates packets matching the exact byte structure.
  */
 export class ConfigBasedGenerator {
   private config: DeviceConfig;
@@ -50,16 +49,19 @@ export class ConfigBasedGenerator {
   private generator: TabletDataGenerator;
   private buttonConfig: Record<string, any>;
   private buttonType: string;
-  
+
   readonly maxX: number;
   readonly maxY: number;
   readonly maxPressure: number;
   readonly reportId: number;
   readonly sampleRate: number = 200;
 
-  constructor(configPath: string) {
-    const content = readFileSync(configPath, 'utf-8');
-    this.config = JSON.parse(content);
+  /**
+   * Create a ConfigBasedGenerator from a device config object.
+   * @param config - The device configuration object (parsed JSON)
+   */
+  constructor(config: DeviceConfig) {
+    this.config = config;
 
     // Support both multi-mode format (modes array) and legacy single-mode format
     if (this.config.modes && Array.isArray(this.config.modes) && this.config.modes.length > 0) {
@@ -425,8 +427,8 @@ export class ConfigBasedGenerator {
 }
 
 /**
- * Factory function to create a config-based generator
+ * Factory function to create a config-based generator from a config object
  */
-export function createConfigBasedGenerator(configPath: string): ConfigBasedGenerator {
-  return new ConfigBasedGenerator(configPath);
+export function createConfigBasedGenerator(config: DeviceConfig): ConfigBasedGenerator {
+  return new ConfigBasedGenerator(config);
 }

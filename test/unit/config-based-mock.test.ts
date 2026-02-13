@@ -1,7 +1,7 @@
 /**
  * Unit tests for config-based mock data generation
  * Tests that mock data correctly matches device configurations
- * 
+ *
  * This mirrors the Python test_config_based_mock.py tests.
  */
 
@@ -11,6 +11,7 @@ import { join } from 'path';
 import {
   ConfigBasedGenerator,
   createConfigBasedGenerator,
+  DeviceConfig,
   TabletDataGenerator,
 } from '../../src/mockbytes/index.js';
 import { processDeviceData } from '../../src/utils/data-helpers.js';
@@ -19,6 +20,11 @@ import { processDeviceData } from '../../src/utils/data-helpers.js';
 const TEST_CONFIG_PATH = join(__dirname, '../../common-test-fixtures/test-tablet-config.json');
 const XP_PEN_CONFIG_PATH = join(__dirname, '../../common-test-fixtures/xp-pen-deco640-driverless.json');
 const DRIVER_CONFIG_PATH = join(__dirname, '../../common-test-fixtures/xp-pen-deco640-driver.json');
+
+// Helper to load config from file (Node.js only, for tests)
+function loadConfig(configPath: string): DeviceConfig {
+  return JSON.parse(readFileSync(configPath, 'utf-8'));
+}
 
 /**
  * Helper to extract mode data from either multi-mode or legacy single-mode config format.
@@ -45,8 +51,8 @@ describe('ConfigBasedGenerator', () => {
   let xpPenGenerator: ConfigBasedGenerator;
 
   beforeEach(() => {
-    testGenerator = new ConfigBasedGenerator(TEST_CONFIG_PATH);
-    xpPenGenerator = new ConfigBasedGenerator(XP_PEN_CONFIG_PATH);
+    testGenerator = new ConfigBasedGenerator(loadConfig(TEST_CONFIG_PATH));
+    xpPenGenerator = new ConfigBasedGenerator(loadConfig(XP_PEN_CONFIG_PATH));
   });
 
   describe('initialization', () => {
@@ -142,7 +148,7 @@ describe('XP-Pen Button Generation', () => {
   let xpPenGenerator: ConfigBasedGenerator;
 
   beforeEach(() => {
-    xpPenGenerator = new ConfigBasedGenerator(XP_PEN_CONFIG_PATH);
+    xpPenGenerator = new ConfigBasedGenerator(loadConfig(XP_PEN_CONFIG_PATH));
   });
 
   it('should generate button packets correctly', () => {
@@ -217,7 +223,7 @@ describe('XP-Pen Button Generation', () => {
 
 describe('Factory Function', () => {
   it('should create generator correctly', () => {
-    const generator = createConfigBasedGenerator(TEST_CONFIG_PATH);
+    const generator = createConfigBasedGenerator(loadConfig(TEST_CONFIG_PATH));
 
     expect(generator).toBeInstanceOf(ConfigBasedGenerator);
     expect(generator.maxX).toBe(65535);
@@ -228,7 +234,7 @@ describe('End-to-End Processing', () => {
   let xpPenGenerator: ConfigBasedGenerator;
 
   beforeEach(() => {
-    xpPenGenerator = new ConfigBasedGenerator(XP_PEN_CONFIG_PATH);
+    xpPenGenerator = new ConfigBasedGenerator(loadConfig(XP_PEN_CONFIG_PATH));
   });
 
   it('should round-trip stylus data', () => {
@@ -307,7 +313,7 @@ describe('Driver Mode Generator', () => {
   let driverGenerator: ConfigBasedGenerator;
 
   beforeEach(() => {
-    driverGenerator = new ConfigBasedGenerator(DRIVER_CONFIG_PATH);
+    driverGenerator = new ConfigBasedGenerator(loadConfig(DRIVER_CONFIG_PATH));
   });
 
   it('should initialize correctly from driver config file', () => {
