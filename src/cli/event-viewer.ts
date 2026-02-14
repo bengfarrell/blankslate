@@ -106,11 +106,22 @@ export class EventStreamer extends TabletReaderBase {
       this.lastReportId = reportId;
 
       // Process the data using the config
-      // For keyboard interface, use keyboard button processing
+      // Check if this is a button interface packet that should use tabletButtons processing
+      // (XP-Pen style) vs keyboardButtons processing (Huion style)
       let events: Record<string, string | number | boolean>;
-      if (interfaceType === 'keyboard') {
+
+      // Check if any mode has this as a buttonInterfaceReportId with tabletButtons config
+      const hasTabletButtonsForReportId = this.configData.modes?.some(mode =>
+        mode.buttonInterfaceReportId === reportId &&
+        mode.byteCodeMappings?.tabletButtons
+      );
+
+      if (interfaceType === 'keyboard' && !hasTabletButtonsForReportId) {
+        // Huion-style: keyboard interface with keyboardButtons config
         events = this.processKeyboardPacket(data);
       } else {
+        // XP-Pen style or digitizer: use standard packet processing
+        // This handles tabletButtons with scan codes
         events = this.processPacket(data, reportId);
       }
 
