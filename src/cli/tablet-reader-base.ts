@@ -13,7 +13,7 @@ import HID from 'node-hid';
 import { Config } from '../models/config.js';
 import { processDeviceData, processKeyboardButtonData, type KeyboardButtonsConfig } from '../utils/data-helpers.js';
 import { MockHIDReader, createMockHIDReader } from '../core/hid/mock-hid-reader.js';
-import type { IHIDReader, HIDDeviceInfo } from '../core/hid/hid-interface.js';
+import type { IHIDReader, HIDDeviceInfo, HIDInterfaceType } from '../core/hid/hid-interface.js';
 import { createNodeHIDManager, MultiInterfaceReader, type NodeHIDReaderOptions } from './node-hid-reader.js';
 
 /**
@@ -64,6 +64,7 @@ export interface TabletEventData {
 export interface TabletReaderOptions {
   mock?: boolean;
   exitOnStop?: boolean; // Whether to call process.exit() in stop() - default true
+  configDir?: string; // Directory to search for configs when auto-detecting devices
 }
 
 /**
@@ -369,11 +370,162 @@ export function normalizeTabletEvent(events: Record<string, string | number | bo
 }
 
 /**
+ * Context for packet processing - tracks current mode for multi-mode configs
+ */
+export interface PacketProcessingContext {
+  currentMode: any;
+}
+
+/**
+ * Process a raw packet through the config mappings
+ * This is a standalone function that can be used without extending TabletReaderBase
+ *
+ * @param data The raw packet data
+ * @param configData The tablet configuration
+ * @param context Mutable context for tracking current mode (will be updated if mode is detected)
+ * @param reportId Optional Report ID (if not included in data)
+ * @param interfaceType Optional HID interface type ('keyboard', 'digitizer', 'other')
+ * @returns Processed event data
+ */
+export function processPacketWithConfig(
+  data: Uint8Array,
+  configData: Config,
+  context: PacketProcessingContext,
+  reportId?: number,
+  interfaceType?: HIDInterfaceType
+): Record<string, string | number | boolean> {
+  if (data.length === 0) {
+    return {};
+  }
+
+  // Extract report ID from first byte if not provided
+  const rid = reportId !== undefined ? reportId : data[0];
+
+  // Check if any mode has this as a buttonInterfaceReportId with tabletButtons config
+  // XP-Pen tablets use tabletButtons (scan codes), while Huion uses keyboardButtons (modifier + keycode)
+  const hasTabletButtonsForReportId = configData.modes?.some(mode =>
+    mode.buttonInterfaceReportId === rid &&
+    mode.byteCodeMappings?.tabletButtons
+  ) ?? false;
+
+  // Check if this is a keyboard interface packet
+  // Use interfaceType if available, otherwise fall back to checking report IDs (3, 4, 5)
+  const isKeyboardPacket = interfaceType === 'keyboard' ||
+    (interfaceType === undefined && (rid === 3 || rid === 4 || rid === 5));
+
+  // Only route to processKeyboardButtonData if it's a keyboard packet AND NOT using tabletButtons config
+  if (isKeyboardPacket && !hasTabletButtonsForReportId) {
+    // Try to find keyboardButtons config in any mode
+    let keyboardButtonsConfig: KeyboardButtonsConfig | null = null;
+    for (const mode of configData.modes) {
+      const kbConfig = mode.byteCodeMappings?.keyboardButtons;
+      if (kbConfig && kbConfig.buttons) {
+        keyboardButtonsConfig = kbConfig as KeyboardButtonsConfig;
+        break;
+      }
+    }
+
+    if (keyboardButtonsConfig) {
+      return processKeyboardButtonData(data, keyboardButtonsConfig);
+    }
+    // If no keyboard buttons config, fall through to normal processing
+  }
+
+  // For multi-mode configs, get Report ID and appropriate mappings
+  let mappings;
+  let buttonInterfaceReportId;
+
+  // Check if this is a multi-mode config (more than one mode)
+  const isMultiMode = configData.modes && configData.modes.length > 1;
+
+  if (isMultiMode) {
+    // First try to find mode by main report ID
+    let mode = configData.getModeByReportId(rid);
+
+    // If found by main report ID, this becomes the current mode
+    if (mode && context.currentMode === null) {
+      context.currentMode = mode;
+      console.log(chalk.green(`\n✓ Detected device mode: `) + chalk.cyan.bold(`Report ID ${rid}`));
+      if (mode.capabilities?.resolution) {
+        console.log(chalk.cyan(`  Resolution: `) + chalk.white(`${mode.capabilities.resolution.x}x${mode.capabilities.resolution.y}\n`));
+      }
+    }
+
+    // If not found by main report ID, check if this is a button interface report ID
+    // IMPORTANT: Check current mode first to avoid ambiguity when multiple modes share the same buttonInterfaceReportId
+    if (!mode && rid !== undefined) {
+      // First check if it matches the current mode's button interface
+      if (context.currentMode && context.currentMode.buttonInterfaceReportId === rid) {
+        mode = context.currentMode;
+      }
+      // If not, search all modes (fallback for first button packet before stylus packet)
+      else if (configData.modes) {
+        // Find all modes with matching buttonInterfaceReportId
+        const matchingModes = configData.modes.filter(m => m.buttonInterfaceReportId === rid);
+
+        if (matchingModes.length === 1) {
+          mode = matchingModes[0];
+        } else if (matchingModes.length > 1) {
+          // Multiple modes share the same buttonInterfaceReportId
+          // Try to detect which mode based on the button data (scan code at byte index 2)
+          const tabletButtonsMapping = data.length > 2 ? data[2] : 0;
+
+          // Find mode whose tabletButtons config contains this scan code
+          for (const candidateMode of matchingModes) {
+            const tabletButtons = candidateMode.byteCodeMappings?.tabletButtons;
+            if (tabletButtons?.values) {
+              const scanCodeStr = String(tabletButtonsMapping);
+              if (tabletButtons.values[scanCodeStr]) {
+                mode = candidateMode;
+                // Set currentMode so future packets use the same mode
+                if (context.currentMode === null) {
+                  context.currentMode = mode;
+                  console.log(chalk.green(`\n✓ Detected device mode from button data: `) +
+                    chalk.cyan.bold(`buttonInterfaceReportId ${rid}, scan code ${tabletButtonsMapping}`));
+                }
+                break;
+              }
+            }
+          }
+
+          // Fallback to first matching mode if no scan code match
+          if (!mode) {
+            mode = matchingModes[0];
+          }
+        }
+      }
+    }
+
+    if (mode) {
+      mappings = mode.byteCodeMappings;
+      buttonInterfaceReportId = mode.buttonInterfaceReportId;
+    } else {
+      // Unknown Report ID, return empty result
+      return {};
+    }
+  } else {
+    // Single-mode config - use first mode
+    const mode = configData.modes[0];
+    mappings = mode?.byteCodeMappings;
+    buttonInterfaceReportId = mode?.buttonInterfaceReportId;
+  }
+
+  return processDeviceData(data, mappings, 0, {
+    buttonInterfaceReportId,
+  });
+}
+
+/**
  * Abstract base class for tablet readers (event-viewer, websocket-server, etc.)
+ *
+ * Supports two initialization modes:
+ * 1. Immediate: Pass configPath to constructor - config is loaded immediately
+ * 2. Deferred: Pass configDir to constructor - config is loaded when device is detected
  */
 export abstract class TabletReaderBase {
   protected reader: IHIDReader | null = null;
-  protected configData: Config;
+  protected configData: Config | null = null;
+  protected configDir: string | null = null;
   protected isMockMode: boolean;
   protected exitOnStop: boolean;
   protected packetCount = 0;
@@ -392,10 +544,48 @@ export abstract class TabletReaderBase {
   protected currentMode: any = null;
   protected detectedReportId: number | null = null;
 
-  constructor(configPath: string, options: TabletReaderOptions) {
+  /**
+   * Create a TabletReaderBase instance.
+   *
+   * @param configPath - Path to a specific config file (optional if configDir is provided in options)
+   * @param options - Reader options including configDir for auto-detection
+   *
+   * If configPath is provided, the config is loaded immediately.
+   * If only configDir is provided (via options), the reader starts without a config
+   * and will auto-detect the device when startDevicePolling() is called.
+   */
+  constructor(configPath: string | null, options: TabletReaderOptions) {
     this.isMockMode = options.mock ?? false;
     this.exitOnStop = options.exitOnStop ?? true;
-    this.configData = loadConfig(configPath);
+    this.configDir = options.configDir ?? null;
+
+    if (configPath) {
+      this.configData = loadConfig(configPath);
+    }
+  }
+
+  /**
+   * Check if a config has been loaded
+   */
+  protected hasConfig(): boolean {
+    return this.configData !== null;
+  }
+
+  /**
+   * Load config for a detected device. Called during auto-detection.
+   * @returns true if config was loaded successfully
+   */
+  protected loadConfigForDetectedDevice(): boolean {
+    if (!this.configDir) {
+      return false;
+    }
+
+    const configPath = findConfigForDevice(this.configDir);
+    if (configPath) {
+      this.configData = loadConfig(configPath);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -406,21 +596,32 @@ export abstract class TabletReaderBase {
     console.log(chalk.blue.bold('║           ') + chalk.blue.bold(title.padEnd(48)) + chalk.blue.bold('║'));
     console.log(chalk.blue.bold('╚════════════════════════════════════════════════════════════╝'));
     console.log();
-    console.log(chalk.cyan('Config:'), chalk.white(this.configData.name || 'Unknown'));
-    console.log(chalk.cyan('Mode:'), this.isMockMode ? chalk.yellow('Mock Data') : chalk.green('Real Device'));
 
-    if (!this.isMockMode) {
-      const vid = this.configData.deviceInfo?.vendor_id;
-      const pid = this.configData.deviceInfo?.product_id;
-      console.log(chalk.cyan('Device IDs:'), chalk.white(`0x${vid?.toString(16) || '?'} : 0x${pid?.toString(16) || '?'}`));
+    if (this.configData) {
+      console.log(chalk.cyan('Config:'), chalk.white(this.configData.name || 'Unknown'));
+      console.log(chalk.cyan('Mode:'), this.isMockMode ? chalk.yellow('Mock Data') : chalk.green('Real Device'));
+
+      if (!this.isMockMode) {
+        const vid = this.configData.deviceInfo?.vendor_id;
+        const pid = this.configData.deviceInfo?.product_id;
+        console.log(chalk.cyan('Device IDs:'), chalk.white(`0x${vid?.toString(16) || '?'} : 0x${pid?.toString(16) || '?'}`));
+      }
+    } else {
+      console.log(chalk.cyan('Config:'), chalk.yellow('Waiting for device...'));
+      console.log(chalk.cyan('Mode:'), chalk.yellow('Auto-detect'));
     }
     console.log();
   }
 
   /**
    * Initialize the HID reader (mock or real)
+   * Requires configData to be loaded first
    */
   protected async initializeReader(): Promise<void> {
+    if (!this.configData) {
+      throw new Error('Cannot initialize reader: no config loaded');
+    }
+
     if (this.isMockMode) {
       this.reader = createMockReader(this.configData);
     } else {
@@ -480,91 +681,37 @@ export abstract class TabletReaderBase {
    * Process a raw packet through the config mappings
    * @param data The raw packet data
    * @param reportId Optional Report ID (if not included in data)
+   * @param interfaceType Optional HID interface type ('keyboard', 'digitizer', 'other')
    */
-  protected processPacket(data: Uint8Array, reportId?: number): Record<string, string | number | boolean> {
-    if (data.length === 0) {
+  protected processPacket(data: Uint8Array, reportId?: number, interfaceType?: HIDInterfaceType): Record<string, string | number | boolean> {
+    if (!this.configData) {
       return {};
     }
 
-    // Extract report ID from first byte if not provided
-    const rid = reportId !== undefined ? reportId : data[0];
+    // Create a context object that wraps our currentMode
+    // The standalone function will update context.currentMode, and we sync it back
+    const context: PacketProcessingContext = { currentMode: this.currentMode };
 
-    // Check if this is a keyboard button packet (report IDs 3, 4, 5)
-    // These come from a separate keyboard HID interface on some tablets (e.g., Huion)
-    if (rid === 3 || rid === 4 || rid === 5) {
-      // Try to find keyboardButtons config in any mode
-      let keyboardButtonsConfig: KeyboardButtonsConfig | null = null;
-      for (const mode of this.configData.modes) {
-        const kbConfig = mode.byteCodeMappings?.keyboardButtons;
-        if (kbConfig && kbConfig.buttons) {
-          keyboardButtonsConfig = kbConfig as KeyboardButtonsConfig;
-          break;
-        }
-      }
+    const result = processPacketWithConfig(data, this.configData, context, reportId, interfaceType);
 
-      if (keyboardButtonsConfig) {
-        return processKeyboardButtonData(data, keyboardButtonsConfig);
+    // Sync the currentMode back from the context
+    if (context.currentMode !== this.currentMode) {
+      this.currentMode = context.currentMode;
+      if (this.currentMode) {
+        this.detectedReportId = this.currentMode.reportId ?? null;
       }
-      // If no keyboard buttons config, fall through to normal processing
     }
 
-    // For multi-mode configs, get Report ID and appropriate mappings
-    let mappings;
-    let buttonInterfaceReportId;
-
-    // Check if this is a multi-mode config (more than one mode)
-    const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
-
-    if (isMultiMode) {
-      // First try to find mode by main report ID
-      let mode = this.configData.getModeByReportId(rid);
-
-      // If found by main report ID, this becomes the current mode
-      if (mode && this.currentMode === null) {
-        this.currentMode = mode;
-        this.detectedReportId = rid ?? null;
-        console.log(chalk.green(`\n✓ Detected device mode: `) + chalk.cyan.bold(`Report ID ${rid}`));
-        if (mode.capabilities?.resolution) {
-          console.log(chalk.cyan(`  Resolution: `) + chalk.white(`${mode.capabilities.resolution.x}x${mode.capabilities.resolution.y}\n`));
-        }
-      }
-
-      // If not found by main report ID, check if this is a button interface report ID
-      // IMPORTANT: Check current mode first to avoid ambiguity when multiple modes share the same buttonInterfaceReportId
-      if (!mode && rid !== undefined) {
-        // First check if it matches the current mode's button interface
-        if (this.currentMode && this.currentMode.buttonInterfaceReportId === rid) {
-          mode = this.currentMode;
-        }
-        // If not, search all modes (fallback for first button packet before stylus packet)
-        else if (this.configData.modes) {
-          mode = this.configData.modes.find(m => m.buttonInterfaceReportId === rid);
-        }
-      }
-
-      if (mode) {
-        mappings = mode.byteCodeMappings;
-        buttonInterfaceReportId = mode.buttonInterfaceReportId;
-      } else {
-        // Unknown Report ID, return empty result
-        return {};
-      }
-    } else {
-      // Single-mode config - use first mode
-      const mode = this.configData.modes[0];
-      mappings = mode?.byteCodeMappings;
-      buttonInterfaceReportId = mode?.buttonInterfaceReportId;
-    }
-
-    return processDeviceData(data, mappings, 0, {
-      buttonInterfaceReportId,
-    });
+    return result;
   }
 
   /**
    * Handle a received packet - override in subclasses
+   * @param data The raw packet data
+   * @param reportId Optional Report ID
+   * @param interfaceType Optional HID interface type ('keyboard', 'digitizer', 'other')
    */
-  protected abstract handlePacket(data: Uint8Array): void;
+  protected abstract handlePacket(data: Uint8Array, reportId?: number, interfaceType?: HIDInterfaceType): void;
 
   /**
    * Start the reader - override in subclasses for additional setup
@@ -618,6 +765,16 @@ export abstract class TabletReaderBase {
       this.reader = null;
     }
 
+    // Reset mode tracking
+    this.currentMode = null;
+    this.detectedReportId = null;
+
+    // In deferred mode (configDir set), clear the config so we can auto-detect
+    // a potentially different device on reconnect
+    if (this.configDir) {
+      this.configData = null;
+    }
+
     // Start device polling for reconnection
     if (!this.isReconnecting) {
       this.reconnectAttempts = 0;
@@ -665,20 +822,34 @@ export abstract class TabletReaderBase {
   }
 
   /**
-   * Check if the device is physically present in the system
+   * Check if the device is physically present in the system.
+   *
+   * If configData is loaded, checks for that specific device.
+   * If no configData but configDir is set, uses findConfigForDevice to check for any supported device.
    */
   protected async isDevicePresent(): Promise<boolean> {
     try {
-      const vendorId = this.configData.deviceInfo?.vendor_id;
-      const productId = this.configData.deviceInfo?.product_id;
+      // If we have a config, check for that specific device
+      if (this.configData) {
+        const vendorId = this.configData.deviceInfo?.vendor_id;
+        const productId = this.configData.deviceInfo?.product_id;
 
-      if (!vendorId || !productId) {
-        return false;
+        if (!vendorId || !productId) {
+          return false;
+        }
+
+        const manager = createNodeHIDManager();
+        const devices = await manager.listDevices({ vendorId, productId });
+        return devices.length > 0;
       }
 
-      const manager = createNodeHIDManager();
-      const devices = await manager.listDevices({ vendorId, productId });
-      return devices.length > 0;
+      // No config loaded - check if any supported device is present using findConfigForDevice
+      if (this.configDir) {
+        const configPath = findConfigForDevice(this.configDir);
+        return configPath !== null;
+      }
+
+      return false;
     } catch {
       return false;
     }
@@ -686,7 +857,10 @@ export abstract class TabletReaderBase {
 
   /**
    * Attempt to reconnect to the device
-   * Called after device presence is confirmed
+   * Called after device presence is confirmed.
+   *
+   * If no config is loaded yet (deferred initialization mode), this will
+   * attempt to load the config for the detected device first.
    */
   protected async attemptReconnect(): Promise<void> {
     if (this.isReconnecting) return;
@@ -696,6 +870,19 @@ export abstract class TabletReaderBase {
     console.log(chalk.yellow('Attempting to reconnect...'));
 
     try {
+      // If no config loaded yet, try to load one for the detected device
+      if (!this.configData) {
+        if (!this.loadConfigForDetectedDevice()) {
+          throw new Error('No config found for detected device');
+        }
+        // configData is now guaranteed to be set by loadConfigForDetectedDevice
+        console.log(chalk.green(`✓ Loaded config: ${this.configData!.name || 'Unknown'}`));
+      }
+
+      // Reset mode tracking for new connection
+      this.currentMode = null;
+      this.detectedReportId = null;
+
       // Try to reinitialize the device
       await this.initializeReader();
 
@@ -704,13 +891,16 @@ export abstract class TabletReaderBase {
       }
 
       // Restart reading
-      this.reader.startReading((data) => {
-        this.handlePacket(data);
+      this.reader.startReading((data, reportId, interfaceType) => {
+        this.handlePacket(data, reportId, interfaceType);
       });
 
       console.log(chalk.green('✓ Device reconnected successfully!'));
       this.isReconnecting = false;
       this.reconnectAttempts = 0;
+
+      // Notify subclasses that device is connected
+      this.onDeviceConnected();
 
     } catch (error) {
       // Reconnection failed even though device was detected
@@ -735,5 +925,14 @@ export abstract class TabletReaderBase {
         }
       }, backoffTime);
     }
+  }
+
+  /**
+   * Called when a device is successfully connected (or reconnected).
+   * Override in subclasses to perform additional setup.
+   */
+  protected onDeviceConnected(): void {
+    // Default implementation does nothing
+    // Subclasses can override to send status updates, etc.
   }
 }

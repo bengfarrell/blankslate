@@ -36,10 +36,6 @@
       "types": "./dist/cli/tablet-reader-base.d.ts",
       "import": "./dist/cli/tablet-reader-base.js"
     },
-    "./cli/tablet-reader-base.js": {
-      "types": "./dist/cli/tablet-reader-base.d.ts",
-      "import": "./dist/cli/tablet-reader-base.js"
-    },
     "./cli/node-hid-reader": {
       "types": "./dist/cli/node-hid-reader.d.ts",
       "import": "./dist/cli/node-hid-reader.js"
@@ -114,7 +110,7 @@
     "config": "npx tsx src/cli/config-generator.ts",
     "events": "npx tsx src/cli/event-viewer.ts",
     "websocket": "npx tsx src/cli/tablet-websocket-server.ts",
-     "webapp:build": "vite build --config vite.webapp.config.ts",
+    "webapp:build": "vite build --config vite.webapp.config.ts",
     "docs:build": "eleventy --config=eleventy.config.mjs",
     "docs:serve": "eleventy --config=eleventy.config.mjs --serve",
     "docs:watch": "eleventy --config=eleventy.config.mjs --watch",

@@ -22,6 +22,7 @@ import {
   normalizeTabletEvent,
   resolveConfigPath,
 } from './tablet-reader-base.js';
+import type { HIDInterfaceType } from '../core/hid/hid-interface.js';
 
 // Default config directory (relative to project root)
 const DEFAULT_CONFIG_DIR = path.resolve(process.cwd(), 'public', 'configs');
@@ -83,17 +84,17 @@ export class TabletWebSocketServer extends TabletReaderBase {
       // Send initial connection confirmation
       const connectionMessage: any = {
         type: 'connected',
-        config: {
+        config: this.configData ? {
           name: this.configData.name,
           manufacturer: this.configData.manufacturer,
           model: this.configData.model,
-        },
+        } : null,
         mode: this.isMockMode ? 'mock' : 'device',
         dataFormat: this.sendRaw ? 'raw' : 'translated',
       };
 
       // If sending raw bytes, include the full config so client can interpret them
-      if (this.sendRaw) {
+      if (this.sendRaw && this.configData) {
         // Convert Config instance to plain object for JSON serialization
         // Use the new multi-mode config format
         connectionMessage.fullConfig = {
@@ -123,8 +124,8 @@ export class TabletWebSocketServer extends TabletReaderBase {
 
     // Start reading HID data
     console.log(chalk.gray('Setting up data callback...'));
-    this.reader.startReading((data) => {
-      this.handlePacket(data);
+    this.reader.startReading((data, reportId, interfaceType) => {
+      this.handlePacket(data, reportId, interfaceType);
     });
 
     console.log(chalk.green('✓ Started reading tablet data'));
@@ -143,7 +144,7 @@ export class TabletWebSocketServer extends TabletReaderBase {
     }
   }
 
-  protected handlePacket(data: Uint8Array): void {
+  protected handlePacket(data: Uint8Array, reportId?: number, interfaceType?: HIDInterfaceType): void {
     try {
       this.packetCount++;
 
@@ -152,7 +153,7 @@ export class TabletWebSocketServer extends TabletReaderBase {
         this.broadcastRaw(data);
       } else {
         // Process raw bytes into tablet events
-        const events = this.processPacket(data);
+        const events = this.processPacket(data, reportId, interfaceType);
         const normalized = normalizeTabletEvent(events);
 
         // Build WebSocket event

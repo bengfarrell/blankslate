@@ -102,6 +102,8 @@ export class EventStreamer extends TabletReaderBase {
 
   protected handlePacket(data: Uint8Array, reportId?: number, interfaceType?: HIDInterfaceType): void {
     try {
+      if (!this.configData) return;
+
       this.packetCount++;
       this.lastReportId = reportId;
 
@@ -154,6 +156,8 @@ export class EventStreamer extends TabletReaderBase {
    * @returns Processed button events
    */
   protected processKeyboardPacket(data: Uint8Array): Record<string, string | number | boolean> {
+    if (!this.configData) return {};
+
     // Get keyboardButtons config from current mode
     let keyboardButtonsConfig: KeyboardButtonsConfig | undefined;
 
@@ -182,6 +186,8 @@ export class EventStreamer extends TabletReaderBase {
    * Extract raw multi-byte values from data and track max values seen
    */
   private trackRawValues(data: Uint8Array): void {
+    if (!this.configData) return;
+
     const dataList = Array.from(data);
 
     // Get mappings from current mode (for multi-mode configs) or from config directly
@@ -282,6 +288,8 @@ export class EventStreamer extends TabletReaderBase {
    */
   private updateCalibrationWarnings(): void {
     this.calibrationWarnings = [];
+
+    if (!this.configData) return;
 
     // Get mappings from current mode (for multi-mode configs) or from config directly
     const isMultiMode = this.configData.modes && this.configData.modes.length > 1;
@@ -456,6 +464,8 @@ export class EventStreamer extends TabletReaderBase {
     // ANSI codes
     const HIDE_CURSOR = '\x1b[?25l';
     const CLEAR_LINE = '\x1b[2K';
+
+    if (!this.configData) return;
 
     // Get config max values for calibration warnings
     // Get mappings from current mode (for multi-mode configs) or from config directly
