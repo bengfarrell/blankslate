@@ -39,9 +39,10 @@ export const styles = css`
     display: flex;
     gap: 24px;
     padding: 16px 20px;
-    background: var(--spectrum-gray-75);
+    background: var(--spectrum-gray-100);
     border-radius: 12px;
     border: 1px solid var(--spectrum-gray-200);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     flex-wrap: wrap;
   }
 
@@ -278,11 +279,18 @@ export const styles = css`
 
   .visualizer-card {
     background: var(--spectrum-gray-100);
-    border-radius: 16px;
+    border-radius: 12px;
     padding: 12px;
     border: 1px solid var(--spectrum-gray-200);
     min-width: 0;
     overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .visualizer-card:hover {
+    border-color: var(--spectrum-gray-300);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
 
   /* Compact panels (25% width) with constrained visualizer */
