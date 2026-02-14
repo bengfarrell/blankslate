@@ -90,49 +90,51 @@ describe('HID Dashboard Translation Integration', () => {
       expect(decoded.tiltY).toBe(-0.1);
     });
 
-    it('should produce equivalent results from both modes', (done) => {
-      const device = new MockTabletDevice({
-        maxX: 16000,
-        maxY: 9000,
-        translateEvents: true,
-        byteCodeMappings: testConfig,
+    it('should produce equivalent results from both modes', () => {
+      return new Promise<void>((resolve) => {
+        const device = new MockTabletDevice({
+          maxX: 16000,
+          maxY: 9000,
+          translateEvents: true,
+          byteCodeMappings: testConfig,
+        });
+
+        let rawData: Uint8Array | null = null;
+        let translatedData: any = null;
+        let completed = false;
+
+        device.addEventListener('inputreport', (data: Uint8Array) => {
+          // Ignore events after test completion
+          if (completed) return;
+          rawData = data;
+        });
+
+        device.addEventListener('tablet-event', (data: Uint8Array) => {
+          // Ignore events after test completion
+          if (completed) return;
+
+          const jsonStr = new TextDecoder().decode(data);
+          translatedData = JSON.parse(jsonStr);
+
+          if (rawData && translatedData) {
+            // Mark completed and stop device BEFORE assertions to prevent further events
+            completed = true;
+            device.stop();
+
+            // Use offset -1 to match how MockTabletDevice processes data internally
+            // (simulating WebHID which strips the report ID)
+            const manuallyProcessed = processDeviceData(rawData, testConfig, -1);
+
+            // Values should be equivalent
+            expect(Math.abs(translatedData.x - manuallyProcessed.x)).toBeLessThan(0.001);
+            expect(Math.abs(translatedData.y - manuallyProcessed.y)).toBeLessThan(0.001);
+
+            resolve();
+          }
+        });
+
+        device.playCircle();
       });
-
-      let rawData: Uint8Array | null = null;
-      let translatedData: any = null;
-      let completed = false;
-
-      device.addEventListener('inputreport', (data: Uint8Array) => {
-        // Ignore events after test completion
-        if (completed) return;
-        rawData = data;
-      });
-
-      device.addEventListener('tablet-event', (data: Uint8Array) => {
-        // Ignore events after test completion
-        if (completed) return;
-
-        const jsonStr = new TextDecoder().decode(data);
-        translatedData = JSON.parse(jsonStr);
-
-        if (rawData && translatedData) {
-          // Mark completed and stop device BEFORE assertions to prevent further events
-          completed = true;
-          device.stop();
-
-          // Use offset -1 to match how MockTabletDevice processes data internally
-          // (simulating WebHID which strips the report ID)
-          const manuallyProcessed = processDeviceData(rawData, testConfig, -1);
-
-          // Values should be equivalent
-          expect(Math.abs(translatedData.x - manuallyProcessed.x)).toBeLessThan(0.001);
-          expect(Math.abs(translatedData.y - manuallyProcessed.y)).toBeLessThan(0.001);
-
-          done();
-        }
-      });
-
-      device.playCircle();
     });
   });
 });

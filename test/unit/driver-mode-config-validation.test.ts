@@ -90,8 +90,8 @@ describe('Driver Mode Config Validation', () => {
     driverConfig = JSON.parse(readFileSync(DRIVER_CONFIG_PATH, 'utf-8'));
     mode = driverConfig.modes[0];
 
-    // Create generator from driver config
-    generator = new ConfigBasedGenerator(DRIVER_CONFIG_PATH);
+    // Create generator from driver config (pass the config object, not the path)
+    generator = new ConfigBasedGenerator(driverConfig);
 
     // Create walkthrough engine with packetIncludesReportId: true (Node.js style)
     engine = new WalkthroughEngine({
@@ -337,7 +337,8 @@ describe('Driver Mode Config Round-Trip Validation', () => {
   beforeEach(() => {
     driverConfig = JSON.parse(readFileSync(DRIVER_CONFIG_PATH, 'utf-8'));
     mode = driverConfig.modes[0];
-    generator = new ConfigBasedGenerator(DRIVER_CONFIG_PATH);
+    // Pass the config object, not the path
+    generator = new ConfigBasedGenerator(driverConfig);
   });
 
   it('should generate packets that process back to original values', () => {

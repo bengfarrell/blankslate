@@ -86,10 +86,10 @@ describe('Stable Config Validation', () => {
   beforeEach(() => {
     // Load stable config
     stableConfig = JSON.parse(readFileSync(STABLE_CONFIG_PATH, 'utf-8'));
-    
-    // Create generator from stable config
-    generator = new ConfigBasedGenerator(STABLE_CONFIG_PATH);
-    
+
+    // Create generator from stable config (pass the config object, not the path)
+    generator = new ConfigBasedGenerator(stableConfig);
+
     // Create walkthrough engine with packetIncludesReportId: true (Node.js style)
     engine = new WalkthroughEngine({
       minPacketsPerStep: 10,
@@ -327,7 +327,8 @@ describe('Config Round-Trip Validation', () => {
 
   beforeEach(() => {
     stableConfig = JSON.parse(readFileSync(STABLE_CONFIG_PATH, 'utf-8'));
-    generator = new ConfigBasedGenerator(STABLE_CONFIG_PATH);
+    // Pass the config object, not the path
+    generator = new ConfigBasedGenerator(stableConfig);
   });
 
   it('should generate packets that process back to original values', () => {
