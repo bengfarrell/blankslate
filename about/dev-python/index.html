@@ -167,12 +167,12 @@ pip <span class="token function">install</span> <span class="token parameter var
 </ul>
 <h3>3. Verify Installation</h3>
 <pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># Check CLI tools are available</span>
-tablet-config <span class="token parameter variable">--help</span>
+tablet-config-generator <span class="token parameter variable">--help</span>
 tablet-events <span class="token parameter variable">--help</span>
 tablet-websocket <span class="token parameter variable">--help</span>
 
 <span class="token comment"># Test Python imports</span>
-python <span class="token parameter variable">-c</span> <span class="token string">"from blankslate import Config, HIDReader; print('✅ Import successful!')"</span></code></pre>
+python <span class="token parameter variable">-c</span> <span class="token string">"from blankslate.models import Config; print('✅ Import successful!')"</span></code></pre>
 <hr>
 <h2>Project Structure</h2>
 <pre><code>python/

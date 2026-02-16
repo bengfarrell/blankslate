@@ -176,19 +176,19 @@
   <span class="token comment">// Walkthrough engine</span>
   WalkthroughEngine<span class="token punctuation">,</span>
   WalkthroughController<span class="token punctuation">,</span>
-  
+
   <span class="token comment">// HID interfaces</span>
   IHIDReader<span class="token punctuation">,</span>
   MockHIDReader<span class="token punctuation">,</span>
-  
+
   <span class="token comment">// Data processing</span>
   processDeviceData<span class="token punctuation">,</span>
   analyzeBytes<span class="token punctuation">,</span>
-  generateDeviceConfig<span class="token punctuation">,</span>
-  
+  generateCompleteConfig<span class="token punctuation">,</span>
+
   <span class="token comment">// Mock data</span>
   TabletDataGenerator<span class="token punctuation">,</span>
-  
+
   <span class="token comment">// Config</span>
   Config
 <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/core'</span><span class="token punctuation">;</span></code></pre>
@@ -222,18 +222,21 @@
 <h3>Reading Tablet Data (Node.js)</h3>
 <pre class="language-typescript" tabindex="0"><code class="language-typescript"><span class="token keyword">import</span> <span class="token punctuation">{</span> Config <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/models'</span><span class="token punctuation">;</span>
 <span class="token keyword">import</span> <span class="token punctuation">{</span> processDeviceData <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/utils'</span><span class="token punctuation">;</span>
-<span class="token keyword">import</span> <span class="token punctuation">{</span> NodeHIDReaderManager <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/cli/node-hid-reader'</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token punctuation">{</span> NodeHIDDeviceManager<span class="token punctuation">,</span> MultiInterfaceReader <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'blankslate/cli/node-hid-reader'</span><span class="token punctuation">;</span>
 
 <span class="token comment">// Load configuration</span>
 <span class="token keyword">const</span> config <span class="token operator">=</span> <span class="token keyword">await</span> Config<span class="token punctuation">.</span><span class="token function">load</span><span class="token punctuation">(</span><span class="token string">'./my-tablet-config.json'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> mode <span class="token operator">=</span> config<span class="token punctuation">.</span>modes<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token comment">// Get first mode configuration</span>
 
-<span class="token comment">// Create HID reader manager and open device</span>
-<span class="token keyword">const</span> manager <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">NodeHIDReaderManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token keyword">const</span> reader <span class="token operator">=</span> <span class="token keyword">await</span> manager<span class="token punctuation">.</span><span class="token function">openAllInterfaces</span><span class="token punctuation">(</span>
-  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>vendor_id<span class="token punctuation">,</span>
-  config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>product_id
-<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">// Create HID device manager and find device</span>
+<span class="token keyword">const</span> manager <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">NodeHIDDeviceManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> devices <span class="token operator">=</span> <span class="token keyword">await</span> manager<span class="token punctuation">.</span><span class="token function">listDevices</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  vendorId<span class="token operator">:</span> config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>vendor_id<span class="token punctuation">,</span>
+  productId<span class="token operator">:</span> config<span class="token punctuation">.</span>deviceInfo<span class="token punctuation">.</span>product_id
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Open the device</span>
+<span class="token keyword">const</span> reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MultiInterfaceReader</span><span class="token punctuation">(</span>devices<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">await</span> reader<span class="token punctuation">.</span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 <span class="token comment">// Process incoming data using mode's byte mappings</span>

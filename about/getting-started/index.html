@@ -204,7 +204,8 @@ tablet-events <span class="token parameter variable">-c</span> <span class="toke
 <h2>Connecting a Real Tablet</h2>
 <h3>1. Find Your Tablet</h3>
 <p><strong>Node.js:</strong></p>
-<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run diagnose</code></pre>
+<pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token comment"># List HID devices with digitizer usage page</span>
+<span class="token function">node</span> <span class="token parameter variable">-e</span> <span class="token string">"const HID = require('node-hid'); console.log(HID.devices().filter(d => d.usagePage === 13))"</span></code></pre>
 <p><strong>Python:</strong></p>
 <pre class="language-bash" tabindex="0"><code class="language-bash">python <span class="token parameter variable">-c</span> <span class="token string">"import hid; print([d for d in hid.enumerate() if d['usage_page'] == 13])"</span></code></pre>
 <p>Look for devices with <code>usage_page: 13</code> (Digitizer).</p>
@@ -213,7 +214,7 @@ tablet-events <span class="token parameter variable">-c</span> <span class="toke
 <p><strong>Node.js:</strong></p>
 <pre class="language-bash" tabindex="0"><code class="language-bash"><span class="token function">npm</span> run config</code></pre>
 <p><strong>Python:</strong></p>
-<pre class="language-bash" tabindex="0"><code class="language-bash">tablet-config</code></pre>
+<pre class="language-bash" tabindex="0"><code class="language-bash">tablet-config-generator</code></pre>
 <p>The interactive walkthrough guides you through:</p>
 <ol>
 <li>Connecting your device</li>
@@ -256,10 +257,6 @@ tablet-events <span class="token parameter variable">-c</span> your-config.json 
 <td><code>npm run websocket -- -c config.json</code></td>
 <td>Start WebSocket server</td>
 </tr>
-<tr>
-<td><code>npm run diagnose</code></td>
-<td>List HID devices</td>
-</tr>
 </tbody>
 </table>
 <h3>Python</h3>
@@ -272,7 +269,7 @@ tablet-events <span class="token parameter variable">-c</span> your-config.json 
 </thead>
 <tbody>
 <tr>
-<td><code>tablet-config</code></td>
+<td><code>tablet-config-generator</code></td>
 <td>Generate tablet config</td>
 </tr>
 <tr>
