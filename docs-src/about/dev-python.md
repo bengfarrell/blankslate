@@ -61,12 +61,12 @@ pip install -e .
 
 ```bash
 # Check CLI tools are available
-tablet-config --help
+tablet-config-generator --help
 tablet-events --help
 tablet-websocket --help
 
 # Test Python imports
-python -c "from blankslate import Config, HIDReader; print('✅ Import successful!')"
+python -c "from blankslate.models import Config; print('✅ Import successful!')"
 ```
 
 ---

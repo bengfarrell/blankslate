@@ -11,9 +11,9 @@ Blankslate has comprehensive test suites for both Node.js/TypeScript and Python 
 
 | Platform | Tests | Test Files | Framework |
 |----------|-------|------------|-----------|
-| **Node.js/TypeScript** | 566 | 22 | Vitest |
+| **Node.js/TypeScript** | 613+ | 24 | Vitest |
 | **Python** | 295 | 10 | pytest |
-| **Total** | **861** | **32** | - |
+| **Total** | **900+** | **34** | - |
 
 ---
 

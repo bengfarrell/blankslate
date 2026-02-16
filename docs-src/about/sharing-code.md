@@ -92,19 +92,19 @@ import {
   // Walkthrough engine
   WalkthroughEngine,
   WalkthroughController,
-  
+
   // HID interfaces
   IHIDReader,
   MockHIDReader,
-  
+
   // Data processing
   processDeviceData,
   analyzeBytes,
-  generateDeviceConfig,
-  
+  generateCompleteConfig,
+
   // Mock data
   TabletDataGenerator,
-  
+
   // Config
   Config
 } from 'blankslate/core';
@@ -162,18 +162,21 @@ import { NodeHIDReader, MultiInterfaceReader } from 'blankslate/cli/node-hid-rea
 ```typescript
 import { Config } from 'blankslate/models';
 import { processDeviceData } from 'blankslate/utils';
-import { NodeHIDReaderManager } from 'blankslate/cli/node-hid-reader';
+import { NodeHIDDeviceManager, MultiInterfaceReader } from 'blankslate/cli/node-hid-reader';
 
 // Load configuration
 const config = await Config.load('./my-tablet-config.json');
 const mode = config.modes[0]; // Get first mode configuration
 
-// Create HID reader manager and open device
-const manager = new NodeHIDReaderManager();
-const reader = await manager.openAllInterfaces(
-  config.deviceInfo.vendor_id,
-  config.deviceInfo.product_id
-);
+// Create HID device manager and find device
+const manager = new NodeHIDDeviceManager();
+const devices = await manager.listDevices({
+  vendorId: config.deviceInfo.vendor_id,
+  productId: config.deviceInfo.product_id
+});
+
+// Open the device
+const reader = new MultiInterfaceReader(devices);
 await reader.open();
 
 // Process incoming data using mode's byte mappings

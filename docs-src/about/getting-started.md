@@ -101,7 +101,8 @@ Mock mode generates realistic tablet data (circles, lines, pressure sweeps) so y
 
 **Node.js:**
 ```bash
-npm run diagnose
+# List HID devices with digitizer usage page
+node -e "const HID = require('node-hid'); console.log(HID.devices().filter(d => d.usagePage === 13))"
 ```
 
 **Python:**
@@ -122,7 +123,7 @@ npm run config
 
 **Python:**
 ```bash
-tablet-config
+tablet-config-generator
 ```
 
 The interactive walkthrough guides you through:
@@ -155,13 +156,13 @@ tablet-events -c your-config.json --live
 | `npm run config` | Generate tablet config |
 | `npm run events -- -c config.json --live` | View live events |
 | `npm run websocket -- -c config.json` | Start WebSocket server |
-| `npm run diagnose` | List HID devices |
+
 
 ### Python
 
 | Command | Description |
 |---------|-------------|
-| `tablet-config` | Generate tablet config |
+| `tablet-config-generator` | Generate tablet config |
 | `tablet-events -c config.json --live` | View live events |
 | `tablet-websocket -c config.json` | Start WebSocket server |
 
