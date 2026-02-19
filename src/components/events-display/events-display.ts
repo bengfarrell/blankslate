@@ -2,6 +2,10 @@ import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styles } from './events-display.styles.js';
 
+/**
+ * Tablet event for event stream display
+ * Supports dynamic button counts via index signature (button1, button2, ..., buttonN)
+ */
 export interface TabletEvent {
   timestamp: number;
   x?: number;
@@ -12,15 +16,9 @@ export interface TabletEvent {
   tiltXY?: number;
   primaryButtonPressed?: boolean;
   secondaryButtonPressed?: boolean;
-  button1?: boolean;
-  button2?: boolean;
-  button3?: boolean;
-  button4?: boolean;
-  button5?: boolean;
-  button6?: boolean;
-  button7?: boolean;
-  button8?: boolean;
   state?: string;
+  // Dynamic button properties (button1, button2, ..., buttonN)
+  [key: string]: number | boolean | string | undefined;
 }
 
 export interface EventsDeviceInfo {
@@ -51,14 +49,13 @@ export class EventsDisplay extends LitElement {
   }
 
   protected _getPressedTabletButton(event: TabletEvent): number | null {
-    if (event.button1) return 1;
-    if (event.button2) return 2;
-    if (event.button3) return 3;
-    if (event.button4) return 4;
-    if (event.button5) return 5;
-    if (event.button6) return 6;
-    if (event.button7) return 7;
-    if (event.button8) return 8;
+    // Dynamically check for any buttonN property that is true
+    for (const key of Object.keys(event)) {
+      const match = key.match(/^button(\d+)$/);
+      if (match && event[key] === true) {
+        return parseInt(match[1], 10);
+      }
+    }
     return null;
   }
 

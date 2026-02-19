@@ -48,6 +48,7 @@ export interface ByteData {
 
 /**
  * Tablet event for event stream display
+ * Supports dynamic button counts via index signature (button1, button2, ..., buttonN)
  */
 export interface TabletEvent {
   timestamp: number;
@@ -59,19 +60,14 @@ export interface TabletEvent {
   tiltXY?: number;
   primaryButtonPressed?: boolean;
   secondaryButtonPressed?: boolean;
-  button1?: boolean;
-  button2?: boolean;
-  button3?: boolean;
-  button4?: boolean;
-  button5?: boolean;
-  button6?: boolean;
-  button7?: boolean;
-  button8?: boolean;
   state?: string;
+  // Dynamic button properties (button1, button2, ..., buttonN)
+  [key: string]: number | boolean | string | undefined;
 }
 
 /**
  * WebSocket tablet event structure
+ * Supports dynamic button counts via index signature (button1, button2, ..., buttonN)
  */
 export interface WebSocketTabletEvent {
   type: 'tablet-data' | 'connected' | 'config';
@@ -86,14 +82,6 @@ export interface WebSocketTabletEvent {
   primaryButtonPressed?: boolean;
   secondaryButtonPressed?: boolean;
   tabletButtons?: number;
-  button1?: boolean;
-  button2?: boolean;
-  button3?: boolean;
-  button4?: boolean;
-  button5?: boolean;
-  button6?: boolean;
-  button7?: boolean;
-  button8?: boolean;
   button?: number;
   config?: {
     name?: string;
@@ -103,6 +91,8 @@ export interface WebSocketTabletEvent {
   mode?: string;
   dataFormat?: 'raw' | 'translated';
   fullConfig?: any;
+  // Dynamic button properties (button1, button2, ..., buttonN)
+  [key: string]: string | number | boolean | undefined | { name?: string; manufacturer?: string; model?: string; };
 }
 
 /**

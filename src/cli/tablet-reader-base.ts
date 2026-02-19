@@ -36,6 +36,7 @@ export type MockGesture = (typeof MOCK_GESTURES)[number];
 
 /**
  * Processed tablet event with normalized values
+ * Supports dynamic button counts via index signature (button1, button2, etc.)
  */
 export interface TabletEventData {
   state: string;
@@ -48,14 +49,8 @@ export interface TabletEventData {
   primaryButtonPressed: boolean;
   secondaryButtonPressed: boolean;
   tabletButtons: number;
-  button1: boolean;
-  button2: boolean;
-  button3: boolean;
-  button4: boolean;
-  button5: boolean;
-  button6: boolean;
-  button7: boolean;
-  button8: boolean;
+  // Dynamic button properties (button1, button2, ..., buttonN)
+  [key: string]: string | number | boolean;
 }
 
 /**
@@ -341,13 +336,14 @@ export async function initializeRealDevice(config: Config, options?: Partial<Nod
 
 /**
  * Convert raw processDeviceData output to normalized TabletEventData
+ * Supports dynamic button counts - will include all buttonN properties from the input
  */
 export function normalizeTabletEvent(events: Record<string, string | number | boolean>): TabletEventData {
   const tiltX = typeof events.tiltX === 'number' ? events.tiltX : 0;
   const tiltY = typeof events.tiltY === 'number' ? events.tiltY : 0;
   const tiltXY = Math.sqrt(tiltX * tiltX + tiltY * tiltY) * Math.sign(tiltX * tiltY || 1);
 
-  return {
+  const result: TabletEventData = {
     state: String(events.state ?? 'unknown'),
     x: typeof events.x === 'number' ? events.x : 0,
     y: typeof events.y === 'number' ? events.y : 0,
@@ -358,15 +354,16 @@ export function normalizeTabletEvent(events: Record<string, string | number | bo
     primaryButtonPressed: Boolean(events.primaryButton || events.primaryButtonPressed),
     secondaryButtonPressed: Boolean(events.secondaryButton || events.secondaryButtonPressed),
     tabletButtons: typeof events.tabletButtons === 'number' ? events.tabletButtons : 0,
-    button1: Boolean(events.button1),
-    button2: Boolean(events.button2),
-    button3: Boolean(events.button3),
-    button4: Boolean(events.button4),
-    button5: Boolean(events.button5),
-    button6: Boolean(events.button6),
-    button7: Boolean(events.button7),
-    button8: Boolean(events.button8),
   };
+
+  // Dynamically add all button properties (button1, button2, ..., buttonN)
+  for (const key of Object.keys(events)) {
+    if (/^button\d+$/.test(key)) {
+      result[key] = Boolean(events[key]);
+    }
+  }
+
+  return result;
 }
 
 /**

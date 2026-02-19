@@ -28,6 +28,7 @@ import '@spectrum-web-components/icons-workflow/icons/sp-icon-moon.js';
 
 /**
  * Tablet event structure received from WebSocket server
+ * Supports dynamic button counts via index signature (button1, button2, ..., buttonN)
  */
 interface WebSocketTabletEvent {
   type: 'tablet-data' | 'connected';
@@ -42,14 +43,6 @@ interface WebSocketTabletEvent {
   primaryButtonPressed?: boolean;
   secondaryButtonPressed?: boolean;
   tabletButtons?: number;
-  button1?: boolean;
-  button2?: boolean;
-  button3?: boolean;
-  button4?: boolean;
-  button5?: boolean;
-  button6?: boolean;
-  button7?: boolean;
-  button8?: boolean;
   config?: {
     name?: string;
     manufacturer?: string;
@@ -58,6 +51,8 @@ interface WebSocketTabletEvent {
   mode?: string;
   dataFormat?: 'raw' | 'translated';
   fullConfig?: ConfigData;
+  // Dynamic button properties (button1, button2, ..., buttonN)
+  [key: string]: string | number | boolean | undefined | ConfigData | { name?: string; manufacturer?: string; model?: string; };
 }
 
 interface TabletDataEvent {
@@ -839,7 +834,7 @@ export class HidDashboard extends LitElement {
 
     // Always store events for display (track if they're translated)
     this.isEventsTranslated = isEventTranslated;
-    
+
     // Handle tablet buttons - can come as individual booleans or as a single number
     const buttonNum = data.button;
     const event: TabletEvent = {
@@ -852,16 +847,22 @@ export class HidDashboard extends LitElement {
       tiltXY: this.tabletData.tiltXY,
       primaryButtonPressed: data.primaryButtonPressed,
       secondaryButtonPressed: data.secondaryButtonPressed,
-      button1: typeof data.button1 === 'boolean' ? data.button1 : (buttonNum === 1),
-      button2: typeof data.button2 === 'boolean' ? data.button2 : (buttonNum === 2),
-      button3: typeof data.button3 === 'boolean' ? data.button3 : (buttonNum === 3),
-      button4: typeof data.button4 === 'boolean' ? data.button4 : (buttonNum === 4),
-      button5: typeof data.button5 === 'boolean' ? data.button5 : (buttonNum === 5),
-      button6: typeof data.button6 === 'boolean' ? data.button6 : (buttonNum === 6),
-      button7: typeof data.button7 === 'boolean' ? data.button7 : (buttonNum === 7),
-      button8: typeof data.button8 === 'boolean' ? data.button8 : (buttonNum === 8),
       state: data.state
     };
+
+    // Dynamically add all button properties from the data (button1, button2, ..., buttonN)
+    for (const key of Object.keys(data)) {
+      if (/^button\d+$/.test(key)) {
+        event[key] = Boolean(data[key]);
+      }
+    }
+
+    // If no buttonN properties were found but we have a button number, set that button
+    const hasButtonProps = Object.keys(event).some(k => /^button\d+$/.test(k) && event[k] === true);
+    if (!hasButtonProps && typeof buttonNum === 'number' && buttonNum > 0) {
+      event[`button${buttonNum}`] = true;
+    }
+
     this.tabletEvents = [...this.tabletEvents, event];
     // Keep only last 50 events
     if (this.tabletEvents.length > 50) {
@@ -972,7 +973,7 @@ export class HidDashboard extends LitElement {
         this.pressedButtons = new Set([mapping.button]);
         this.lastPressedButton = mapping.button;
 
-        // Add to events
+        // Add to events - dynamically set the button property
         const event: TabletEvent = {
           timestamp: Date.now(),
           x: this.tabletData.x,
@@ -983,16 +984,13 @@ export class HidDashboard extends LitElement {
           tiltXY: this.tabletData.tiltXY,
           primaryButtonPressed: this.tabletData.primaryButtonPressed,
           secondaryButtonPressed: this.tabletData.secondaryButtonPressed,
-          button1: mapping.button === 1,
-          button2: mapping.button === 2,
-          button3: mapping.button === 3,
-          button4: mapping.button === 4,
-          button5: mapping.button === 5,
-          button6: mapping.button === 6,
-          button7: mapping.button === 7,
-          button8: mapping.button === 8,
           state: 'buttons'
         };
+
+        // Dynamically set the button property based on mapping.button
+        if (mapping.button > 0) {
+          event[`button${mapping.button}`] = true;
+        }
 
         this.tabletEvents = [...this.tabletEvents, event];
         if (this.tabletEvents.length > 50) {

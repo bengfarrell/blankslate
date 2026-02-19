@@ -86,47 +86,45 @@ class TabletEventData:
     primaryButtonPressed: bool
     secondaryButtonPressed: bool
     tabletButtons: int
-    button1: bool
-    button2: bool
-    button3: bool
-    button4: bool
-    button5: bool
-    button6: bool
-    button7: bool
-    button8: bool
+    # Dynamic button properties (button1, button2, ..., buttonN) are added at runtime
+    # Access via result['button1'], result['button2'], etc.
 
 
 def normalize_tablet_event(events: Dict[str, Any]) -> TabletEventData:
-    """Convert raw processDeviceData output to normalized TabletEventData"""
+    """Convert raw processDeviceData output to normalized TabletEventData.
+
+    Supports dynamic button counts - will include all buttonN properties from the input.
+    """
     tilt_x = float(events.get('tiltX', 0))
     tilt_y = float(events.get('tiltY', 0))
-    
+
     # Calculate combined tilt
     import math
+    import re
     tilt_xy = math.sqrt(tilt_x * tilt_x + tilt_y * tilt_y)
     if tilt_x * tilt_y != 0:
         tilt_xy *= math.copysign(1, tilt_x * tilt_y)
-    
-    return TabletEventData(
-        state=str(events.get('state', 'unknown')),
-        x=float(events.get('x', 0)),
-        y=float(events.get('y', 0)),
-        pressure=float(events.get('pressure', 0)),
-        tiltX=tilt_x,
-        tiltY=tilt_y,
-        tiltXY=max(-1, min(1, tilt_xy)),
-        primaryButtonPressed=bool(events.get('primaryButton') or events.get('primaryButtonPressed')),
-        secondaryButtonPressed=bool(events.get('secondaryButton') or events.get('secondaryButtonPressed')),
-        tabletButtons=int(events.get('tabletButtons', 0)),
-        button1=bool(events.get('button1')),
-        button2=bool(events.get('button2')),
-        button3=bool(events.get('button3')),
-        button4=bool(events.get('button4')),
-        button5=bool(events.get('button5')),
-        button6=bool(events.get('button6')),
-        button7=bool(events.get('button7')),
-        button8=bool(events.get('button8')),
-    )
+
+    result: Dict[str, Any] = {
+        'state': str(events.get('state', 'unknown')),
+        'x': float(events.get('x', 0)),
+        'y': float(events.get('y', 0)),
+        'pressure': float(events.get('pressure', 0)),
+        'tiltX': tilt_x,
+        'tiltY': tilt_y,
+        'tiltXY': max(-1, min(1, tilt_xy)),
+        'primaryButtonPressed': bool(events.get('primaryButton') or events.get('primaryButtonPressed')),
+        'secondaryButtonPressed': bool(events.get('secondaryButton') or events.get('secondaryButtonPressed')),
+        'tabletButtons': int(events.get('tabletButtons', 0)),
+    }
+
+    # Dynamically add all button properties (button1, button2, ..., buttonN)
+    button_pattern = re.compile(r'^button\d+$')
+    for key in events:
+        if button_pattern.match(key):
+            result[key] = bool(events[key])
+
+    return TabletEventData(**result)  # type: ignore[typeddict-item]
 
 
 class TabletReaderBase(ABC):

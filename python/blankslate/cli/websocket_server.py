@@ -17,7 +17,7 @@ import asyncio
 import json
 from pathlib import Path
 from typing import Dict, Any, Set, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, field
 
 try:
     import websockets
@@ -36,7 +36,10 @@ except ImportError:
 
 @dataclass
 class TabletWebSocketEvent:
-    """Tablet event structure sent over WebSocket"""
+    """Tablet event structure sent over WebSocket.
+
+    Supports dynamic button counts via the extra_buttons dict.
+    """
     type: str  # 'tablet-data'
     timestamp: float
     state: str
@@ -49,14 +52,28 @@ class TabletWebSocketEvent:
     primaryButtonPressed: bool
     secondaryButtonPressed: bool
     tabletButtons: int
-    button1: bool
-    button2: bool
-    button3: bool
-    button4: bool
-    button5: bool
-    button6: bool
-    button7: bool
-    button8: bool
+    # Dynamic button properties stored in a dict, merged when serializing
+    _buttons: Dict[str, bool] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dict for JSON serialization, merging button properties."""
+        result = {
+            'type': self.type,
+            'timestamp': self.timestamp,
+            'state': self.state,
+            'x': self.x,
+            'y': self.y,
+            'pressure': self.pressure,
+            'tiltX': self.tiltX,
+            'tiltY': self.tiltY,
+            'tiltXY': self.tiltXY,
+            'primaryButtonPressed': self.primaryButtonPressed,
+            'secondaryButtonPressed': self.secondaryButtonPressed,
+            'tabletButtons': self.tabletButtons,
+        }
+        # Merge button properties
+        result.update(self._buttons)
+        return result
 
 
 class TabletWebSocketServer(TabletReaderBase):
@@ -184,9 +201,22 @@ class TabletWebSocketServer(TabletReaderBase):
                 # Process raw bytes into tablet events
                 events = self.process_packet(data)
                 normalized = normalize_tablet_event(events)
-                
-                # Build WebSocket event
+
+                # Extract all button properties dynamically
+                import re
                 import time
+                buttons: Dict[str, bool] = {}
+                button_pattern = re.compile(r'^button\d+$')
+                for key in dir(normalized):
+                    if button_pattern.match(key):
+                        buttons[key] = getattr(normalized, key, False)
+                # Also check dict-style access for TypedDict
+                if hasattr(normalized, 'keys'):
+                    for key in normalized.keys():  # type: ignore
+                        if button_pattern.match(key):
+                            buttons[key] = bool(normalized[key])  # type: ignore
+
+                # Build WebSocket event
                 tablet_event = TabletWebSocketEvent(
                     type='tablet-data',
                     timestamp=time.time() * 1000,  # milliseconds
@@ -200,14 +230,7 @@ class TabletWebSocketServer(TabletReaderBase):
                     primaryButtonPressed=normalized.primaryButtonPressed,
                     secondaryButtonPressed=normalized.secondaryButtonPressed,
                     tabletButtons=normalized.tabletButtons,
-                    button1=normalized.button1,
-                    button2=normalized.button2,
-                    button3=normalized.button3,
-                    button4=normalized.button4,
-                    button5=normalized.button5,
-                    button6=normalized.button6,
-                    button7=normalized.button7,
-                    button8=normalized.button8,
+                    _buttons=buttons,
                 )
 
                 # Broadcast to all connected clients
@@ -223,8 +246,8 @@ class TabletWebSocketServer(TabletReaderBase):
         """Broadcast event to all connected clients"""
         if not self.clients:
             return
-        
-        message = json.dumps(asdict(event))
+
+        message = json.dumps(event.to_dict())
         
         # Send to all clients
         disconnected = set()

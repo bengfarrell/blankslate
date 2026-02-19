@@ -118,9 +118,10 @@ export function rawBytesToByteData(data: Uint8Array, mappings?: Record<string, a
 
 /**
  * Create a TabletEvent from TabletData for event stream display
+ * Supports dynamic button counts - will set buttonN property based on buttonNum
  */
 export function createTabletEvent(data: TabletData, buttonNum?: number): TabletEvent {
-  return {
+  const event: TabletEvent = {
     timestamp: Date.now(),
     x: data.x,
     y: data.y,
@@ -130,16 +131,15 @@ export function createTabletEvent(data: TabletData, buttonNum?: number): TabletE
     tiltXY: data.tiltXY,
     primaryButtonPressed: data.primaryButtonPressed,
     secondaryButtonPressed: data.secondaryButtonPressed,
-    button1: typeof buttonNum === 'number' ? buttonNum === 1 : undefined,
-    button2: typeof buttonNum === 'number' ? buttonNum === 2 : undefined,
-    button3: typeof buttonNum === 'number' ? buttonNum === 3 : undefined,
-    button4: typeof buttonNum === 'number' ? buttonNum === 4 : undefined,
-    button5: typeof buttonNum === 'number' ? buttonNum === 5 : undefined,
-    button6: typeof buttonNum === 'number' ? buttonNum === 6 : undefined,
-    button7: typeof buttonNum === 'number' ? buttonNum === 7 : undefined,
-    button8: typeof buttonNum === 'number' ? buttonNum === 8 : undefined,
     state: data.state,
   };
+
+  // Dynamically set the button property if a button number is provided
+  if (typeof buttonNum === 'number' && buttonNum > 0) {
+    event[`button${buttonNum}`] = true;
+  }
+
+  return event;
 }
 
 /**
