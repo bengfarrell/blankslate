@@ -177,7 +177,8 @@ def parse_bit_flags(
 
 def process_device_data(
     data: Union[bytes, List[int]],
-    mappings: Dict[str, Any]
+    mappings: Dict[str, Any],
+    button_interface_report_id: Optional[int] = None
 ) -> Dict[str, Union[str, int, float, bool]]:
     """
     Process raw device data according to configuration byte code mappings
@@ -185,6 +186,12 @@ def process_device_data(
     Args:
         data: Raw HID device data as bytes or list of ints
         mappings: Configuration mappings defining how to interpret the data
+        button_interface_report_id: Optional report ID for button interface packets.
+                                    When provided and matches the packet's report ID,
+                                    forces button processing even if status byte doesn't
+                                    indicate button mode. Used for multi-interface devices
+                                    like XP-Pen Deco 640 where buttons come through a
+                                    separate interface with a different report ID.
 
     Returns:
         Processed data as key-value pairs
@@ -192,10 +199,21 @@ def process_device_data(
     Example:
         result = process_device_data(raw_data, config.byte_code_mappings)
         print(result['x'], result['y'], result['pressure'])
+
+        # With button interface report ID (for multi-interface devices)
+        result = process_device_data(raw_data, config.byte_code_mappings,
+                                     button_interface_report_id=6)
     """
     # Convert bytes to list of integers if needed
     data_list = list(data) if isinstance(data, bytes) else data
     result: Dict[str, Union[str, int, float, bool]] = {}
+
+    # Check if this is a button interface packet
+    # Report ID is at byte 0 when packet includes it
+    is_button_interface = False
+    if button_interface_report_id is not None and len(data_list) > 0:
+        report_id = data_list[0]
+        is_button_interface = report_id == button_interface_report_id
 
     # First pass: Parse status/code to determine device state
     device_state = None
@@ -231,9 +249,12 @@ def process_device_data(
 
         # Handle tabletButtons with code type (custom value mapping)
         if key == 'tabletButtons' and mapping_type == 'code':
-            # Process button codes when in button/keyboard state
-            # This handles devices that send buttons on the same interface as pen data
-            in_button_mode = device_state in ['buttons', 'keyboard']
+            # Process button codes when:
+            # 1. Device state indicates buttons/keyboard mode, OR
+            # 2. This is a button interface packet (separate HID interface for buttons)
+            # 3. Status byte is 240 (explicit button mode indicator)
+            status_byte = data_list[status_byte_index] if status_byte_index < len(data_list) else 0
+            in_button_mode = is_button_interface or device_state in ['buttons', 'keyboard'] or status_byte == 240
             if in_button_mode:
                 byte_value = str(data_list[first_byte_index])
                 values_map = mapping.get('values', {})

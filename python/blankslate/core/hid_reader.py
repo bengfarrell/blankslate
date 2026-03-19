@@ -113,15 +113,15 @@ def process_keyboard_button_data(data: bytes, keyboard_buttons_config: Dict) -> 
 class HIDReader:
     """Manages HID device reading and data processing"""
     
-    def __init__(self, device, config: 'Config', data_callback: Callable[[Dict[str, Union[str, int, float]]], None], 
+    def __init__(self, device, config: 'Config', data_callback: Callable[[Dict[str, Union[str, int, float]], int], None],
                  warning_callback: Optional[Callable[[str], None]] = None):
         """
         Initialize HID reader
-        
+
         Args:
             device: HID device object (from hid library)
             config: Configuration instance with device byte code mappings
-            data_callback: Callback function to handle processed data
+            data_callback: Callback function to handle processed data (data, report_id)
             warning_callback: Optional callback function to send warnings (e.g., via websocket)
         """
         self.device = device
@@ -270,10 +270,13 @@ class HIDReader:
     def start_reading(self, buffer_size: int = 64, sleep_interval: float = 0.001):
         """
         Start reading from the HID device in a loop
-        
+
         Args:
             buffer_size: Size of read buffer in bytes
             sleep_interval: Sleep time between reads when no data (seconds)
+
+        Note:
+            The data_callback will be called with (processed_data, report_id) for each packet
         """
         if not self.device:
             raise ValueError("No device available for reading")
@@ -290,7 +293,7 @@ class HIDReader:
                 if data:
                     # Get report ID from first byte
                     report_id = data[0] if len(data) > 0 else 0
-                    
+
                     # Process the data
                     processed_data = self.process_device_data(bytes(data))
 

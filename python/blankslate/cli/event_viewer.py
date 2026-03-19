@@ -76,7 +76,7 @@ class EventViewer(TabletReaderBase):
         print(colored('Setting up data callback...', Colors.GRAY))
         if hasattr(self.reader, 'start_reading'):
             # Accept old (data only), new (data, report_id), and newest (data, report_id, interface_type) signatures
-            self.reader.start_reading(lambda data, report_id=None, interface_type=None: self.handle_packet(data, interface_type))
+            self.reader.start_reading(lambda data, report_id=None, interface_type=None: self.handle_packet(data, report_id, interface_type))
 
         print(colored('✓ Started reading data', Colors.GREEN))
         print(colored('Press Ctrl+C to stop\n', Colors.GRAY))
@@ -97,18 +97,20 @@ class EventViewer(TabletReaderBase):
         finally:
             self.stop_sync()
     
-    def handle_packet(self, data: bytes, interface_type: Optional[str] = None):
+    def handle_packet(self, data: bytes, report_id: Optional[int] = None, interface_type: Optional[str] = None):
         """Handle incoming packet
 
         Args:
             data: Raw HID packet bytes
+            report_id: Report ID from the HID packet (if available)
             interface_type: Type of interface ('keyboard', 'digitizer', 'other', or None)
         """
         try:
             self.packet_count += 1
 
-            # Extract Report ID from first byte
-            report_id = data[0] if len(data) > 0 else None
+            # Use provided report_id or extract from first byte
+            if report_id is None:
+                report_id = data[0] if len(data) > 0 else None
             self.last_report_id = report_id
 
             # Process the data using the config

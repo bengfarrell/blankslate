@@ -266,8 +266,8 @@ class TestMockReaderIntegration:
         # Track received packets
         received_packets = []
 
-        def callback(packet):
-            received_packets.append(packet)
+        def callback(packet, report_id=None):
+            received_packets.append({'packet': packet, 'report_id': report_id})
 
         reader.start_reading(callback)
 
@@ -279,6 +279,38 @@ class TestMockReaderIntegration:
 
         # Should have received packets
         assert len(received_packets) > 0
+
+    def test_mock_reader_passes_report_id(self, xp_pen_generator):
+        """Test that MockHIDReader passes report_id to callback"""
+        from blankslate.mockbytes import MockHIDReader
+        import asyncio
+
+        reader = MockHIDReader(custom_generator=xp_pen_generator)
+
+        # Track received data with report IDs
+        received_data = []
+
+        def callback(packet, report_id):
+            received_data.append({'packet': packet, 'report_id': report_id})
+
+        reader.start_reading(callback)
+
+        # Play a short gesture
+        async def test_gesture():
+            await reader.play_horizontal_drag(duration=100)
+
+        asyncio.run(test_gesture())
+
+        # Should have received packets with report IDs
+        assert len(received_data) > 0
+
+        # All packets should have report_id
+        for item in received_data:
+            assert item['report_id'] is not None
+            # Report ID should match the generator's report ID
+            assert item['report_id'] == xp_pen_generator.report_id
+            # Packet should start with report ID
+            assert item['packet'][0] == xp_pen_generator.report_id
 
 
 class TestEndToEndProcessing:

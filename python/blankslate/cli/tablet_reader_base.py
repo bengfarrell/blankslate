@@ -263,17 +263,52 @@ class TabletReaderBase(ABC):
             self.detected_report_id = report_id
             self.current_mode = self.config_data.get_mode_by_report_id(report_id)
 
+            # If not found by main reportId, check if it's a buttonInterfaceReportId
+            if not self.current_mode:
+                # Check how many modes have this buttonInterfaceReportId
+                matching_modes = [m for m in self.config_data.modes
+                                 if hasattr(m, 'buttonInterfaceReportId') and m.buttonInterfaceReportId == report_id]
+
+                if len(matching_modes) == 1:
+                    # Only one mode has this buttonInterfaceReportId, safe to use it
+                    self.current_mode = matching_modes[0]
+                    print(colored(f'\n✓ Detected device mode from button interface: ', Colors.GREEN) +
+                          colored(f'Report ID {report_id} (buttons)', Colors.CYAN, bold=True))
+                elif len(matching_modes) > 1:
+                    # Multiple modes share the same buttonInterfaceReportId
+                    # Try to detect which mode based on the button data (scan code at byte index 2)
+                    tablet_buttons_mapping = data[2] if len(data) > 2 else 0
+
+                    # Find mode whose tabletButtons config contains this scan code
+                    for candidate_mode in matching_modes:
+                        tablet_buttons = candidate_mode.byteCodeMappings.get('tabletButtons', {})
+                        if tablet_buttons and 'values' in tablet_buttons:
+                            scan_code_str = str(tablet_buttons_mapping)
+                            if scan_code_str in tablet_buttons['values']:
+                                self.current_mode = candidate_mode
+                                print(colored(f'\n✓ Detected device mode from button data: ', Colors.GREEN) +
+                                      colored(f'buttonInterfaceReportId {report_id}, scan code {tablet_buttons_mapping}', Colors.CYAN, bold=True))
+                                break
+
+                    # Fallback to first matching mode if no scan code match
+                    if not self.current_mode:
+                        self.current_mode = matching_modes[0]
+                        print(colored(f'\n⚠ Using first matching mode (Report ID {self.current_mode.reportId}) as fallback', Colors.YELLOW))
+
             if self.current_mode:
-                print(colored(f'\n✓ Detected device mode: ', Colors.GREEN) +
-                      colored(f'Report ID {report_id}', Colors.CYAN, bold=True))
-                print(colored(f'  Resolution: ', Colors.CYAN) +
-                      colored(f'{self.current_mode.capabilities.resolution.x}x{self.current_mode.capabilities.resolution.y}', Colors.WHITE))
-                print()
+                if report_id == self.current_mode.reportId:
+                    print(colored(f'\n✓ Detected device mode: ', Colors.GREEN) +
+                          colored(f'Report ID {report_id}', Colors.CYAN, bold=True))
+                    print(colored(f'  Resolution: ', Colors.CYAN) +
+                          colored(f'{self.current_mode.capabilities.resolution.x}x{self.current_mode.capabilities.resolution.y}', Colors.WHITE))
+                    print()
             else:
                 print(colored(f'\n⚠ Warning: Unknown Report ID {report_id}', Colors.YELLOW))
                 print(colored(f'  Available modes:', Colors.YELLOW))
                 for mode in self.config_data.modes:
                     print(colored(f'    - Report ID {mode.reportId}', Colors.YELLOW))
+                    if hasattr(mode, 'buttonInterfaceReportId'):
+                        print(colored(f'      (Button interface: Report ID {mode.buttonInterfaceReportId})', Colors.GRAY))
                 print()
                 return {}
 
@@ -282,17 +317,48 @@ class TabletReaderBase(ABC):
         mode = self.config_data.get_mode_by_report_id(report_id)
 
         # If not found, check if this is a button interface report ID for any mode
-        if not mode:
-            for m in self.config_data.modes:
-                if hasattr(m, 'buttonInterfaceReportId') and m.buttonInterfaceReportId == report_id:
-                    mode = m
-                    break
+        # IMPORTANT: Check current mode first to avoid ambiguity when multiple modes share the same buttonInterfaceReportId
+        if not mode and report_id is not None:
+            # First check if current mode matches
+            if self.current_mode and hasattr(self.current_mode, 'buttonInterfaceReportId') and self.current_mode.buttonInterfaceReportId == report_id:
+                mode = self.current_mode
+            else:
+                # Find all modes with matching buttonInterfaceReportId
+                matching_modes = [m for m in self.config_data.modes
+                                 if hasattr(m, 'buttonInterfaceReportId') and m.buttonInterfaceReportId == report_id]
+
+                if len(matching_modes) == 1:
+                    mode = matching_modes[0]
+                elif len(matching_modes) > 1:
+                    # Multiple modes share the same buttonInterfaceReportId
+                    # Try to detect which mode based on the button data (scan code at byte index 2)
+                    tablet_buttons_mapping = data[2] if len(data) > 2 else 0
+
+                    # Find mode whose tabletButtons config contains this scan code
+                    for candidate_mode in matching_modes:
+                        tablet_buttons = candidate_mode.byteCodeMappings.get('tabletButtons', {})
+                        if tablet_buttons and 'values' in tablet_buttons:
+                            scan_code_str = str(tablet_buttons_mapping)
+                            if scan_code_str in tablet_buttons['values']:
+                                mode = candidate_mode
+                                # Set currentMode so future packets use the same mode
+                                if self.current_mode is None:
+                                    self.current_mode = mode
+                                    print(colored(f'\n✓ Detected device mode from button data: ', Colors.GREEN) +
+                                          colored(f'buttonInterfaceReportId {report_id}, scan code {tablet_buttons_mapping}', Colors.CYAN, bold=True))
+                                break
+
+                    # Fallback to first matching mode if no scan code match
+                    if not mode:
+                        mode = matching_modes[0]
 
         # Use the found mode's mappings, or current mode as fallback
         if mode:
-            return process_device_data(data, mode.byteCodeMappings)
+            button_interface_report_id = getattr(mode, 'buttonInterfaceReportId', None)
+            return process_device_data(data, mode.byteCodeMappings, button_interface_report_id)
         elif self.current_mode:
-            return process_device_data(data, self.current_mode.byteCodeMappings)
+            button_interface_report_id = getattr(self.current_mode, 'buttonInterfaceReportId', None)
+            return process_device_data(data, self.current_mode.byteCodeMappings, button_interface_report_id)
         else:
             return {}
     
@@ -519,7 +585,7 @@ class TabletReaderBase(ABC):
             
             # Restart reading
             if hasattr(self.reader, 'start_reading'):
-                self.reader.start_reading(lambda data: self.handle_packet(data))
+                self.reader.start_reading(lambda data, report_id=None, interface_type=None: self.handle_packet(data))
             
             print(colored('✓ Device reconnected successfully!', Colors.GREEN))
             self.is_reconnecting = False
