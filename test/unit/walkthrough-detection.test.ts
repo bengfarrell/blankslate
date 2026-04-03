@@ -343,7 +343,7 @@ describe('Walkthrough Byte Detection', () => {
       // Verify status block
       expect(generatedConfig.status).toBeDefined();
       expect(generatedConfig.status!.byteIndex).toEqual([1]);
-      expect(generatedConfig.status!.type).toBe('code');
+      // status type field removed (always 'code' now)
       expect(generatedConfig.status!.values).toBeDefined();
 
       // Verify all 7 status codes are present

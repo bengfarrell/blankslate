@@ -32,7 +32,6 @@ export class MappingType {
   static readonly MULTI_BYTE_RANGE = 'multi-byte-range' as const;
   static readonly BIPOLAR_RANGE = 'bipolar-range' as const;
   static readonly KEYBOARD_EVENTS = 'keyboard-events' as const;
-  static readonly BIT_FLAGS = 'bit-flags' as const;
 }
 
 /**
@@ -50,7 +49,6 @@ export interface ConfigMode {
   buttonInterfaceReportId?: number;
   stylusModeStatusByte?: number;
   excludedUsagePages?: number[];
-  keyboardMappings?: KeyboardMappings;
   capabilities: {
     hasButtons: boolean;
     buttonCount: number;
@@ -104,7 +102,7 @@ export interface ConfigMode {
       type: typeof MappingType.BIPOLAR_RANGE;
     };
     tabletButtons?: {
-      type: typeof MappingType.KEYBOARD_EVENTS | typeof MappingType.BIT_FLAGS | typeof MappingType.CODE;
+      type?: typeof MappingType.KEYBOARD_EVENTS | typeof MappingType.CODE;  // Optional: defaults to CODE
       buttonCount?: number;
       byteIndex?: number[];
       keyMappings?: Record<string, {
@@ -130,21 +128,6 @@ export interface ConfigMode {
 }
 
 /**
- * Keyboard button mapping for WebHID mode when driver is active
- */
-export interface KeyboardButtonMapping {
-  button: number;
-  usageIds: number[]; // USB HID keyboard usage IDs (e.g., [0xE0, 0x56] for Ctrl+NumpadSubtract)
-  keys: string[]; // JavaScript KeyboardEvent codes for reference (e.g., ["ControlLeft", "NumpadSubtract"])
-}
-
-export interface KeyboardMappings {
-  description?: string;
-  note?: string;
-  buttons: KeyboardButtonMapping[];
-}
-
-/**
  * Type definitions for Config properties
  */
 export interface ConfigData {
@@ -166,9 +149,6 @@ export interface ConfigData {
 
   // Multi-mode support
   modes: ConfigMode[];
-
-  // Keyboard mappings for WebHID mode when driver blocks HID button interface
-  keyboardMappings?: KeyboardMappings;
 }
 
 /**
@@ -195,9 +175,6 @@ export class Config implements ConfigData {
   // Multi-mode support
   modes: ConfigMode[];
 
-  // Keyboard mappings for WebHID mode
-  keyboardMappings?: KeyboardMappings;
-
   constructor(data: ConfigData) {
     this.name = data.name;
     this.manufacturer = data.manufacturer;
@@ -207,7 +184,6 @@ export class Config implements ConfigData {
     this.productId = data.productId;
     this.deviceInfo = data.deviceInfo;
     this.modes = data.modes;
-    this.keyboardMappings = data.keyboardMappings;
   }
 
   /**
@@ -268,7 +244,6 @@ export class Config implements ConfigData {
       productId: this.productId,
       deviceInfo: this.deviceInfo,
       modes: this.modes,
-      keyboardMappings: this.keyboardMappings,
     };
     return JSON.stringify(data, null, pretty ? 2 : 0);
   }

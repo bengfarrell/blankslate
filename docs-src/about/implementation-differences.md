@@ -149,59 +149,57 @@ processDeviceData(bytes, config.byteCodeMappings, 0);
 
 ## Tablet Button Detection
 
-Tablet buttons can be detected in different ways depending on the driver state and platform.
+Tablet buttons are sent over HID in two different ways depending on the tablet manufacturer:
 
-### Detection Methods
+### HID Button Modalities
 
-| Method | When Used | Config Output |
-|--------|-----------|---------------|
-| **HID Scan Codes** | Driverless mode (all platforms) | `type: "code"` with `{ button: N }` |
-| **HID Bitmask** | Some tablets (driver mode) | `type: "code"` with bitmask values |
-| **Keyboard Events** | WebHID only, driver active | `type: "code"` with `{ button: N, key: "x" }` |
+| Modality | HID Interface | Config Format | Example |
+|----------|---------------|---------------|---------|
+| **Native Buttons** | Digitizer (Usage Page 13) | `tabletButtons` | XP-Pen tablets |
+| **Keyboard HID Buttons** | Keyboard (Usage Page 1) | `keyboardButtons` | Huion tablets |
 
-### Detection Methods by Platform
+Both modalities read **raw HID packets** directly from the device. Blankslate does not use OS-level keyboard event listeners.
 
-| Method | Node.js | Python | WebHID |
-|--------|---------|--------|--------|
-| HID Scan Codes | ✅ | ✅ | ✅ |
-| HID Bitmask | ✅ | ✅ | ✅ |
-| Keyboard Events | ❌ | ❌ | ✅ |
+### tabletButtons - Digitizer Interface
 
-### Keyboard Fallback (WebHID Only)
-
-When the tablet driver is active, it often intercepts the HID button interface and converts button presses to keyboard shortcuts. In this case:
-
-- **WebHID** can capture keyboard events via the browser's `keydown` API alongside HID data
-- **Python/Node.js** only read raw HID packets and cannot capture OS keyboard events
-
-This means WebHID can detect buttons via keyboard events even when the driver blocks HID button data:
+Buttons are embedded in the same HID packet as pen data:
 
 ```json
 "tabletButtons": {
-  "byteIndex": [],
+  "byteIndex": [2],
   "buttonCount": 8,
-  "type": "code",
   "values": {
-    "1": { "button": 1, "key": "b", "code": "KeyB" },
-    "2": { "button": 2, "key": "e", "code": "KeyE" }
+    "1": { "button": 1 },
+    "2": { "button": 2 }
   }
 }
 ```
 
-**Key points:**
-- When `byteIndex` is empty `[]`, buttons were detected via keyboard events only
-- The `key` and `code` fields match the browser's KeyboardEvent properties
-- Python/Node readers cannot use keyboard-only configs - they require HID scan codes
-- WebHID configs include both HID button numbers and keyboard shortcut info, allowing Python/Node to use the `button` field while preserving keyboard info
+### keyboardButtons - Keyboard HID Interface
 
-### Platform Comparison for Button Detection
+Buttons come through a separate Keyboard HID interface with different report types:
 
-| Scenario | Python/Node.js | WebHID |
-|----------|----------------|--------|
-| Driverless mode | ✅ Full HID button detection | ✅ Full HID button detection |
-| Driver active | ⚠️ May not see button HID data | ✅ Keyboard fallback available |
+```json
+"keyboardButtons": {
+  "usagePage": 1,
+  "usage": 6,
+  "buttons": [
+    { "button": 1, "reportId": 3, "type": "keyboard", "modifier": 0, "keycode": 5 },
+    { "button": 21, "reportId": 4, "type": "consumer", "consumerCode": 182 },
+    { "button": 25, "reportId": 5, "type": "scroll", "scrollDelta": 1 }
+  ]
+}
+```
 
-**Recommendation:** For best cross-platform compatibility, generate configs in **driverless mode** when possible. This ensures HID scan codes are captured, which work across all platforms.
+### Platform Comparison
+
+| Platform | Native Buttons | Keyboard HID Buttons |
+|----------|----------------|---------------------|
+| Node.js | ✅ | ✅ (requires sudo on macOS) |
+| Python | ✅ | ✅ (requires sudo on macOS) |
+| WebHID | ✅ | ❌ (blocked by security policy) |
+
+**Recommendation:** For best cross-platform compatibility, generate configs in **driverless mode** when possible. This ensures raw HID codes are captured without driver interference.
 
 ---
 
@@ -214,7 +212,7 @@ This means WebHID can detect buttons via keyboard events even when the driver bl
 | WebSocket server | ✅ | ✅ | N/A |
 | Mock mode | ✅ | ✅ | ✅ |
 | Multi-interface | ✅ | ✅ | ✅ |
-| Keyboard capture | ❌ | ❌ | ✅ |
+| Keyboard HID interface | ✅ (sudo on macOS) | ✅ (sudo on macOS) | ❌ Blocked |
 | GUI visualization | ❌ | ❌ | ✅ |
 | No browser required | ✅ | ✅ | ❌ |
 

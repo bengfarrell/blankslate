@@ -160,88 +160,6 @@ export function processKeyboardButtonData(
 }
 
 /**
- * Convert keyboardButtons config (Huion-style) to keyboardMappings format
- * for browser keyboard event matching.
- *
- * This allows the web app to match browser keydown events to button numbers
- * using the HID keycode/modifier information from the config.
- *
- * @param keyboardButtonsConfig - The keyboardButtons config section
- * @returns KeyboardMappings format compatible with _checkButtonMapping
- */
-export function convertKeyboardButtonsToMappings(
-  keyboardButtonsConfig: KeyboardButtonsConfig
-): { description?: string; note?: string; buttons: Array<{ button: number; usageIds: number[]; keys: string[] }> } | null {
-  // Import dynamically to avoid circular dependencies
-  // We need the HID code mappings
-  const buttons = keyboardButtonsConfig.buttons || [];
-
-  // Only convert keyboard-type buttons (Report ID 3)
-  // Consumer and scroll buttons don't map to keyboard events
-  const keyboardButtons = buttons.filter(b => b.type === 'keyboard' && b.reportId === 3);
-
-  if (keyboardButtons.length === 0) {
-    return null;
-  }
-
-  // We need to import the HID code mappings
-  // Since this is a sync function, we'll use a lazy import pattern
-  // For now, we'll build the mapping inline using the known HID codes
-  const HID_USAGE_TO_KEY_CODE: Record<number, string> = {
-    0x04: 'KeyA', 0x05: 'KeyB', 0x06: 'KeyC', 0x07: 'KeyD', 0x08: 'KeyE',
-    0x09: 'KeyF', 0x0A: 'KeyG', 0x0B: 'KeyH', 0x0C: 'KeyI', 0x0D: 'KeyJ',
-    0x0E: 'KeyK', 0x0F: 'KeyL', 0x10: 'KeyM', 0x11: 'KeyN', 0x12: 'KeyO',
-    0x13: 'KeyP', 0x14: 'KeyQ', 0x15: 'KeyR', 0x16: 'KeyS', 0x17: 'KeyT',
-    0x18: 'KeyU', 0x19: 'KeyV', 0x1A: 'KeyW', 0x1B: 'KeyX', 0x1C: 'KeyY',
-    0x1D: 'KeyZ', 0x1E: 'Digit1', 0x1F: 'Digit2', 0x20: 'Digit3', 0x21: 'Digit4',
-    0x22: 'Digit5', 0x23: 'Digit6', 0x24: 'Digit7', 0x25: 'Digit8', 0x26: 'Digit9',
-    0x27: 'Digit0', 0x28: 'Enter', 0x29: 'Escape', 0x2A: 'Backspace', 0x2B: 'Tab',
-    0x2C: 'Space', 0x2D: 'Minus', 0x2E: 'Equal', 0x2F: 'BracketLeft', 0x30: 'BracketRight',
-    0x31: 'Backslash', 0x33: 'Semicolon', 0x34: 'Quote', 0x35: 'Backquote',
-    0x36: 'Comma', 0x37: 'Period', 0x38: 'Slash', 0x39: 'CapsLock',
-    0x3A: 'F1', 0x3B: 'F2', 0x3C: 'F3', 0x3D: 'F4', 0x3E: 'F5', 0x3F: 'F6',
-    0x40: 'F7', 0x41: 'F8', 0x42: 'F9', 0x43: 'F10', 0x44: 'F11', 0x45: 'F12',
-    0x46: 'PrintScreen', 0x47: 'ScrollLock', 0x48: 'Pause', 0x49: 'Insert',
-    0x4A: 'Home', 0x4B: 'PageUp', 0x4C: 'Delete', 0x4D: 'End', 0x4E: 'PageDown',
-    0x4F: 'ArrowRight', 0x50: 'ArrowLeft', 0x51: 'ArrowDown', 0x52: 'ArrowUp',
-  };
-
-  const mappedButtons = keyboardButtons.map(btn => {
-    const keys: string[] = [];
-    const usageIds: number[] = [];
-
-    // Add modifier keys
-    const modifier = btn.modifier ?? 0;
-    if (modifier & 0x01) { keys.push('ControlLeft'); usageIds.push(0xE0); }
-    if (modifier & 0x02) { keys.push('ShiftLeft'); usageIds.push(0xE1); }
-    if (modifier & 0x04) { keys.push('AltLeft'); usageIds.push(0xE2); }
-    if (modifier & 0x08) { keys.push('MetaLeft'); usageIds.push(0xE3); }
-
-    // Add the main key
-    const keycode = btn.keycode ?? 0;
-    if (keycode > 0) {
-      usageIds.push(keycode);
-      const keyCode = HID_USAGE_TO_KEY_CODE[keycode];
-      if (keyCode) {
-        keys.push(keyCode);
-      }
-    }
-
-    return {
-      button: btn.button,
-      usageIds,
-      keys,
-    };
-  });
-
-  return {
-    description: keyboardButtonsConfig.description,
-    note: 'Auto-converted from keyboardButtons config',
-    buttons: mappedButtons,
-  };
-}
-
-/**
  * Parse a code value from a specific byte index and return the corresponding value
  */
 export function parseCode(
@@ -488,7 +406,8 @@ export function processDeviceData(
     }
 
     // Handle tabletButtons with code type (custom value mapping)
-    if (key === 'tabletButtons' && mappingType === MappingType.CODE) {
+    // Type field is optional - defaults to 'code' when missing
+    if (key === 'tabletButtons' && (mappingType === MappingType.CODE || !mappingType)) {
       // Process button codes when in button mode
       // Use status byte at actual index (already computed with offset)
       // For WebHID (byteIndexOffset < 0), status byte is at raw index 0
@@ -545,13 +464,8 @@ export function processDeviceData(
       continue;
     }
 
-    // Skip button parsing if not in button mode (unless we're on button-only interface)
-    if (mappingType === MappingType.BIT_FLAGS && deviceState !== 'buttons' && !isButtonInterface) {
-      continue;
-    }
-
     // Skip coordinate/pressure/tilt parsing if on button-only interface or in button mode
-    if ((isButtonInterface || deviceState === 'buttons') && 
+    if ((isButtonInterface || deviceState === 'buttons') &&
         ['x', 'y', 'pressure', 'tiltX', 'tiltY'].includes(key)) {
       continue;
     }
@@ -594,17 +508,6 @@ export function processDeviceData(
         mapping.negativeMin ?? 0,
         mapping.negativeMax ?? 0
       );
-    } else if (mappingType === MappingType.BIT_FLAGS) {
-      // Use 0-based indexing directly
-      if (byteIndex < 0 || byteIndex >= dataList.length) {
-        continue;
-      }
-      const buttonStates = parseBitFlags(
-        dataList,
-        byteIndex,
-        mapping.buttonCount ?? 8
-      );
-      Object.assign(result, buttonStates);
     }
   }
 

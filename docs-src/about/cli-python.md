@@ -294,6 +294,130 @@ asyncio.run(receive_events())
 
 ---
 
+## Keyboard Input Modes
+
+The Python CLI supports three input modes for tablet buttons, automatically detected from your configuration file:
+
+### 1. Standard HID Mode (Default)
+Traditional HID device reading for both pen and buttons.
+
+**Config:** Device info with no `keyboardMappings`
+```json
+{
+  "deviceInfo": {
+    "vendor_id": 10429,
+    "product_id": 10500
+  },
+  "modes": [{
+    "reportId": 7,
+    "byteCodeMappings": { /* pen data */ }
+  }]
+}
+```
+
+### 2. Keyboard-Only Mode
+Use keyboard keys as tablet buttons without any physical tablet. Perfect for testing button functionality or when no tablet is available.
+
+**Config:** Set `vendor_id: 0` and add `keyboardMappings`
+```json
+{
+  "deviceInfo": {
+    "vendor_id": 0,
+    "product_id": 0
+  },
+  "modes": [{
+    "reportId": 0,
+    "keyboardMappings": {
+      "description": "Use number keys 1-8 for tablet buttons",
+      "buttons": [
+        { "button": 1, "keys": ["Digit1"] },
+        { "button": 2, "keys": ["Digit2"] },
+        { "button": 3, "keys": ["Digit3"] },
+        { "button": 4, "keys": ["Digit4"] },
+        { "button": 5, "keys": ["Digit5"] },
+        { "button": 6, "keys": ["Digit6"] },
+        { "button": 7, "keys": ["Digit7"] },
+        { "button": 8, "keys": ["Digit8"] }
+      ]
+    }
+  }]
+}
+```
+
+**Usage:**
+```bash
+tablet-websocket -c keyboard-only-config.json
+# Press number keys 1-8 to trigger button events
+```
+
+### 3. Hybrid Mode
+Combine HID tablet (pen data) with keyboard buttons. This is useful when:
+- Tablet drivers block HID button access
+- Physical buttons are broken or uncomfortable
+- You want to use custom keyboard shortcuts
+- You need more than 8 buttons
+
+**Config:** Device info with real IDs + `keyboardMappings`
+```json
+{
+  "deviceInfo": {
+    "vendor_id": 10429,
+    "product_id": 10500
+  },
+  "modes": [{
+    "reportId": 7,
+    "keyboardMappings": {
+      "description": "Use comfortable keyboard shortcuts instead of tiny tablet buttons",
+      "buttons": [
+        { "button": 1, "keys": ["KeyZ"] },
+        { "button": 2, "keys": ["KeyX"] },
+        { "button": 3, "keys": ["KeyC"] },
+        { "button": 4, "keys": ["KeyV"] },
+        { "button": 5, "keys": ["ControlLeft", "KeyZ"], "note": "Undo" },
+        { "button": 6, "keys": ["ControlLeft", "ShiftLeft", "KeyZ"], "note": "Redo" },
+        { "button": 7, "keys": ["BracketLeft"] },
+        { "button": 8, "keys": ["BracketRight"] }
+      ]
+    },
+    "byteCodeMappings": { /* pen data from HID */ }
+  }]
+}
+```
+
+**Usage:**
+```bash
+tablet-websocket -c hybrid-config.json
+# Pen data comes from tablet via HID
+# Button events come from keyboard shortcuts
+```
+
+### Keyboard Key Format
+
+Use standard Web KeyboardEvent codes:
+
+**Letters:** `KeyA`, `KeyB`, `KeyC`, ...
+**Numbers:** `Digit0`, `Digit1`, `Digit2`, ...
+**Modifiers:** `ControlLeft`, `ShiftLeft`, `AltLeft`, `MetaLeft` (Command/Windows)
+**Function Keys:** `F1`, `F2`, `F3`, ...
+**Symbols:** `BracketLeft` `[`, `BracketRight` `]`, `Comma` `,`, etc.
+
+See the [full list](https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values) of keyboard codes.
+
+### Benefits
+
+✅ **Development:** Test button functionality without hardware
+✅ **Driver Compatibility:** When drivers block HID button access
+✅ **Ergonomics:** Use comfortable keys instead of tiny buttons
+✅ **Expandability:** Support more than 8 buttons
+✅ **Custom Workflows:** Map buttons to application-specific shortcuts
+✅ **Broken Hardware:** Continue using tablet when physical buttons fail
+
+### Example Configs
+
+See `python/keyboard-only-config.json` and `python/hybrid-tablet-keyboard-config.json` for complete examples.
+
+---
+
 ## Mock Mode
 
 All tools support `--mock` flag for testing without physical hardware:

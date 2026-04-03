@@ -75,7 +75,6 @@
         "tabletButtons": {
           "byteIndex": [2],
           "buttonCount": 8,
-          "type": "code",
           "values": {
             "1": { "button": 1 },
             "2": { "button": 2 },

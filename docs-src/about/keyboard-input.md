@@ -1,18 +1,22 @@
 ---
 layout: page.njk
-title: Keyboard Input Handling
+title: Keyboard HID Interface
 description: How Blankslate handles tablet buttons that use keyboard HID interfaces
 ---
 
-# Keyboard Input Handling
+# Keyboard HID Interface
 
-Some drawing tablets send button presses through a **Keyboard HID interface** rather than through the digitizer interface. This page explains how Blankslate handles these tablets and the various configuration formats involved.
+Some drawing tablets send button presses through a **Keyboard HID interface** rather than through the digitizer interface. This page explains how Blankslate reads these HID packets and the configuration format used.
+
+## Project Scope: HID-Only
+
+**Important:** Blankslate is focused exclusively on reading **HID (Human Interface Device) data**. We do **not** use OS-level keyboard event listeners (like `keydown`/`keyup` events). Even when tablets use the "Keyboard HID interface," we read the raw HID packets directly—not browser or OS keyboard events.
 
 ## Background: How Tablets Send Button Data
 
-Drawing tablets can send button data in two fundamentally different ways:
+Drawing tablets can send button data through two different HID interfaces:
 
-### Digitizer-Style Buttons (XP-Pen)
+### 1. Digitizer Interface - Native Buttons (XP-Pen style)
 
 Most tablets include button data in the same HID packet as pen data:
 
@@ -20,17 +24,83 @@ Most tablets include button data in the same HID packet as pen data:
 [reportId, status, x_lo, x_hi, y_lo, y_hi, pressure_lo, pressure_hi, tiltX, tiltY, buttonByte]
 ```
 
-The button byte contains bit flags or scan codes indicating which buttons are pressed. This data comes through the **Digitizer HID interface** (usage page 13).
+The button byte contains scan codes indicating which buttons are pressed. This data comes through the **Digitizer HID interface** (usage page 13).
 
-### Keyboard-Style Buttons (Huion)
+**Config format:** `tabletButtons` with `byteIndex` and `values` lookup
 
-Some tablets (notably Huion) send button presses through a completely separate **Keyboard HID interface** (usage page 1, usage 6). When you press a tablet button, the tablet sends a keyboard shortcut:
+### 2. Keyboard Interface - HID Button Packets (Huion style)
+
+Some tablets (notably Huion) send button presses through a completely separate **Keyboard HID interface** (usage page 1, usage 6). These are **raw HID packets** (not OS keyboard events):
 
 | Report ID | Type | Data Format | Example |
 |-----------|------|-------------|---------|
-| 3 | Keyboard | `[modifier, 0, keycode, 0, 0, 0, 0, 0]` | Button 1 → `keycode: 5` (B key) |
-| 4 | Consumer Control | `[consumerCode_lo, consumerCode_hi]` | Media keys |
-| 5 | Relative Scroll | `[scrollDelta]` | Scroll wheel |
+| 3 | Standard Keyboard | `[modifier, 0, keycode, 0, 0, 0, 0, 0]` | Button 1 → `modifier: 0, keycode: 5` (B key) |
+| 4 | Consumer Control | `[consumerCode_lo, consumerCode_hi]` | Button 21 → `consumerCode: 182` (media key) |
+| 5 | Relative Input | `[scrollDelta]` | Scroll up → `scrollDelta: 1`, down → `255` |
+
+**Config format:** `keyboardButtons` with per-button `reportId`, `type`, and type-specific fields
+
+**Important:** The scroll wheel (Report ID 5) is hardware that physically rotates, but the HID packets contain discrete delta values (`1` or `255`/-1), not variable scroll amounts. We treat each delta value as a separate button trigger.
+
+---
+
+## Identifying Common Button Types
+
+When analyzing HID packets from the Keyboard interface during config generation, you'll encounter these common patterns:
+
+### Standard Keyboard Shortcuts (Report ID 3)
+
+```
+Packet: [03 00 00 05 00 00 00 00 00]
+         ↑  ↑  ↑  ↑
+         │  │  │  └─ keycode: 5 (B key)
+         │  │  └──── reserved byte
+         │  └─────── modifier: 0 (no modifiers)
+         └────────── Report ID: 3
+```
+
+**Identifies as:** Single key press (e.g., 'B')
+
+**With modifiers:**
+```
+Packet: [03 01 00 1d 00 00 00 00 00]
+         ↑  ↑     ↑
+         │  │     └─ keycode: 29 (Z key)
+         │  └─────── modifier: 1 (Left Ctrl)
+         └────────── Report ID: 3
+```
+
+**Identifies as:** Keyboard shortcut (e.g., Ctrl+Z)
+
+### Media Keys (Report ID 4)
+
+```
+Packet: [04 b6 00]
+         ↑  ↑  ↑
+         │  │  └─ consumerCode high byte
+         │  └──── consumerCode: 182 (0xB6 = Scan Next Track)
+         └─────── Report ID: 4
+```
+
+**Identifies as:** Media control button (Play, Pause, Volume, etc.)
+
+### Scroll Wheel (Report ID 5)
+
+```
+Scroll Up:   [05 01]
+              ↑  ↑
+              │  └─ scrollDelta: 1
+              └──── Report ID: 5
+
+Scroll Down: [05 ff]
+              ↑  ↑
+              │  └─ scrollDelta: 255 (-1 in signed 8-bit)
+              └──── Report ID: 5
+```
+
+**Identifies as:** Wheel rotation (creates two button entries: one for up, one for down)
+
+**Key insight:** Even though the hardware is a rotating wheel, we see only two distinct values in practice. The config maps each delta value to a separate button number.
 
 ---
 
@@ -125,74 +195,56 @@ For tablets where buttons come through the keyboard HID interface, with raw USB 
 }
 ```
 
+**Button Types:**
+- `type: "keyboard"` - Standard keyboard shortcut (modifier + keycode)
+- `type: "consumer"` - Media control keys (play, pause, volume, etc.)
+- `type: "scroll"` - Scroll wheel with discrete delta values
+
 **Generated by:** Node.js and Python config generators (with sudo on macOS)
 
-**Used by:** All platforms - WebHID automatically converts to `keyboardMappings` format at runtime
+**Used by:** All platforms (WebHID, Node.js, Python)
 
-### `keyboardMappings` - Browser Keyboard Event Codes
+### Understanding Scroll Wheels
 
-For WebHID when the driver is active and converts button presses to keyboard shortcuts:
+The scroll wheel uses HID Report ID 5 (Relative Input) and sends a `scrollDelta` value. While the hardware is a physical rotating wheel, the HID packets contain **discrete delta values**:
 
-```json
-"keyboardMappings": {
-  "description": "Keyboard shortcuts for WebHID mode when driver is active",
-  "buttons": [
-    { "button": 1, "keys": ["KeyB"] },
-    { "button": 2, "keys": ["KeyE"] },
-    { "button": 5, "keys": ["ControlLeft", "NumpadSubtract"] }
-  ]
-}
-```
+- **Scroll Up**: `scrollDelta: 1`
+- **Scroll Down**: `scrollDelta: 255` (which is -1 in signed 8-bit)
 
-The `keys` array uses JavaScript `KeyboardEvent.code` values (physical key positions like `KeyB`, `ControlLeft`), not `KeyboardEvent.key` values (characters like `b`, `Control`).
+We treat each delta value as a **separate button trigger** rather than a continuous scroll amount. This means the config will have two button entries—one for "up" and one for "down"—each mapped to its specific delta value.
 
-**Generated by:** Manual configuration only (for driver mode scenarios)
-
-**Used by:** WebHID dashboard only
+**Why it's called "scrollDelta":** The naming follows the USB HID specification. Even though we treat it like discrete buttons in practice, the config preserves the actual HID protocol structure for accuracy and debugging.
 
 ---
 
-## How the Formats Relate
+## Summary: Two HID Button Modalities
 
-The `keyboardButtons` and `keyboardMappings` formats represent the same button mappings in different forms:
+Blankslate supports two ways tablets send button data over HID:
 
-| `keyboardButtons` (raw HID) | `keyboardMappings` (browser events) |
-|-----------------------------|-------------------------------------|
-| `keycode: 5` | `keys: ["KeyB"]` |
-| `keycode: 8` | `keys: ["KeyE"]` |
-| `modifier: 1, keycode: 86` | `keys: ["ControlLeft", "NumpadSubtract"]` |
+| Modality | HID Interface | Config Format | Example Tablet |
+|----------|---------------|---------------|----------------|
+| **Native Buttons** | Digitizer (Usage Page 13) | `tabletButtons` | XP-Pen |
+| **Keyboard HID Buttons** | Keyboard (Usage Page 1) | `keyboardButtons` | Huion |
 
-The WebHID dashboard automatically converts `keyboardButtons` to `keyboardMappings` at runtime using a USB HID keycode lookup table. This means:
-
-- **Generate configs with Node.js/Python** to get raw HID keycodes (`keyboardButtons`)
-- **Use in WebHID** - the dashboard converts them automatically
-- **No need to manually create `keyboardMappings`** for Huion-style tablets
-
----
+Both modalities read **raw HID packets** directly from the device—we do not use OS-level keyboard event listeners.
 
 ## Recommendations
 
 ### For Best Compatibility
 
-1. **Generate configs using Node.js or Python** with `sudo` on macOS
-2. **Use driverless mode** to capture raw HID scan codes
-3. The resulting `keyboardButtons` format works everywhere
-
-### For WebHID-Only Use
-
-If you only need WebHID support and have the manufacturer's driver active:
-
-1. The driver converts button presses to keyboard shortcuts
-2. WebHID can capture these via browser keyboard events
-3. Add `keyboardMappings` manually to your config
+1. **Generate configs using Node.js or Python CLI** with `sudo` on macOS (if using keyboard HID interface)
+2. **Use driverless mode** when possible to capture raw HID codes
+3. Both `tabletButtons` and `keyboardButtons` formats work across all platforms
 
 ### Comparison Table
 
-| Scenario | Config Generator | Button Format | Works In |
-|----------|------------------|---------------|----------|
-| XP-Pen (any mode) | Any | `tabletButtons` | All platforms |
-| Huion (driverless) | Node.js/Python + sudo | `keyboardButtons` | All platforms |
-| Huion (driver mode) | Manual | `keyboardMappings` | WebHID only |
+| Scenario | Config Generator | Button Format | Works In | Driver Required |
+|----------|------------------|---------------|----------|-----------------|
+| XP-Pen (any mode) | Any | `tabletButtons` | All platforms | No |
+| Huion (driverless) | Node.js/Python + sudo | `keyboardButtons` | All platforms | No |
+| Huion (driver mode) | Node.js/Python + sudo | `keyboardButtons` | All platforms | Optional* |
+
+*When the driver is active, it may claim exclusive access to the keyboard HID interface, preventing Blankslate from reading it. Run in driverless mode for reliable HID access.
 
 ---
 

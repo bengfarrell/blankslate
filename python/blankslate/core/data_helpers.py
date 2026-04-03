@@ -145,34 +145,7 @@ def parse_bipolar_range_data(
     return 0.0
 
 
-def parse_bit_flags(
-    data: List[int],
-    byte_index: int,
-    button_count: int
-) -> Dict[str, bool]:
-    """
-    Parse bit flags from a byte (e.g., for button states)
 
-    Args:
-        data: List of byte values
-        byte_index: Index of the byte containing bit flags
-        button_count: Number of buttons to parse
-
-    Returns:
-        Dictionary mapping button names to their pressed state
-    """
-    result: Dict[str, bool] = {}
-
-    if byte_index >= len(data):
-        return result
-
-    bits = data[byte_index]
-
-    for i in range(button_count):
-        button_num = i + 1
-        result[f'button{button_num}'] = (bits & (1 << i)) != 0
-
-    return result
 
 
 def process_device_data(
@@ -248,7 +221,8 @@ def process_device_data(
             continue
 
         # Handle tabletButtons with code type (custom value mapping)
-        if key == 'tabletButtons' and mapping_type == 'code':
+        # Default to 'code' type if not specified (for backward compatibility)
+        if key == 'tabletButtons' and (mapping_type == 'code' or not mapping_type):
             # Process button codes when:
             # 1. Device state indicates buttons/keyboard mode, OR
             # 2. This is a button interface packet (separate HID interface for buttons)
@@ -307,13 +281,6 @@ def process_device_data(
                 mapping.get('negativeMin', 0),
                 mapping.get('negativeMax', 0)
             )
-        elif mapping_type == 'bit-flags':
-            button_states = parse_bit_flags(
-                data_list,
-                first_byte_index,
-                mapping.get('buttonCount', 8)
-            )
-            result.update(button_states)
 
     return result
 

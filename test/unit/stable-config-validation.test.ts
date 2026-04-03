@@ -13,9 +13,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { WalkthroughEngine } from '../../src/core/walkthrough/walkthrough-engine.js';
-import { ConfigBasedGenerator } from '../../src/mockbytes/config-based-generator.js';
-import { processDeviceData } from '../../src/utils/data-helpers.js';
+import { WalkthroughEngine } from '../../src/core/walkthrough/walkthrough-engine';
+import { ConfigBasedGenerator } from '../../src/mockbytes/config-based-generator';
+import { processDeviceData } from '../../src/utils/data-helpers';
 
 // Path to stable config (test fixture)
 const STABLE_CONFIG_PATH = join(__dirname, '../../common-test-fixtures/xp-pen-deco640-driverless.json');
@@ -350,11 +350,21 @@ describe('Config Round-Trip Validation', () => {
   it('should generate button packets that detect correct button', () => {
     const mode = stableConfig.modes[0];
 
+    // Check what's in the config
+    console.log('Mappings keys:', Object.keys(mode.byteCodeMappings));
+    console.log('tabletButtons:', mode.byteCodeMappings.tabletButtons);
+    console.log('Has tabletButtons:', 'tabletButtons' in mode.byteCodeMappings);
+
     for (let buttonNum = 1; buttonNum <= 8; buttonNum++) {
       const packet = generator.generateButtonPacket(buttonNum);
       const packetWithReportId = new Uint8Array([mode.reportId, ...packet]);
 
       const result = processDeviceData(packetWithReportId, mode.byteCodeMappings, 0);
+
+      if (buttonNum === 1) {
+        console.log('Packet:', Array.from(packetWithReportId));
+        console.log('Result:', result);
+      }
 
       expect(result.tabletButtons).toBe(buttonNum);
       expect(result[`button${buttonNum}`]).toBe(true);

@@ -384,13 +384,13 @@ describe.each(RECORDING_FILES)('Recording Replay: %s', (recordingFile) => {
       );
     });
 
-    it('should have correct status mapping type', () => {
+    it('should have status mapping', () => {
       const engine = createEngine();
       const config = runFullWalkthrough(engine, recording);
-      
-      expect(config.modes[0].byteCodeMappings.status.type).toBe(
-        expectedMode.byteCodeMappings.status.type
-      );
+
+      // status type field removed (always 'code' now)
+      expect(config.modes[0].byteCodeMappings.status).toBeDefined();
+      expect(config.modes[0].byteCodeMappings.status.values).toBeDefined();
     });
 
     it('should detect hover status (160)', () => {

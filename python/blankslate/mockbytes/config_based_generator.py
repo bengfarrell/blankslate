@@ -44,7 +44,6 @@ class ConfigBasedGenerator:
 
         # Get button configuration
         self.button_config = self.mappings.get('tabletButtons', {})
-        self.button_type = self.button_config.get('type', 'bit-flags')
 
         # Sample rate for packet generation
         self.sample_rate = 200
@@ -134,6 +133,7 @@ class ConfigBasedGenerator:
     def generate_button_packet(self, button_number: int) -> bytes:
         """
         Generate a button press packet matching the config
+        Uses 'code' type (scan code mapping) - bit-flags removed
 
         Args:
             button_number: Button number (1-8)
@@ -141,57 +141,48 @@ class ConfigBasedGenerator:
         Returns:
             HID packet bytes (report ID will be prepended by mock reader)
         """
-        if self.button_type == 'code':
-            # Find the scan code for this button
-            values = self.button_config.get('values', {})
-            status_overrides = self.button_config.get('statusOverrides', [])
+        # Find the scan code for this button
+        values = self.button_config.get('values', {})
+        status_overrides = self.button_config.get('statusOverrides', [])
 
-            # Find scan code for this button
-            scan_code = None
-            status_byte = self._get_status_byte_for_state('buttons')
+        # Find scan code for this button
+        scan_code = None
+        status_byte = self._get_status_byte_for_state('buttons')
 
-            # Check if this button is in statusOverrides
-            for override in status_overrides:
-                if override.get('buttonNumber') == button_number:
-                    scan_code = override.get('scanCode')
-                    status_byte = override.get('statusByte')
+        # Check if this button is in statusOverrides
+        for override in status_overrides:
+            if override.get('buttonNumber') == button_number:
+                scan_code = override.get('scanCode')
+                status_byte = override.get('statusByte')
+                break
+
+        # If not in overrides, find in values
+        if scan_code is None:
+            for code_str, props in values.items():
+                if props.get('button') == button_number:
+                    scan_code = int(code_str)
                     break
 
-            # If not in overrides, find in values
-            if scan_code is None:
-                for code_str, props in values.items():
-                    if props.get('button') == button_number:
-                        scan_code = int(code_str)
-                        break
+        if scan_code is None:
+            # Fallback to button number as scan code
+            scan_code = button_number
 
-            if scan_code is None:
-                # Fallback to button number as scan code
-                scan_code = button_number
+        # Get button byte index from config (subtract 1 since no report ID)
+        byte_indices = self.button_config.get('byteIndex', [2])
+        button_byte_index = (byte_indices[0] - 1) if byte_indices and byte_indices[0] > 0 else 1
 
-            # Get button byte index from config (subtract 1 since no report ID)
-            byte_indices = self.button_config.get('byteIndex', [2])
-            button_byte_index = (byte_indices[0] - 1) if byte_indices and byte_indices[0] > 0 else 1
+        # Get status byte index from config (subtract 1 since no report ID)
+        status_mapping = self.mappings.get('status', {})
+        status_byte_indices = status_mapping.get('byteIndex', [1])
+        status_byte_index = (status_byte_indices[0] - 1) if status_byte_indices and status_byte_indices[0] > 0 else 0
 
-            # Get status byte index from config (subtract 1 since no report ID)
-            status_mapping = self.mappings.get('status', {})
-            status_byte_indices = status_mapping.get('byteIndex', [1])
-            status_byte_index = (status_byte_indices[0] - 1) if status_byte_indices and status_byte_indices[0] > 0 else 0
+        # Create packet - size based on max byte index + 1
+        packet_size = max(button_byte_index, status_byte_index) + 1
+        packet = bytearray(packet_size)
+        packet[status_byte_index] = status_byte
+        packet[button_byte_index] = scan_code
 
-            # Create packet - size based on max byte index + 1
-            packet_size = max(button_byte_index, status_byte_index) + 1
-            packet = bytearray(packet_size)
-            packet[status_byte_index] = status_byte
-            packet[button_byte_index] = scan_code
-
-            return bytes(packet)
-
-        elif self.button_type == 'bit-flags':
-            # Use bit-flags approach
-            return self.generator.generate_button_packet(button_number)
-
-        else:
-            # keyboard-events type - not supported in mock yet
-            raise NotImplementedError(f"Button type '{self.button_type}' not supported in mock generator")
+        return bytes(packet)
 
     def generate_stylus_packet(self, x: float, y: float, pressure: float,
                                tilt_x: float = 0, tilt_y: float = 0,

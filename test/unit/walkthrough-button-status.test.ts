@@ -131,8 +131,8 @@ describe('Button Status Byte Handling', () => {
       expect(ALL_BUTTON_STATUS_BYTES).toContain(240);
     });
 
-    it('should have driver mode button values with bit-flags', () => {
-      // Driver mode uses bit-flags: 1, 2, 4, 8, 16, 32, 64, 128
+    it('should have driver mode button values with scan codes', () => {
+      // Driver mode uses scan codes: 1, 2, 4, 8, 16, 32, 64, 128
       expect(TABLET_BUTTON_VALUES_DRIVER['1']).toEqual({ button: 1 });
       expect(TABLET_BUTTON_VALUES_DRIVER['2']).toEqual({ button: 2 });
       expect(TABLET_BUTTON_VALUES_DRIVER['4']).toEqual({ button: 3 });

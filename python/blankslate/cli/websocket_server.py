@@ -193,7 +193,7 @@ class TabletWebSocketServer(TabletReaderBase):
         """Handle incoming HID packet"""
         try:
             self.packet_count += 1
-            
+
             if self.send_raw:
                 # Send raw bytes directly
                 asyncio.create_task(self._broadcast_raw(data))

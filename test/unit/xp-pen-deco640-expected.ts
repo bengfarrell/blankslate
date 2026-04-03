@@ -189,8 +189,8 @@ export const TABLET_BUTTON_VALUES_DRIVERLESS = {
 export const TABLET_BUTTON_VALUES = TABLET_BUTTON_VALUES_DRIVERLESS;
 
 /**
- * Bit-flag to button mapping as it should appear in the config (DRIVER mode)
- * These are the bit-flags sent when the XP-Pen driver IS installed
+ * Scan code to button mapping as it should appear in the config (DRIVER mode)
+ * These are the scan codes sent when the XP-Pen driver IS installed
  */
 export const TABLET_BUTTON_VALUES_DRIVER = {
   '1': { button: 1 },
@@ -316,13 +316,11 @@ export const EXPECTED_BYTE_CODE_MAPPINGS = {
   },
   status: {
     byteIndex: BYTE_LAYOUT.status.byteIndex,
-    type: 'code' as const,
     values: STATUS_VALUES,
   },
   tabletButtons: {
     byteIndex: BYTE_LAYOUT.tabletButtons.byteIndex,
     buttonCount: CAPABILITIES.buttonCount,
-    type: 'code' as const,
     values: TABLET_BUTTON_VALUES,
     statusOverrides: STATUS_OVERRIDES,
   },

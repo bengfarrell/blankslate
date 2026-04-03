@@ -9,7 +9,7 @@ import time
 import struct
 from typing import Dict, Any, Union, Callable, Optional, List, TYPE_CHECKING
 
-from .data_helpers import parse_code, parse_range_data, parse_bipolar_range_data, parse_multi_byte_range_data, parse_bit_flags
+from .data_helpers import parse_code, parse_range_data, parse_bipolar_range_data, parse_multi_byte_range_data
 
 if TYPE_CHECKING:
     from config import Config
@@ -218,11 +218,7 @@ class HIDReader:
             # Skip keyboard-events type - these are handled by keyboard listener, not HID
             if key == 'tabletButtons' and mapping_type == 'keyboard-events':
                 continue
-            
-            # Skip button parsing if not in button mode (unless we're on button-only interface)
-            if mapping_type == 'bit-flags' and device_state != 'buttons' and not is_button_interface:
-                continue
-            
+
             # Skip coordinate/pressure/tilt parsing if on button-only interface or in button mode
             if (is_button_interface or device_state == 'buttons') and key in ['x', 'y', 'pressure', 'tiltX', 'tiltY']:
                 continue
@@ -257,13 +253,6 @@ class HIDReader:
                     mapping.get('negativeMin', 0),
                     mapping.get('negativeMax', 0)
                 )
-            elif mapping_type == 'bit-flags':
-                button_states = parse_bit_flags(
-                    data_list,
-                    first_byte_index,
-                    mapping.get('buttonCount', 8)
-                )
-                result.update(button_states)
         
         return result
     

@@ -1,6 +1,8 @@
 # Blankslate
 
-A universal HID tablet configuration toolkit with support for Node.js, Python, and WebHID.
+A universal HID tablet configuration toolkit focused on reading raw HID packets from drawing tablets. Supports Node.js, Python, and WebHID.
+
+**Scope:** Blankslate reads HID (Human Interface Device) data directly—not OS-level keyboard events.
 
 📖 **[View Full Documentation](https://bengfarrell.github.io/blankslate/)**
 
@@ -33,5 +35,5 @@ A universal HID tablet configuration toolkit with support for Node.js, Python, a
 ### Technical Reference
 - [HID Reading](docs-src/about/hid-reading.md) - How HID data is read and processed
 - [Implementation Differences](docs-src/about/implementation-differences.md) - Platform-specific details
-- [Keyboard Input](docs-src/about/keyboard-input.md) - Tablet button handling
+- [Keyboard HID Interface](docs-src/about/keyboard-input.md) - Tablets that use keyboard HID for buttons
 - [Limitations](docs-src/about/limitations.md) - Known limitations and workarounds

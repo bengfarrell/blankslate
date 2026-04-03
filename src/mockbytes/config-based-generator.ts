@@ -48,7 +48,6 @@ export class ConfigBasedGenerator {
   private mappings: Record<string, any>;
   private generator: TabletDataGenerator;
   private buttonConfig: Record<string, any>;
-  private buttonType: string;
 
   readonly maxX: number;
   readonly maxY: number;
@@ -80,9 +79,8 @@ export class ConfigBasedGenerator {
     this.maxY = this.getMaxValue('y');
     this.maxPressure = this.getMaxValue('pressure');
 
-    // Get button configuration
+    // Get button configuration (always uses 'code' type now - bit-flags removed)
     this.buttonConfig = this.mappings.tabletButtons || {};
-    this.buttonType = this.buttonConfig.type || 'bit-flags';
 
     // Create underlying generator with config parameters
     this.generator = new TabletDataGenerator({
@@ -154,63 +152,57 @@ export class ConfigBasedGenerator {
 
   /**
    * Generate a button press packet matching the config
+   * Uses 'code' type (scan code mapping) - bit-flags removed
    */
   generateButtonPacket(buttonNumber: number): Uint8Array {
-    if (this.buttonType === 'code') {
-      // Find the scan code for this button
-      const values = this.buttonConfig.values || {};
-      const statusOverrides = this.buttonConfig.statusOverrides || [];
+    // Find the scan code for this button
+    const values = this.buttonConfig.values || {};
+    const statusOverrides = this.buttonConfig.statusOverrides || [];
 
-      // Find scan code for this button
-      let scanCode: number | null = null;
-      let statusByte = this.getStatusByteForState('buttons');
+    // Find scan code for this button
+    let scanCode: number | null = null;
+    let statusByte = this.getStatusByteForState('buttons');
 
-      // Check if this button is in statusOverrides
-      for (const override of statusOverrides) {
-        if (override.buttonNumber === buttonNumber) {
-          scanCode = override.scanCode;
-          statusByte = override.statusByte;
+    // Check if this button is in statusOverrides
+    for (const override of statusOverrides) {
+      if (override.buttonNumber === buttonNumber) {
+        scanCode = override.scanCode;
+        statusByte = override.statusByte;
+        break;
+      }
+    }
+
+    // If not in overrides, find in values
+    if (scanCode === null) {
+      for (const [codeStr, props] of Object.entries(values)) {
+        if ((props as any).button === buttonNumber) {
+          scanCode = parseInt(codeStr, 10);
           break;
         }
       }
-
-      // If not in overrides, find in values
-      if (scanCode === null) {
-        for (const [codeStr, props] of Object.entries(values)) {
-          if ((props as any).button === buttonNumber) {
-            scanCode = parseInt(codeStr, 10);
-            break;
-          }
-        }
-      }
-
-      if (scanCode === null) {
-        // Fallback to button number as scan code
-        scanCode = buttonNumber;
-      }
-
-      // Get button byte index from config (subtract 1 since no report ID)
-      const byteIndices = this.buttonConfig.byteIndex || [2];
-      const buttonByteIndex = byteIndices[0] > 0 ? byteIndices[0] - 1 : 1;
-
-      // Get status byte index from config (subtract 1 since no report ID)
-      const statusMapping = this.mappings.status || {};
-      const statusByteIndices = statusMapping.byteIndex || [1];
-      const statusByteIndex = statusByteIndices[0] > 0 ? statusByteIndices[0] - 1 : 0;
-
-      // Create packet - size based on max byte index + 1
-      const packetSize = Math.max(buttonByteIndex, statusByteIndex) + 1;
-      const packet = new Uint8Array(packetSize);
-      packet[statusByteIndex] = statusByte;
-      packet[buttonByteIndex] = scanCode;
-
-      return packet;
-    } else if (this.buttonType === 'bit-flags') {
-      // Use bit-flags approach
-      return this.generator.generateButtonPacket(buttonNumber);
-    } else {
-      throw new Error(`Button type '${this.buttonType}' not supported in mock generator`);
     }
+
+    if (scanCode === null) {
+      // Fallback to button number as scan code
+      scanCode = buttonNumber;
+    }
+
+    // Get button byte index from config (subtract 1 since no report ID)
+    const byteIndices = this.buttonConfig.byteIndex || [2];
+    const buttonByteIndex = byteIndices[0] > 0 ? byteIndices[0] - 1 : 1;
+
+    // Get status byte index from config (subtract 1 since no report ID)
+    const statusMapping = this.mappings.status || {};
+    const statusByteIndices = statusMapping.byteIndex || [1];
+    const statusByteIndex = statusByteIndices[0] > 0 ? statusByteIndices[0] - 1 : 0;
+
+    // Create packet - size based on max byte index + 1
+    const packetSize = Math.max(buttonByteIndex, statusByteIndex) + 1;
+    const packet = new Uint8Array(packetSize);
+    packet[statusByteIndex] = statusByte;
+    packet[buttonByteIndex] = scanCode;
+
+    return packet;
   }
 
   /**

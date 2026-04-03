@@ -31,12 +31,10 @@ The buttons are an entirely different story. The Huion comes in only as a keyboa
 
 Blankslate has support for Node.js, Python and Web. Node.js and Python are low level enough that things work pretty well.
 Web is based on Chrome's experimental [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API). There are some restrictions here.
-For one, the tablet has some "hot shortcut" keys. The keys are buttons that a user would tap to perform some kind of action. Node.js and Python can easily
-read these with the HID interface. I'm seeing that WebHID cannot without the driver app installed/running. Instead, they come in as keyboard events only.
 
-This project supports learning and viewing these buttons as keyboard events for when the driver is not loaded.
-
-It's a quirk, but one that we work around.
+**Important:** Blankslate reads **HID (Human Interface Device) data only**. Some tablets send button data through a separate "Keyboard HID interface"
+(Huion tablets), but we're still reading raw HID packets—not OS keyboard events. Node.js and Python can read these keyboard HID packets directly
+(requires `sudo` on macOS). WebHID cannot access the keyboard HID interface due to security policies.
 
 ## Tablet Modes
 
@@ -69,12 +67,11 @@ your mouse no longer moves.
 
 ## Summary
 
-To sum up, Blankslate is a utility to read raw byte data from a HID (human interface device) drawing tablet
-and translate those events into what the user is actually doing. We can see horizontal and vertical coordinates, pressure,
-tilt, and button presses (both hotkeys and stylus buttons).
+To sum up, Blankslate is a utility to read **raw HID byte data** from drawing tablets and translate those bytes into meaningful events:
+horizontal and vertical coordinates, pressure, tilt, and button presses (both express keys and stylus buttons).
 
-Blankslate also provides a way to generate JSON configuration files to interpret those raw bytes.
-Again, it's only tested on a single tablet, so there will likely be some work to get other tablets working. But for now it's a start! 
+Blankslate provides a way to generate JSON configuration files that describe how to interpret those raw HID packets.
+The project currently supports XP-Pen and Huion tablets, with a framework for adding support for other manufacturers.
 
 
 ### Key Features

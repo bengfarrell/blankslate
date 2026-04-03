@@ -33,7 +33,6 @@ from .core.data_helpers import (
     parse_range_data,
     parse_multi_byte_range_data,
     parse_bipolar_range_data,
-    parse_bit_flags,
     process_device_data
 )
 from .core.hid_reader import HIDReader
@@ -51,7 +50,6 @@ __all__ = [
     'parse_range_data',
     'parse_multi_byte_range_data',
     'parse_bipolar_range_data',
-    'parse_bit_flags',
     'process_device_data',
 ]
 

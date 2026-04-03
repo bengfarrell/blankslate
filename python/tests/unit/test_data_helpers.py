@@ -10,7 +10,6 @@ from blankslate.core.data_helpers import (
     parse_range_data,
     parse_multi_byte_range_data,
     parse_bipolar_range_data,
-    parse_bit_flags,
 )
 
 
@@ -165,46 +164,3 @@ class TestParseBipolarRangeData:
         result = parse_bipolar_range_data(data, 1, 0, 60, 196, 255)
 
         assert result == 0
-
-
-class TestParseBitFlags:
-    """Tests for parse_bit_flags function"""
-
-    def test_parse_single_button(self):
-        """Should parse single button press"""
-        data = bytes([0, 0b00000001, 0])  # Button 1
-        result = parse_bit_flags(data, 1, 8)
-
-        assert result == {
-            'button1': True,
-            'button2': False,
-            'button3': False,
-            'button4': False,
-            'button5': False,
-            'button6': False,
-            'button7': False,
-            'button8': False,
-        }
-
-    def test_parse_multiple_buttons(self):
-        """Should parse multiple button presses"""
-        data = bytes([0, 0b00000101, 0])  # Buttons 1 and 3
-        result = parse_bit_flags(data, 1, 8)
-
-        assert result['button1'] is True
-        assert result['button2'] is False
-        assert result['button3'] is True
-
-    def test_parse_no_buttons(self):
-        """Should parse no buttons pressed"""
-        data = bytes([0, 0b00000000, 0])
-        result = parse_bit_flags(data, 1, 8)
-
-        assert all(not v for v in result.values())
-
-    def test_parse_all_buttons(self):
-        """Should parse all buttons pressed"""
-        data = bytes([0, 0b11111111, 0])
-        result = parse_bit_flags(data, 1, 8)
-
-        assert all(v for v in result.values())

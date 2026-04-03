@@ -10,7 +10,9 @@ This document describes the JSON configuration file format used by Blankslate to
 
 ## Overview
 
-Configuration files define how raw HID byte data maps to meaningful tablet events (coordinates, pressure, tilt, buttons). The walkthrough tool generates these configs automatically, but they can also be created or edited manually.
+Configuration files define how raw **HID byte data** maps to meaningful tablet events (coordinates, pressure, tilt, buttons). The walkthrough tool generates these configs automatically, but they can also be created or edited manually.
+
+**Scope:** Blankslate is focused exclusively on reading HID (Human Interface Device) data. All configurations describe HID packet structures and do not rely on OS-level keyboard event listeners.
 
 ## Top-Level Structure
 
@@ -94,7 +96,6 @@ The `modes` array contains one or more mode configurations. Each mode represents
 | `excludedUsagePages` | number[] | No | Usage pages to ignore when reading HID data |
 | `capabilities` | object | Yes | Device capabilities |
 | `byteCodeMappings` | object | Yes | Byte-to-data mappings |
-| `keyboardMappings` | object | No | Keyboard shortcut mappings (WebHID only) |
 
 ### Capabilities
 

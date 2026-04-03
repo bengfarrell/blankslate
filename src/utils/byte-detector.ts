@@ -39,18 +39,20 @@ export interface StatusValue {
 
 export interface StatusConfig {
   byteIndex: number[];
-  type: 'code';
   values: Record<string, StatusValue>;
 }
 
 export interface TabletButtonsConfig {
   byteIndex: number[];
   buttonCount: number;
-  type: 'bit-flags' | 'code';
-  // For type 'code': maps scan code/bitmask value to button info
-  // Can include both HID button number AND keyboard shortcut info (for documentation/UI)
-  // Python/Node readers only use 'button', keyboard info is for WebHID fallback display
-  values?: Record<string, { button?: number; key?: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean }>;
+  // Maps scan code value to button number
+  values?: Record<string, { button: number }>;
+  // Optional: status byte overrides for scan codes that map to different buttons based on status
+  statusOverrides?: Array<{
+    scanCode: number;
+    statusByte: number;
+    buttonNumber: number;
+  }>;
 }
 
 /**
@@ -508,7 +510,6 @@ export function generateDeviceConfig(
 
       config.status = {
         byteIndex: [statusByteIndex], // Use 0-based indexing
-        type: 'code',
         values,
       };
     }
@@ -560,24 +561,13 @@ export function generateDeviceConfig(
     const digitizerButtons = buttonMappings.filter(m => m.interfaceType !== 'keyboard');
     const keyboardInterfaceButtons = buttonMappings.filter(m => m.interfaceType === 'keyboard');
 
-    // Check if we have keyboard event mappings (browser keyboard events) or HID scan codes
-    const hasKeyboardEventMappings = digitizerButtons.some(m => m.key !== undefined);
+    // Check if we have HID scan codes
     const hasHIDMappings = digitizerButtons.some(m => m.scanCode !== undefined);
-
-    // Build keyboard info lookup by button number (for merging into HID mappings)
-    const keyboardInfoByButton = new Map<number, ButtonMapping>();
-    for (const mapping of digitizerButtons) {
-      if (mapping.key !== undefined) {
-        keyboardInfoByButton.set(mapping.buttonNumber, mapping);
-      }
-    }
 
     // Handle digitizer interface buttons (XP-Pen style)
     if (hasHIDMappings) {
-      // HID scan code detection - include keyboard info when available
-      // This creates combined entries like { button: 1, key: "b" } for documentation/UI
-      // Python/Node readers only use 'button', keyboard info is preserved for WebHID fallback
-      const values: Record<string, { button: number; key?: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean }> = {};
+      // HID scan code detection
+      const values: Record<string, { button: number }> = {};
       const conflictingButtons: Array<{ scanCode: number; statusByte: number; buttonNumber: number }> = [];
 
       // Check for scan code conflicts and track status byte overrides
@@ -613,20 +603,7 @@ export function generateDeviceConfig(
           buttonNum = mappings[0].buttonNumber;
         }
 
-        // Build entry with button number and optional keyboard info
-        const entry: { button: number; key?: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean } = { button: buttonNum };
-
-        // Merge keyboard info if available for this button
-        const kbInfo = keyboardInfoByButton.get(buttonNum);
-        if (kbInfo?.key) {
-          entry.key = kbInfo.key;
-          if (kbInfo.ctrlKey) entry.ctrl = true;
-          if (kbInfo.shiftKey) entry.shift = true;
-          if (kbInfo.altKey) entry.alt = true;
-          if (kbInfo.metaKey) entry.meta = true;
-        }
-
-        values[String(scanCode)] = entry;
+        values[String(scanCode)] = { button: buttonNum };
       }
 
       const tabletButtonsConfig: TabletButtonsConfig = {
@@ -636,7 +613,6 @@ export function generateDeviceConfig(
         // - Without Report ID: raw index 1, read offset -1 → config 2 - 1 = index 1
         byteIndex: [2],
         buttonCount: digitizerButtons.length,
-        type: 'code',
         values,
       };
 
@@ -646,34 +622,6 @@ export function generateDeviceConfig(
       }
 
       config.tabletButtons = tabletButtonsConfig;
-    } else if (hasKeyboardEventMappings) {
-      // Keyboard-only detection (driver active, HID button interface blocked)
-      // This is a WebHID-specific fallback - buttons are detected via browser keyboard events
-      // Python/Node don't need this since they can read raw HID in driverless mode
-      // Note: We don't include 'button' field here because there's no HID byte data to decode
-      // The button number is the key in the values object, keyboard info is for documentation only
-      const values: Record<string, { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean }> = {};
-
-      for (const mapping of digitizerButtons) {
-        if (mapping.key) {
-          const entry: { key: string; ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean } = {
-            key: mapping.key,
-          };
-          if (mapping.ctrlKey) entry.ctrl = true;
-          if (mapping.shiftKey) entry.shift = true;
-          if (mapping.altKey) entry.alt = true;
-          if (mapping.metaKey) entry.meta = true;
-          values[String(mapping.buttonNumber)] = entry;
-        }
-      }
-
-      config.tabletButtons = {
-        // No byteIndex - buttons come via keyboard events, not HID packets
-        byteIndex: [],
-        buttonCount: digitizerButtons.length,
-        type: 'code',
-        values,
-      };
     }
 
     // Handle keyboard HID interface buttons (Huion-style tablets)
@@ -733,15 +681,6 @@ export function generateDeviceConfig(
         buttons: keyboardButtonMappings,
       };
     }
-  } else if (tabletButtonBytes.length > 0) {
-    // Fallback: auto-detected bytes with bit-flags type
-    const buttonByteIndices = tabletButtonBytes.map(b => b.byteIndex + indexOffset);
-    config.tabletButtons = {
-      byteIndex: buttonByteIndices,
-      buttonCount: 8, // Default to 8 buttons
-      type: 'bit-flags',
-    };
   }
-
   return config;
 }

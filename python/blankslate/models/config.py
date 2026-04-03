@@ -31,7 +31,6 @@ class MappingType:
     MULTI_BYTE_RANGE = 'multi-byte-range'
     BIPOLAR_RANGE = 'bipolar-range'
     KEYBOARD_EVENTS = 'keyboard-events'
-    BIT_FLAGS = 'bit-flags'
 
 
 @dataclass

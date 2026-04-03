@@ -8,7 +8,7 @@ import type { ByteData, DeviceInfo } from '../bytes-display/bytes-display.js';
 import type { TabletEvent, EventsDeviceInfo } from '../events-display/events-display.js';
 import { Config, type ConfigData } from '../../models/config.js';
 import { MockTabletDevice } from '../../mockbytes/mock-tablet-device.js';
-import { processDeviceData, processKeyboardButtonData, convertKeyboardButtonsToMappings, type KeyboardButtonsConfig } from '../../utils/data-helpers.js';
+import { processDeviceData, processKeyboardButtonData, type KeyboardButtonsConfig } from '../../utils/data-helpers.js';
 import '@spectrum-web-components/button/sp-button.js';
 import '@spectrum-web-components/action-button/sp-action-button.js';
 import '@spectrum-web-components/action-menu/sp-action-menu.js';
@@ -247,14 +247,8 @@ export class HidDashboard extends LitElement {
   @state()
   private currentReportId: number | null = null;
 
-  // Keyboard tracking for button mappings
-  private pressedKeys: Set<string> = new Set();
-  private keyboardListenerBound = this._handleKeyDown.bind(this);
-  private keyupListenerBound = this._handleKeyUp.bind(this);
-
-  // Cached keyboard button config and converted mappings for Huion-style tablets
+  // Cached keyboard button config for Huion-style tablets
   private cachedKeyboardButtonsConfig: KeyboardButtonsConfig | null = null;
-  private cachedConvertedKeyboardMappings: ReturnType<typeof convertKeyboardButtonsToMappings> = null;
 
   private readonly mockDataOptions: MockDataOption[] = [
     { id: 'circle', label: 'Draw Circle', action: (d) => d.playCircle() },
@@ -275,10 +269,6 @@ export class HidDashboard extends LitElement {
     super.connectedCallback();
     // Initialize mock device so it's ready for simulations
     this._initMockDevice();
-    // Add keyboard listeners for button mappings
-    // Use capture phase to intercept events before they trigger default browser behavior
-    window.addEventListener('keydown', this.keyboardListenerBound, { capture: true });
-    window.addEventListener('keyup', this.keyupListenerBound, { capture: true });
   }
 
   disconnectedCallback() {
@@ -286,18 +276,14 @@ export class HidDashboard extends LitElement {
     this._disconnectHid();
     this._disconnectWebSocket();
     this._stopSimulation();
-    // Remove keyboard listeners
-    window.removeEventListener('keydown', this.keyboardListenerBound, { capture: true });
-    window.removeEventListener('keyup', this.keyupListenerBound, { capture: true });
   }
 
   /**
-   * Cache keyboardButtons config and convert to keyboardMappings format
-   * for Huion-style tablets that send buttons via keyboard HID interface
+   * Cache keyboardButtons config for Huion-style tablets
+   * that send buttons via keyboard HID interface
    */
   private _cacheKeyboardButtonsConfig() {
     this.cachedKeyboardButtonsConfig = null;
-    this.cachedConvertedKeyboardMappings = null;
 
     if (!this.config?.modes) return;
 
@@ -306,11 +292,6 @@ export class HidDashboard extends LitElement {
       const keyboardButtons = mode.byteCodeMappings?.keyboardButtons as KeyboardButtonsConfig | undefined;
       if (keyboardButtons?.buttons?.length) {
         this.cachedKeyboardButtonsConfig = keyboardButtons;
-        this.cachedConvertedKeyboardMappings = convertKeyboardButtonsToMappings(keyboardButtons);
-        console.log('[HIDDashboard] Cached keyboardButtons config:', {
-          buttonCount: keyboardButtons.buttons.length,
-          convertedMappings: this.cachedConvertedKeyboardMappings?.buttons.length ?? 0
-        });
         break;
       }
     }
@@ -883,125 +864,6 @@ export class HidDashboard extends LitElement {
     }
   }
 
-  // ================== Keyboard Button Mapping Methods ==================
-
-  private _handleKeyDown(e: KeyboardEvent) {
-    // Don't process if typing in an input field
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-      return;
-    }
-
-    // If we have keyboard button mappings, prevent default browser behavior
-    // This stops things like Space scrolling the page, etc.
-    if (this.cachedConvertedKeyboardMappings || this.config?.keyboardMappings) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // Track pressed keys
-    this.pressedKeys.add(e.code);
-
-    // Check if this key combination matches any button mapping
-    this._checkButtonMapping();
-  }
-
-  private _handleKeyUp(e: KeyboardEvent) {
-    // Don't process if typing in an input field
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-      return;
-    }
-
-    // If we have keyboard button mappings, prevent default browser behavior
-    if (this.cachedConvertedKeyboardMappings || this.config?.keyboardMappings) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // Remove from pressed keys
-    this.pressedKeys.delete(e.code);
-
-    // Clear button state when keys are released
-    if (this.pressedKeys.size === 0) {
-      this.pressedButtons = new Set();
-    }
-  }
-
-  private _checkButtonMapping() {
-    if (!this.config) {
-      return;
-    }
-
-    // Get keyboard mappings from current mode or fallback to config-level
-    // Also check for converted keyboardButtons mappings (Huion-style)
-    let keyboardMappings = this.config.keyboardMappings;
-
-    if (this.currentReportId !== null) {
-      const currentMode = this.config.getModeByReportId(this.currentReportId);
-      if (currentMode?.keyboardMappings) {
-        keyboardMappings = currentMode.keyboardMappings;
-      }
-    } else {
-      // If no report ID yet, check all modes for keyboard mappings
-      if (this.config.modes) {
-        for (const mode of this.config.modes) {
-          if (mode.keyboardMappings) {
-            keyboardMappings = mode.keyboardMappings;
-            break;
-          }
-        }
-      }
-    }
-
-    // Fall back to converted keyboardButtons mappings if no keyboardMappings found
-    if (!keyboardMappings && this.cachedConvertedKeyboardMappings) {
-      keyboardMappings = this.cachedConvertedKeyboardMappings;
-    }
-
-    if (!keyboardMappings) {
-      return;
-    }
-
-    // Check each button mapping to see if current pressed keys match
-    for (const mapping of keyboardMappings.buttons) {
-      const requiredKeys = mapping.keys;
-
-      // Check if all required keys are pressed and no extra keys
-      if (requiredKeys.length === this.pressedKeys.size &&
-          requiredKeys.every(key => this.pressedKeys.has(key))) {
-
-        // Trigger button press
-        this.pressedButtons = new Set([mapping.button]);
-        this.lastPressedButton = mapping.button;
-
-        // Add to events - dynamically set the button property
-        const event: TabletEvent = {
-          timestamp: Date.now(),
-          x: this.tabletData.x,
-          y: this.tabletData.y,
-          pressure: this.tabletData.pressure,
-          tiltX: this.tabletData.tiltX,
-          tiltY: this.tabletData.tiltY,
-          tiltXY: this.tabletData.tiltXY,
-          primaryButtonPressed: this.tabletData.primaryButtonPressed,
-          secondaryButtonPressed: this.tabletData.secondaryButtonPressed,
-          state: 'buttons'
-        };
-
-        // Dynamically set the button property based on mapping.button
-        if (mapping.button > 0) {
-          event[`button${mapping.button}`] = true;
-        }
-
-        this.tabletEvents = [...this.tabletEvents, event];
-        if (this.tabletEvents.length > 50) {
-          this.tabletEvents = this.tabletEvents.slice(-50);
-        }
-
-        break; // Only match one button at a time
-      }
-    }
-  }
-
   // ================== WebSocket Connection Methods ==================
 
   private _handleWebSocketUrlChange(e: Event) {
@@ -1119,13 +981,14 @@ export class HidDashboard extends LitElement {
         this.pressedButtons = new Set([data.tabletButtons]);
         this.lastPressedButton = data.tabletButtons;
       } else {
-        // Check individual button flags (legacy support for buttons 1-8)
+        // Check individual button flags (dynamically detect all buttonN properties)
         const pressed = new Set<number>();
-        for (let i = 1; i <= 8; i++) {
-          const key = `button${i}` as keyof WebSocketTabletEvent;
-          if (data[key]) {
-            pressed.add(i);
-            this.lastPressedButton = i;
+        for (const key of Object.keys(data)) {
+          const match = key.match(/^button(\d+)$/);
+          if (match && data[key]) {
+            const buttonNum = parseInt(match[1], 10);
+            pressed.add(buttonNum);
+            this.lastPressedButton = buttonNum;
           }
         }
         this.pressedButtons = pressed;
@@ -1142,16 +1005,16 @@ export class HidDashboard extends LitElement {
         tiltXY: data.tiltXY,
         primaryButtonPressed: data.primaryButtonPressed,
         secondaryButtonPressed: data.secondaryButtonPressed,
-        button1: data.button1,
-        button2: data.button2,
-        button3: data.button3,
-        button4: data.button4,
-        button5: data.button5,
-        button6: data.button6,
-        button7: data.button7,
-        button8: data.button8,
         state: data.state
       };
+
+      // Dynamically add all button properties from the data (button1, button2, ..., buttonN)
+      for (const key of Object.keys(data)) {
+        if (/^button\d+$/.test(key)) {
+          event[key] = Boolean(data[key]);
+        }
+      }
+
       this.tabletEvents = [...this.tabletEvents, event];
       // Keep only last 50 events
       if (this.tabletEvents.length > 50) {

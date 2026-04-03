@@ -105,26 +105,27 @@ def normalize_tablet_event(events: Dict[str, Any]) -> TabletEventData:
     if tilt_x * tilt_y != 0:
         tilt_xy *= math.copysign(1, tilt_x * tilt_y)
 
-    result: Dict[str, Any] = {
-        'state': str(events.get('state', 'unknown')),
-        'x': float(events.get('x', 0)),
-        'y': float(events.get('y', 0)),
-        'pressure': float(events.get('pressure', 0)),
-        'tiltX': tilt_x,
-        'tiltY': tilt_y,
-        'tiltXY': max(-1, min(1, tilt_xy)),
-        'primaryButtonPressed': bool(events.get('primaryButton') or events.get('primaryButtonPressed')),
-        'secondaryButtonPressed': bool(events.get('secondaryButton') or events.get('secondaryButtonPressed')),
-        'tabletButtons': int(events.get('tabletButtons', 0)),
-    }
+    # Create the base TabletEventData with known fields
+    base_data = TabletEventData(
+        state=str(events.get('state', 'unknown')),
+        x=float(events.get('x', 0)),
+        y=float(events.get('y', 0)),
+        pressure=float(events.get('pressure', 0)),
+        tiltX=tilt_x,
+        tiltY=tilt_y,
+        tiltXY=max(-1, min(1, tilt_xy)),
+        primaryButtonPressed=bool(events.get('primaryButton') or events.get('primaryButtonPressed')),
+        secondaryButtonPressed=bool(events.get('secondaryButton') or events.get('secondaryButtonPressed')),
+        tabletButtons=int(events.get('tabletButtons', 0)),
+    )
 
-    # Dynamically add all button properties (button1, button2, ..., buttonN)
+    # Dynamically add all button properties (button1, button2, ..., buttonN) as attributes
     button_pattern = re.compile(r'^button\d+$')
     for key in events:
         if button_pattern.match(key):
-            result[key] = bool(events[key])
+            setattr(base_data, key, bool(events[key]))
 
-    return TabletEventData(**result)  # type: ignore[typeddict-item]
+    return base_data
 
 
 class TabletReaderBase(ABC):
@@ -186,6 +187,20 @@ class TabletReaderBase(ABC):
             print(colored('Device IDs: ', Colors.CYAN) + colored(f"{vid_str} : {pid_str}", Colors.WHITE))
         print()
     
+    def _has_keyboard_mappings(self) -> bool:
+        """Check if any mode in config has keyboard mappings."""
+        for mode in self.config_data.modes:
+            if hasattr(mode, 'keyboardMappings') and mode.keyboardMappings:
+                return True
+        return False
+
+    def _get_keyboard_mappings(self) -> Optional[Dict]:
+        """Extract keyboard mappings from config."""
+        for mode in self.config_data.modes:
+            if hasattr(mode, 'keyboardMappings') and mode.keyboardMappings:
+                return mode.keyboardMappings
+        return None
+
     async def initialize_reader(self):
         """Initialize the HID reader (mock or real) - async version"""
         if self.is_mock_mode:
@@ -193,23 +208,57 @@ class TabletReaderBase(ABC):
             self.config_generator = create_config_based_generator(self.config_path)
             self.reader = MockHIDReader(custom_generator=self.config_generator)
         else:
-            # Find and open real device using multi-interface reader
-            # This is needed for tablets that split pen and button data across interfaces
+            # Check if config specifies keyboard mappings
+            has_keyboard_mappings = self._has_keyboard_mappings()
+            keyboard_mappings = self._get_keyboard_mappings()
+
             device_info = self.config_data.deviceInfo
-            if not device_info:
-                raise ValueError("Config must include deviceInfo")
 
-            # Use HIDReaderFactory to create multi-interface reader
-            from ..core.hid_reader_factory import HIDReaderFactory
-            factory = HIDReaderFactory()
+            # Three scenarios based on config:
+            # 1. Keyboard-only mode (no HID device)
+            # 2. Hybrid mode (HID tablet + keyboard buttons)
+            # 3. Standard HID mode (existing behavior)
 
-            self.reader = await factory.create_multi_interface_reader(
-                device_info.vendor_id,
-                device_info.product_id
-            )
+            if not device_info or device_info.vendor_id == 0:
+                # Keyboard-only mode
+                if has_keyboard_mappings:
+                    from ..core.keyboard_listener import KeyboardOnlyReader
+                    print(colored('Mode: ', Colors.CYAN) + colored('Keyboard-Only', Colors.YELLOW))
+                    print(colored('Using keyboard for button input (no tablet device)', Colors.GRAY))
+                    self.reader = KeyboardOnlyReader(keyboard_mappings)
+                else:
+                    raise ValueError("Config has no device info and no keyboard mappings")
 
-            if not self.reader:
-                raise RuntimeError("Could not find/open device")
+            elif has_keyboard_mappings:
+                # Hybrid mode: Tablet HID + Keyboard buttons
+                from ..core.hid_reader_factory import HIDReaderFactory
+                from ..core.hybrid_reader import HybridReader
+
+                factory = HIDReaderFactory()
+                tablet_reader = await factory.create_multi_interface_reader(
+                    device_info.vendor_id,
+                    device_info.product_id
+                )
+
+                if not tablet_reader:
+                    raise RuntimeError("Could not find/open tablet device")
+
+                print(colored('Mode: ', Colors.CYAN) + colored('Hybrid (HID + Keyboard)', Colors.YELLOW))
+                print(colored('Pen data from tablet, buttons from keyboard', Colors.GRAY))
+                self.reader = HybridReader(tablet_reader, keyboard_mappings)
+
+            else:
+                # Standard HID-only mode (existing behavior)
+                from ..core.hid_reader_factory import HIDReaderFactory
+                factory = HIDReaderFactory()
+
+                self.reader = await factory.create_multi_interface_reader(
+                    device_info.vendor_id,
+                    device_info.product_id
+                )
+
+                if not self.reader:
+                    raise RuntimeError("Could not find/open device")
 
     def initialize_reader_sync(self):
         """Initialize the HID reader (mock or real) - synchronous version"""
@@ -218,23 +267,58 @@ class TabletReaderBase(ABC):
             self.config_generator = create_config_based_generator(self.config_path)
             self.reader = MockHIDReader(custom_generator=self.config_generator)
         else:
-            # Find and open real device using multi-interface reader
+            # Check if config specifies keyboard mappings
+            has_keyboard_mappings = self._has_keyboard_mappings()
+            keyboard_mappings = self._get_keyboard_mappings()
+
             device_info = self.config_data.deviceInfo
-            if not device_info:
-                raise ValueError("Config must include deviceInfo")
 
-            # Use HIDReaderFactory to create multi-interface reader
-            from ..core.hid_reader_factory import HIDReaderFactory
-            factory = HIDReaderFactory()
+            # Three scenarios based on config:
+            # 1. Keyboard-only mode (no HID device)
+            # 2. Hybrid mode (HID tablet + keyboard buttons)
+            # 3. Standard HID mode (existing behavior)
 
-            # Use synchronous version - no event loop needed
-            self.reader = factory.create_multi_interface_reader_sync(
-                device_info.vendor_id,
-                device_info.product_id
-            )
+            if not device_info or device_info.vendor_id == 0:
+                # Keyboard-only mode
+                if has_keyboard_mappings:
+                    from ..core.keyboard_listener import KeyboardOnlyReader
+                    print(colored('Mode: ', Colors.CYAN) + colored('Keyboard-Only', Colors.YELLOW))
+                    print(colored('Using keyboard for button input (no tablet device)', Colors.GRAY))
+                    self.reader = KeyboardOnlyReader(keyboard_mappings)
+                else:
+                    raise ValueError("Config has no device info and no keyboard mappings")
 
-            if not self.reader:
-                raise RuntimeError("Could not find/open device")
+            elif has_keyboard_mappings:
+                # Hybrid mode: Tablet HID + Keyboard buttons
+                from ..core.hid_reader_factory import HIDReaderFactory
+                from ..core.hybrid_reader import HybridReader
+
+                factory = HIDReaderFactory()
+                tablet_reader = factory.create_multi_interface_reader_sync(
+                    device_info.vendor_id,
+                    device_info.product_id
+                )
+
+                if not tablet_reader:
+                    raise RuntimeError("Could not find/open tablet device")
+
+                print(colored('Mode: ', Colors.CYAN) + colored('Hybrid (HID + Keyboard)', Colors.YELLOW))
+                print(colored('Pen data from tablet, buttons from keyboard', Colors.GRAY))
+                self.reader = HybridReader(tablet_reader, keyboard_mappings)
+
+            else:
+                # Standard HID-only mode (existing behavior)
+                from ..core.hid_reader_factory import HIDReaderFactory
+                factory = HIDReaderFactory()
+
+                # Use synchronous version - no event loop needed
+                self.reader = factory.create_multi_interface_reader_sync(
+                    device_info.vendor_id,
+                    device_info.product_id
+                )
+
+                if not self.reader:
+                    raise RuntimeError("Could not find/open device")
     
     def process_packet(self, data: bytes) -> Dict[str, Any]:
         """Process a raw packet through the config mappings"""
@@ -242,6 +326,23 @@ class TabletReaderBase(ABC):
             return {}
 
         report_id = data[0]
+
+        # Check if this is a synthetic keyboard button packet (report ID 0)
+        # Generated by KeyboardButtonListener
+        if report_id == 0 and len(data) >= 3:
+            # Synthetic packet format: [0x00, 0x01, button_number, ...]
+            # Extract button number and create button event
+            button_num = data[2]
+            result = {
+                'state': 'buttons',
+                'tabletButtons': button_num,
+                f'button{button_num}': True
+            }
+            # Set all other buttons to false
+            for i in range(1, 33):  # Support up to 32 buttons
+                if i != button_num:
+                    result[f'button{i}'] = False
+            return result
 
         # Check if this is a keyboard button packet (report IDs 3, 4, 5)
         # These come from a separate keyboard HID interface on some tablets

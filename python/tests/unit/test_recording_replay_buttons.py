@@ -62,7 +62,8 @@ class TestableTabletReader(TabletReaderBase):
                 scan_code = data[2]
                 for m in self.config_data.modes:
                     tablet_buttons = m.byteCodeMappings.get('tabletButtons')
-                    if tablet_buttons and tablet_buttons.get('type') == 'code':
+                    # Type field is now optional (defaults to 'code')
+                    if tablet_buttons:
                         values = tablet_buttons.get('values', {})
                         if str(scan_code) in values:
                             mode = m

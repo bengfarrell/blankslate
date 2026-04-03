@@ -355,9 +355,9 @@ describe('Driver Mode Config Round-Trip Validation', () => {
     expect(Math.abs((result.pressure as number) - 0.5)).toBeLessThan(0.01);
   });
 
-  it('should generate button packets with bit-flag encoding', () => {
-    // Driver mode uses bit-flag encoding: button 1 = 1, button 2 = 2, button 3 = 4, etc.
-    // The raw scan codes are bit-flags, but processDeviceData translates them to button numbers
+  it('should generate button packets with code type encoding', () => {
+    // Driver mode uses scan code encoding: button 1 = scan code 1, button 2 = scan code 2, button 3 = scan code 4, etc.
+    // processDeviceData translates scan codes to button numbers
     // using the config's values mapping (e.g., scan code 4 -> button 3)
 
     for (let buttonNum = 1; buttonNum <= 8; buttonNum++) {

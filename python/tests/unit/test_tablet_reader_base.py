@@ -123,7 +123,7 @@ class TestableTabletReader:
 @pytest.fixture
 def xp_pen_multi_mode_config():
     """XP-Pen Deco 640 multi-mode config (both driver and driverless modes)"""
-    config_path = Path(__file__).parent.parent.parent.parent / 'dist' / 'configs' / 'xp-pen-deco640.json'
+    config_path = Path(__file__).parent.parent.parent.parent / 'public' / 'configs' / 'xp-pen-deco640.json'
     return str(config_path)
 
 

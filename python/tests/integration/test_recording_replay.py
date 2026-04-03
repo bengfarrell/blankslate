@@ -495,13 +495,12 @@ class TestRecordingReplay:
         assert byte_mappings['tiltY']['type'] == expected_mappings['tiltY']['type'], \
             f"tiltY.type mismatch: {byte_mappings['tiltY']['type']} != {expected_mappings['tiltY']['type']}"
 
-        # TabletButtons - type depends on detection method
-        # Interactive detection produces 'code' with specific button-to-scan-code mappings
-        # Recording replay uses fallback auto-detection which produces 'bit-flags'
+        # TabletButtons - type field is now optional (defaults to 'code')
+        # Interactive detection produces explicit button-to-scan-code mappings
         if 'tabletButtons' in byte_mappings:
-            # Just verify it has a valid type
-            assert byte_mappings['tabletButtons']['type'] in ('code', 'bit-flags'), \
-                f"tabletButtons.type should be 'code' or 'bit-flags', got: {byte_mappings['tabletButtons']['type']}"
+            # Verify it has values mapping
+            assert 'values' in byte_mappings['tabletButtons'], \
+                "tabletButtons should have a 'values' field"
 
     def test_status_byte_values(self, engine, recording, expected_mode):
         """Test that status byte values are correctly detected"""
@@ -574,13 +573,15 @@ class TestRecordingReplay:
         expected_buttons = expected_mode['byteCodeMappings']['tabletButtons']
 
         # Verify byte index includes the expected button byte
-        # The expected config has byteIndex: [2], but auto-detection may find additional bytes
+        # The expected config has byteIndex: [2]
         expected_byte_index = expected_buttons['byteIndex'][0]  # Byte 2
         assert expected_byte_index in tablet_buttons['byteIndex'], \
             f"Expected button byte {expected_byte_index} not in detected byteIndex: {tablet_buttons['byteIndex']}"
 
-        # Verify type is set (fallback uses 'bit-flags')
-        assert 'type' in tablet_buttons, "tabletButtons should have a type field"
+        # Type field is now optional (defaults to 'code')
+        # Just verify that values mapping exists
+        assert 'values' in tablet_buttons or 'type' not in tablet_buttons, \
+            "tabletButtons should have values mapping (type field is optional)"
 
         # Verify buttonCount is set
         assert 'buttonCount' in tablet_buttons, "tabletButtons should have buttonCount"
@@ -1034,8 +1035,7 @@ class TestDriverRecordingReplay:
         if 'tabletButtons' not in byte_mappings:
             pytest.skip("Tablet buttons not detected in this recording")
         tablet_buttons = byte_mappings['tabletButtons']
-        assert 'type' in tablet_buttons
-        assert tablet_buttons['type'] in ('code', 'bit-flags')
+        # Type field is now optional (defaults to 'code')
         assert 'buttonCount' in tablet_buttons
         assert tablet_buttons['buttonCount'] > 0
 

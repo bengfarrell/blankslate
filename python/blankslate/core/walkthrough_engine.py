@@ -648,7 +648,7 @@ class WalkthroughEngine:
                 tablet_buttons_config = {
                     'byteIndex': [2],
                     'buttonCount': len(digitizer_buttons),
-                    'type': 'code',
+                    # 'type': 'code' is now implicit/default - no need to specify
                     'values': values
                 }
                 if conflicting_buttons:
@@ -694,16 +694,9 @@ class WalkthroughEngine:
                     'buttons': keyboard_button_mappings
                 }
 
-        # Fallback: auto-detected button bytes (if no interactive mappings)
-        else:
-            button_data = self.state.step_data.get('step9-tablet-buttons')
-            if button_data and button_data.detected_bytes:
-                button_byte_indices = [b.byte_index for b in button_data.detected_bytes]
-                mappings['tabletButtons'] = {
-                    'byteIndex': button_byte_indices,
-                    'buttonCount': 8,  # Default to 8 buttons
-                    'type': 'bit-flags'
-                }
+        # Note: Removed bit-flags fallback. Interactive button detection is now required
+        # for tabletButtons configuration. If buttons are not detected interactively,
+        # they won't be included in the config.
 
         return mappings
     
