@@ -106,7 +106,6 @@ export class TabletWebSocketServer extends TabletReaderBase {
           productId: this.configData.productId,
           deviceInfo: this.configData.deviceInfo,
           modes: this.configData.modes,
-          keyboardMappings: this.configData.keyboardMappings,
         };
       }
 
