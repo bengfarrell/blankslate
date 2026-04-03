@@ -4,9 +4,6 @@
   "description": "Graphics tablet controller with LitElement web components and Node.js CLI",
   "main": "dist/index.js",
   "type": "module",
-  "workspaces": [
-    "../../spectrumizer"
-  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -88,6 +85,7 @@
     "webhid"
   ],
   "scripts": {
+    "prepare": "npm run build",
     "dev": "vite",
     "build": "npm run clean && tsc --project tsconfig.build.json && tsc --project tsconfig.cli.json && npm run copy:assets",
     "build:cli": "tsc --project tsconfig.cli.json",

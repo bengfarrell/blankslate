@@ -8,6 +8,52 @@ A universal HID tablet configuration toolkit focused on reading raw HID packets 
 
 ---
 
+## Installation
+
+### As a Git Dependency
+
+Blankslate is designed to be consumed as a git dependency, not published to npm/PyPI.
+
+**NPM/Node.js:**
+```json
+{
+  "dependencies": {
+    "blankslate": "git+https://github.com/bengfarrell/blankslate.git"
+  }
+}
+```
+
+Or with a specific version tag:
+```json
+{
+  "dependencies": {
+    "blankslate": "git+https://github.com/bengfarrell/blankslate.git#v1.0.0"
+  }
+}
+```
+
+**Python (requirements.txt):**
+```txt
+git+https://github.com/bengfarrell/blankslate.git
+```
+
+Or with a specific version tag:
+```txt
+git+https://github.com/bengfarrell/blankslate.git@v1.0.0
+```
+
+**Python (pyproject.toml):**
+```toml
+[project]
+dependencies = [
+    "blankslate @ git+https://github.com/bengfarrell/blankslate.git"
+]
+```
+
+The package will automatically build when installed via git.
+
+---
+
 ## Documentation Index
 
 ### Getting Started

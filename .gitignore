@@ -4,6 +4,9 @@
 /coverage
 /docs
 
+# macOS
+.DS_Store
+
 # Build artifacts from TypeScript compilation
 /*.js
 /*.js.map
