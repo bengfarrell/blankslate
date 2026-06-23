@@ -39,6 +39,7 @@ export interface StatusValue {
 
 export interface StatusConfig {
   byteIndex: number[];
+  type: 'code';
   values: Record<string, StatusValue>;
 }
 
@@ -510,6 +511,7 @@ export function generateDeviceConfig(
 
       config.status = {
         byteIndex: [statusByteIndex], // Use 0-based indexing
+        type: 'code',
         values,
       };
     }

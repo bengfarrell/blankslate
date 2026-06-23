@@ -388,8 +388,8 @@ describe.each(RECORDING_FILES)('Recording Replay: %s', (recordingFile) => {
       const engine = createEngine();
       const config = runFullWalkthrough(engine, recording);
 
-      // status type field removed (always 'code' now)
       expect(config.modes[0].byteCodeMappings.status).toBeDefined();
+      expect(config.modes[0].byteCodeMappings.status.type).toBe('code');
       expect(config.modes[0].byteCodeMappings.status.values).toBeDefined();
     });
 

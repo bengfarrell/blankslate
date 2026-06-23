@@ -316,6 +316,7 @@ export const EXPECTED_BYTE_CODE_MAPPINGS = {
   },
   status: {
     byteIndex: BYTE_LAYOUT.status.byteIndex,
+    type: 'code',
     values: STATUS_VALUES,
   },
   tabletButtons: {

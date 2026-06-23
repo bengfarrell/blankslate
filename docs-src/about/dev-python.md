@@ -43,6 +43,12 @@ You'll see `(venv)` in your terminal prompt when activated.
 
 ### 2. Install the Package
 
+First make sure pip is current — editable installs (PEP 660) require pip ≥ 21.3, and fresh venvs on macOS often ship with an older version:
+
+```bash
+pip install --upgrade pip setuptools wheel
+```
+
 ```bash
 # Install in development mode with all dependencies
 pip install -e ".[dev,websocket,keyboard]"

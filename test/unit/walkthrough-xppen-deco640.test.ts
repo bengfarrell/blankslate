@@ -413,7 +413,7 @@ describe('XP-Pen Deco 640 Walkthrough', () => {
       expect(config!.pressure.type).toBe('multi-byte-range');
       expect(config!.tiltX?.type).toBe('bipolar-range');
       expect(config!.tiltY?.type).toBe('bipolar-range');
-      // status type field removed (always 'code' now)
+      expect(config!.status?.type).toBe('code');
     });
   });
 
