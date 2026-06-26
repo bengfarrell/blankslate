@@ -1,98 +1,84 @@
-"""
-Pytest configuration and shared fixtures
+"""Shared fixtures and helpers for the blankslate test suite."""
 
-This file is automatically loaded by pytest and provides
-fixtures that can be used across all test files.
-"""
+from __future__ import annotations
+
+from pathlib import Path
+from typing import List, Optional
 
 import pytest
-import json
-import os
+
+from blankslate.otd.config_loader import (
+    DigitizerIdentifier,
+    TabletConfiguration,
+    TabletSpecifications,
+)
+from blankslate.server.hid_device import DiscoveredDevice
+from blankslate.otd.config_loader import ConfigMatch
+
+
+def make_config(
+    *,
+    name: str = "Test Tablet",
+    max_x: int = 1000,
+    max_y: int = 500,
+    max_pressure: int = 8192,
+    identifiers: Optional[List[DigitizerIdentifier]] = None,
+) -> TabletConfiguration:
+    return TabletConfiguration(
+        name=name,
+        source_path=Path("/dev/null"),
+        specifications=TabletSpecifications(
+            digitizer_max_x=max_x,
+            digitizer_max_y=max_y,
+            pen_max_pressure=max_pressure,
+        ),
+        digitizer_identifiers=identifiers or [],
+    )
+
+
+def make_identifier(
+    *,
+    vendor_id: int = 0x256C,
+    product_id: int = 0x006E,
+    input_report_length: Optional[int] = 12,
+    parser: str = "OpenTabletDriver.Plugin.Tablet.TabletReportParser",
+) -> DigitizerIdentifier:
+    return DigitizerIdentifier(
+        vendor_id=vendor_id,
+        product_id=product_id,
+        input_report_length=input_report_length,
+        output_report_length=None,
+        report_parser=parser,
+    )
+
+
+def make_device(
+    *,
+    vendor_id: int = 0x256C,
+    product_id: int = 0x006E,
+    path: bytes = b"DevA",
+    interface_number: int = 0,
+    usage_page: int = 0x0D,
+    usage: int = 0x02,
+    match: Optional[ConfigMatch] = None,
+) -> DiscoveredDevice:
+    cfg = make_config(identifiers=[make_identifier(vendor_id=vendor_id,
+                                                   product_id=product_id)])
+    return DiscoveredDevice(
+        vendor_id=vendor_id,
+        product_id=product_id,
+        path=path,
+        interface_number=interface_number,
+        usage_page=usage_page,
+        usage=usage,
+        product_string="Test",
+        manufacturer_string="Test Co",
+        serial_number="",
+        input_report_length=None,
+        match=match or ConfigMatch(config=cfg, identifier=cfg.digitizer_identifiers[0]),
+    )
 
 
 @pytest.fixture
-def sample_hid_packets():
-    """Sample HID packets for testing"""
-    return [
-        bytes([2, 160, 0x34, 0x12, 0x78, 0x56, 0xFF, 0x1F, 30, 0]),
-        bytes([2, 160, 0x45, 0x23, 0x89, 0x67, 0xAB, 0x20, 35, 0]),
-        bytes([2, 160, 0x56, 0x34, 0x9A, 0x78, 0xCD, 0x21, 40, 0]),
-    ]
-
-
-@pytest.fixture
-def sample_config_dict():
-    """Sample configuration dictionary"""
-    return {
-        'name': 'Test Tablet',
-        'manufacturer': 'Test Co',
-        'model': 'TestPad 1000',
-        'description': 'A test tablet',
-        'vendorId': '0x28bd',
-        'productId': '0x0914',
-        'deviceInfo': {
-            'vendor_id': 10429,
-            'product_id': 2324,
-            'product_string': 'Test Tablet',
-            'interfaces': [0]
-        },
-        'reportId': 2,
-        'digitizerUsagePage': 13,
-        'capabilities': {
-            'hasButtons': True,
-            'buttonCount': 8,
-            'hasPressure': True,
-            'pressureLevels': 8192,
-            'hasTilt': True,
-            'resolution': {
-                'x': 32768,
-                'y': 32768
-            }
-        },
-        'byteCodeMappings': {
-            'status': {
-                'byteIndex': [1],
-                'type': 'code',
-                'values': {
-                    '160': {
-                        'state': 'stylus',
-                        'primaryButtonPressed': False,
-                        'secondaryButtonPressed': False
-                    },
-                    '161': {
-                        'state': 'stylus',
-                        'primaryButtonPressed': True,
-                        'secondaryButtonPressed': False
-                    }
-                }
-            },
-            'x': {
-                'byteIndex': [2, 3],
-                'max': 32768,
-                'type': 'multi-byte-range'
-            },
-            'y': {
-                'byteIndex': [4, 5],
-                'max': 32768,
-                'type': 'multi-byte-range'
-            },
-            'pressure': {
-                'byteIndex': [6, 7],
-                'max': 8192,
-                'type': 'multi-byte-range'
-            },
-            'tiltX': {
-                'byteIndex': [8],
-                'positiveMax': 60,
-                'negativeMin': 196,
-                'negativeMax': 255,
-                'type': 'bipolar-range'
-            }
-        }
-    }
-
-
-@pytest.fixture
-def fixtures_dir():
-    """Path to test fixtures directory"""
-    return os.path.join(os.path.dirname(__file__), 'fixtures')
+def basic_config() -> TabletConfiguration:
+    return make_config()

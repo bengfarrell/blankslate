@@ -4,7 +4,6 @@ import { styles } from './events-display.styles.js';
 
 /**
  * Tablet event for event stream display
- * Supports dynamic button counts via index signature (button1, button2, ..., buttonN)
  */
 export interface TabletEvent {
   timestamp: number;
@@ -17,8 +16,7 @@ export interface TabletEvent {
   primaryButtonPressed?: boolean;
   secondaryButtonPressed?: boolean;
   state?: string;
-  // Dynamic button properties (button1, button2, ..., buttonN)
-  [key: string]: number | boolean | string | undefined;
+  auxCodes?: number[];
 }
 
 export interface EventsDeviceInfo {
@@ -48,15 +46,9 @@ export class EventsDisplay extends LitElement {
     return value.toFixed(decimals);
   }
 
-  protected _getPressedTabletButton(event: TabletEvent): number | null {
-    // Dynamically check for any buttonN property that is true
-    for (const key of Object.keys(event)) {
-      const match = key.match(/^button(\d+)$/);
-      if (match && event[key] === true) {
-        return parseInt(match[1], 10);
-      }
-    }
-    return null;
+  protected _formatAuxCodes(codes: number[] | undefined): string | null {
+    if (!codes || codes.length === 0) return null;
+    return codes.map(c => '0x' + c.toString(16).padStart(8, '0')).join(' ');
   }
 
   render() {
@@ -115,9 +107,15 @@ export class EventsDisplay extends LitElement {
           <div class="button-indicator ${event.secondaryButtonPressed ? 'active' : ''}">
             <span class="button-label">Secondary</span>
           </div>
-          <div class="button-indicator tablet-btn ${this._getPressedTabletButton(event) ? 'active' : ''}">
-            <span class="button-label">Tablet ${this._getPressedTabletButton(event) ?? '—'}</span>
-          </div>
+          ${(() => {
+            const aux = this._formatAuxCodes(event.auxCodes);
+            return html`
+              <div class="button-indicator tablet-btn ${aux !== null ? 'active' : ''}">
+                <span class="button-label">Tablet</span>
+                <span class="button-code">${aux ?? '—'}</span>
+              </div>
+            `;
+          })()}
         </div>
       </div>
     `;

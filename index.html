@@ -3,34 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlankSlate</title>
+    <title>blankslate viewer</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f7fa;
-            min-height: 100vh;
-        }
-        
-        hid-app {
-            display: block;
-            min-height: 100vh;
-        }
-
-        /* Ensure disabled Spectrum buttons show pointer cursor per Spectrum guidelines */
-        sp-button[disabled] {
-            cursor: pointer !important;
-        }
+      /* Light-theme palette inherited by the visualizer/events-display
+         shadow roots (Spectrum-style names kept for compatibility with
+         the existing component CSS). */
+      :root {
+        --spectrum-gray-50:  rgb(255, 255, 255);
+        --spectrum-gray-75:  rgb(253, 253, 253);
+        --spectrum-gray-100: rgb(248, 248, 248);
+        --spectrum-gray-200: rgb(230, 230, 230);
+        --spectrum-gray-300: rgb(213, 213, 213);
+        --spectrum-gray-400: rgb(177, 177, 177);
+        --spectrum-gray-500: rgb(144, 144, 144);
+        --spectrum-gray-600: rgb(109, 109, 109);
+        --spectrum-gray-700: rgb(70, 70, 70);
+        --spectrum-gray-800: rgb(34, 34, 34);
+        --spectrum-gray-900: rgb(0, 0, 0);
+        --spectrum-positive-color-900:  rgb(43, 154, 73);
+        --spectrum-positive-color-1000: rgb(30, 116, 55);
+        --spectrum-negative-color-900:  rgb(217, 60, 60);
+        --spectrum-informative-color-900: rgb(28, 124, 220);
+        --spectrum-notice-background-color-default: rgb(255, 236, 179);
+        --spectrum-notice-content-color-default:    rgb(120, 78, 0);
+      }
+      html, body { margin: 0; padding: 0; background: var(--spectrum-gray-100); min-height: 100vh; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--spectrum-gray-900); }
     </style>
 </head>
 <body>
-    <hid-app></hid-app>
-    
-    <script type="module" src="/src/components/hid-app/hid-app.ts"></script>
+    <viewer-app></viewer-app>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

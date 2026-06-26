@@ -1,7 +1,6 @@
 import { html, LitElement, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styles } from './tablet-visualizer.css.js';
-import { TabletExpressionConfig } from '../../types/config-types.js';
 import { sharedTabletInteraction } from '../../controllers/index.js';
 
 @customElement('tablet-visualizer')
@@ -30,12 +29,6 @@ export class TabletVisualizer extends LitElement {
     private isPressingTilt: boolean = false;
 
     @state()
-    private pressedButtons: Set<number> = new Set();
-
-    @state()
-    private lastPressedButton: number | null = null;
-
-    @state()
     private primaryButtonPressed: boolean = false;
 
     @state()
@@ -43,24 +36,6 @@ export class TabletVisualizer extends LitElement {
 
     private pressureAnimationFrame: number | null = null;
     private tiltPressureAnimationFrame: number | null = null;
-
-    @property({ 
-        type: Object,
-        hasChanged: () => true // Always update when property is set
-    })
-    noteDuration?: TabletExpressionConfig;
-
-    @property({ 
-        type: Object,
-        hasChanged: () => true // Always update when property is set
-    })
-    pitchBend?: TabletExpressionConfig;
-
-    @property({ 
-        type: Object,
-        hasChanged: () => true // Always update when property is set
-    })
-    noteVelocity?: TabletExpressionConfig;
 
     @property({ type: String })
     mode: 'both' | 'tablet' | 'tilt' = 'both';
@@ -81,12 +56,6 @@ export class TabletVisualizer extends LitElement {
     tabletDeviceInfo: any = null;
 
     @property({
-        type: Object,
-        hasChanged: () => true // Always update when Set changes
-    })
-    externalPressedButtons: Set<number> = new Set();
-
-    @property({ 
         type: Object,
         hasChanged: () => true // Always update when object changes
     })
@@ -279,19 +248,6 @@ export class TabletVisualizer extends LitElement {
         }
     }
 
-    private handleButtonMouseDown(buttonIndex: number, e: MouseEvent) {
-        e.stopPropagation(); // Prevent tablet events
-        this.pressedButtons = new Set(this.pressedButtons).add(buttonIndex);
-        this.lastPressedButton = buttonIndex;
-    }
-
-    private handleButtonMouseUp(buttonIndex: number, e: MouseEvent) {
-        e.stopPropagation(); // Prevent tablet events
-        const newSet = new Set(this.pressedButtons);
-        newSet.delete(buttonIndex);
-        this.pressedButtons = newSet;
-    }
-
     private handleStylusButtonMouseDown(isPrimary: boolean, e: MouseEvent) {
         e.stopPropagation(); // Prevent tilt events
         if (isPrimary) {
@@ -316,17 +272,6 @@ export class TabletVisualizer extends LitElement {
         window.addEventListener('mouseup', this.handleGlobalMouseUp);
     }
 
-    updated(changedProperties: Map<string, unknown>) {
-        super.updated(changedProperties);
-        // Track last pressed button when external buttons change in socket mode
-        if (changedProperties.has('externalPressedButtons') && this.socketMode) {
-            if (this.externalPressedButtons.size > 0) {
-                // Update lastPressedButton with the first pressed button
-                this.lastPressedButton = Array.from(this.externalPressedButtons)[0];
-            }
-        }
-    }
-
     disconnectedCallback() {
         super.disconnectedCallback();
         if (this.pressureAnimationFrame !== null) {
@@ -345,10 +290,6 @@ export class TabletVisualizer extends LitElement {
         if (this.isPressingTilt) {
             this.handleTiltMouseUp();
         }
-        // Clear all button presses on global mouse up
-        if (this.pressedButtons.size > 0) {
-            this.pressedButtons = new Set();
-        }
         // Clear stylus button presses
         if (this.primaryButtonPressed) {
             this.primaryButtonPressed = false;
@@ -356,28 +297,6 @@ export class TabletVisualizer extends LitElement {
         if (this.secondaryButtonPressed) {
             this.secondaryButtonPressed = false;
         }
-    }
-
-    protected renderButtonIndicator() {
-        // Use external pressed buttons when in socket mode, otherwise use internal state
-        const pressedButtonsSet = this.socketMode ? this.externalPressedButtons : this.pressedButtons;
-        const isAnyPressed = pressedButtonsSet.size > 0;
-
-        // Track last pressed button - update when a button is pressed
-        let displayButton: number | null = null;
-        if (isAnyPressed) {
-            // Get the first (or any) pressed button from the set
-            displayButton = Array.from(pressedButtonsSet)[0];
-        } else {
-            displayButton = this.lastPressedButton;
-        }
-
-        return html`
-            <div class="button-indicator ${isAnyPressed ? 'pressed' : ''}">
-                <span class="button-label">Btn</span>
-                <span class="button-value">${displayButton !== null ? displayButton : '–'}</span>
-            </div>
-        `;
     }
 
     protected renderTablet() {

@@ -120,19 +120,27 @@ export const styles = css`
   .button-indicator {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
     padding: 6px;
     border-radius: 6px;
     background: var(--spectrum-gray-200);
     transition: all 0.15s ease;
+    min-width: 0;
+  }
+
+  .button-indicator.tablet-btn {
+    flex: 1.4;
   }
 
   .button-indicator.active {
     background: var(--spectrum-positive-color-900);
   }
 
-  .button-indicator.active .button-label {
+  .button-indicator.active .button-label,
+  .button-indicator.active .button-code {
     color: var(--spectrum-gray-50);
   }
 
@@ -142,5 +150,16 @@ export const styles = css`
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--spectrum-gray-700);
+  }
+
+  .button-code {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--spectrum-gray-800);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;

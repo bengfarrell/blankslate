@@ -1,155 +1,111 @@
-# The Learning Tablet - Python Tools
+# blankslate Python server
 
-Python CLI tools for configuring and testing HID graphics tablets.
+Reference Python implementation of the tablet-to-WebSocket daemon. Reads
+HID input reports from a supported tablet, normalises them using the
+vendored OpenTabletDriver configs under `configs/` at the repo root
+(shared with the Node server), and broadcasts JSON events to any
+connected WebSocket client.
 
-## Quick Start (No Installation)
+## Install
 
-### Generate Tablet Configuration
-
-```bash
-# Interactive mode
-python generate_config.py
-
-# Mock mode (no physical tablet needed)
-python generate_config.py --mock
-
-# Or use shell script
-./run_config_gen.sh --mock
-```
-
-### View Tablet Events
+From the repo root:
 
 ```bash
-# Live dashboard mode
-python view_events.py -c ../public/configs/xp-pen-deco640-osx-python-nodriver.json --live
-
-# Mock mode with live dashboard
-python view_events.py -c my-tablet-config.json --mock --live
-
-# Or use shell script
-./run_viewer.sh
-```
-
-## Available Scripts
-
-| Script | Purpose | Example |
-|--------|---------|---------|
-| `generate_config.py` | Generate tablet config | `python generate_config.py --mock` |
-| `view_events.py` | View tablet events | `python view_events.py -c config.json --live` |
-| `run_config_gen.sh` | Shell wrapper for config gen | `./run_config_gen.sh --mock` |
-| `run_viewer.sh` | Shell wrapper for event viewer | `./run_viewer.sh` |
-
-**Why standalone scripts?**
-- Work without installing the package
-- Ctrl+C works properly in IDEs like WebStorm
-- Easy to run and debug during development
-
-## Setup
-
-### Create Virtual Environment
-
-```bash
-./setup_venv.sh
-```
-
-Or manually:
-
-```bash
+cd python
 python3 -m venv venv
 source venv/bin/activate
-pip install -e .
+pip install -e '.[dev]'
 ```
 
-### Install Package (Optional)
+`pip install -e .` exposes two console scripts: `blankslate-server` and
+`blankslate-udev-rules`. The optional `[dev]` extra adds `pytest` and
+`pytest-asyncio` for the test suite.
 
-After installation, you can use the CLI commands:
-
-```bash
-pip install -e .
-
-# Then use:
-tablet-config --mock
-tablet-events -c config.json --live
-tablet-websocket -c config.json
-```
-
-## Testing
-
-```bash
-# Run all tests
-./run_tests.sh
-
-# Run specific test file
-source venv/bin/activate
-pytest tests/unit/test_config_based_mock.py -v
-```
-
-## Documentation
-
-- [CLI-Python.md](../projectdocs/CLI-Python.md) - Full CLI documentation
-- [WALKTHROUGH.md](WALKTHROUGH.md) - Config generator walkthrough details
-- [TESTING.md](TESTING.md) - Testing documentation
-- [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - Implementation status
-
-## Common Tasks
-
-### Generate Config for Your Tablet
-
-```bash
-python generate_config.py
-# Follow the interactive prompts
-# Config will be saved to my-tablet-config.json
-```
-
-### Test With Mock Data
-
-```bash
-# Generate config with mock device
-python generate_config.py --mock
-
-# View events with mock data
-python view_events.py -c my-tablet-config.json --mock --live
-```
-
-### Debug Byte Mappings
-
-```bash
-# View raw bytes alongside events
-python view_events.py -c config.json --live --raw
-```
-
-## Troubleshooting
-
-### Ctrl+C Not Working
-
-Use the standalone scripts (`generate_config.py`, `view_events.py`) instead of the `-m` module syntax.
-
-### Process Won't Stop
-
-```bash
-./kill_tablet_processes.sh
-```
-
-### Permission Denied on Scripts
-
-```bash
-chmod +x *.sh *.py
-```
-
-## Project Structure
+## Run
 
 ```
-python/
-├── generate_config.py          # Standalone config generator
-├── view_events.py              # Standalone event viewer
-├── run_config_gen.sh           # Shell wrapper for config gen
-├── run_viewer.sh               # Shell wrapper for event viewer
-├── blankslate/          # Main package
-│   ├── cli/                    # CLI modules
-│   ├── core/                   # Core functionality
-│   ├── mockbytes/              # Mock data generation
-│   ├── models/                 # Data models
-│   └── utils/                  # Utilities
-└── tests/                      # Test suite
+blankslate-server                       # start the WebSocket server
+blankslate-server --list                # enumerate matched HID interfaces
+blankslate-server --list-parsers        # show available report parsers
+python -m pytest tests/                 # run unit tests
 ```
 
+On macOS, capturing the auxiliary (express-key) interface requires root
+because it surfaces as a keyboard-class HID device; run with `sudo` to
+get those events. The pen interface itself does not need root.
+
+### CLI options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--port <n>` | `8765` | WebSocket port. |
+| `--host <addr>` | `0.0.0.0` | WebSocket bind address. |
+| `--vid <id>` | — | Force a specific USB vendor ID (e.g. `0x256c`). |
+| `--pid <id>` | — | Force a specific USB product ID. |
+| `--list` | — | List matching connected devices and exit. |
+| `--list-parsers` | — | List parser implementations and exit. |
+| `--no-aux` | — | Don't open auxiliary (express-key) HID interfaces. |
+| `-v`, `--verbose` | — | Enable debug logging (raw bytes, parser dispatch). |
+
+## Architecture
+
+```
+HID interface ─▶ HidReader ─▶ ReportParser ─▶ EventAdapter ─▶ WebSocketServer
+                                  │                │
+                                  │                └── range overrides from
+                                  │                    HID report descriptor
+                                  │
+                                  └── StandardDigitizerReportParser (UsagePage 0x0D)
+                                      or a vendored OTD parser keyed off the
+                                      DigitizerIdentifier's ReportParser field
+```
+
+`discover()` enumerates every HID interface, matches by `(VendorID,
+ProductID)` against the OTD config index, and returns one
+`DiscoveredDevice` per interface. `pick_digitizer_interface()` prefers
+the standard HID Digitizer collection (`UsagePage = 0x0D`);
+`pick_aux_interfaces()` returns the keyboard / consumer-control
+collections on other interfaces.
+
+## Report descriptor handling
+
+Where the device exposes a standard HID Digitizer collection, the OTD
+config's `MaxX` / `MaxY` / `MaxPressure` describe the *vendor-mode*
+coordinate space and don't apply directly. `_apply_descriptor_ranges()`
+in `websocket_server.py` calls `HidReader.get_report_descriptor()`
+(which wraps `hid.device.get_report_descriptor()` from the `hidapi`
+binding), parses out the `Logical Maximum` on the X, Y, and Tip
+Pressure usages via `hid_descriptor.pick_pen_ranges()`, and overrides
+the `EventAdapter`'s ranges so coordinates normalize correctly.
+
+The Python port relies on hidapi's built-in descriptor support
+(available since hidapi 0.14), so a single call suffices on every
+platform. The Node port has to layer multiple fallbacks because
+node-hid 3.x doesn't expose the binding — see `node/README.md` for
+that discussion. The Python implementation is the simpler of the two.
+
+## Other implementation notes
+
+- **Config identification is by VID+PID, with a string-based
+  tie-break.** Many vendors (Huion, Gaomon, Artisul, …) share UCLogic
+  chipsets and ship the exact same `(VID, PID, InputReportLength)`
+  triple, so `ConfigIndex.find()` returns multiple candidates for one
+  tablet. `discover()` then calls `pick_best_match()`, which scores
+  each candidate against the device's own USB descriptor strings: +2
+  if `config.manufacturer` equals the device's `manufacturer_string`
+  (case-insensitive), +1 if `config.model` appears in the device's
+  `product_string`. Highest score wins; ties (and the all-zero case
+  for unknown vendors) fall back to the first candidate in
+  alphabetical config-load order. Parser selection and descriptor
+  ranges are unaffected — this only changes which config's `name`,
+  physical dimensions, and `auxButtonCount` are broadcast in the
+  `connected` message.
+- **OTD configs are vendored verbatim** from upstream OpenTabletDriver
+  and live at `configs/` in the repo root, shared between the Python
+  and Node servers. Do not edit `configs/**/*.json` — those files get
+  re-synced from upstream periodically. blankslate-specific overrides,
+  if ever needed, should live in a separate sidecar file.
+- **Aux interfaces** (express keys) are forwarded as raw HID scan
+  codes; clients build their own per-device mappings. The
+  `auxButtonCount` field broadcast in the `connected` message comes
+  from the OTD config and is a hint, not authoritative.
